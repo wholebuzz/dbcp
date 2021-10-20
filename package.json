@@ -1,0 +1,57 @@
+{
+  "name": "db-copy",
+  "version": "0.0.1",
+  "description": "Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage",
+  "author": "wholebuzz",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wholebuzz/db-copy.git"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "prepublishOnly": "yarn build",
+    "build": "tsc -b .",
+    "clean": "tsc -b . --clean",
+    "start": "node dist/index.js",
+    "docs": "typedoc --disableOutputCheck && rm -rf docs/README.md && ./scripts/updateReadmeApiReference.sh",
+    "test": "jest --runInBand --ci --passWithNoTests",
+    "test:coverage": "jest --runInBand --ci --passWithNoTests --coverage --no-cache",
+    "lint": "tslint -c tslint.json --project .",
+    "fix": "yarn lint --fix",
+    "format": "yarn run prettier --config .prettierrc.js --write 'src/*.+(ts)'"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist/**/*"
+  ],
+  "dependencies": {
+    "@wholebuzz/fs": "^0.0.14",
+    "db-watch": "^0.0.1",
+    "knex": "^0.21.1",
+    "yargs": "^17.2.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.22",
+    "@types/node": "^13.13.5",
+    "jest": "^26.6.3",
+    "prettier": "^2.3.2",
+    "ts-jest": "^26.5.4",
+    "tslint": "^5.20.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "tslint-microsoft-contrib": "^6.2.0",
+    "typedoc": "^0.20.35",
+    "typedoc-plugin-markdown": "3.8.2",
+    "typescript": "4.2.4",
+    "typescript-tslint-plugin": "^1.0.1"
+  },
+  "nyc": {
+    "reporter": [
+      "cobertura",
+      "json",
+      "lcov",
+      "text"
+    ]
+  }
+}
