@@ -1,12 +1,12 @@
 {
-  "name": "db-copy",
+  "name": "dbcp",
   "version": "0.0.1",
   "description": "Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage",
   "author": "wholebuzz",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wholebuzz/db-copy.git"
+    "url": "https://github.com/wholebuzz/dbcp.git"
   },
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -22,6 +22,7 @@
     "format": "yarn run prettier --config .prettierrc.js --write 'src/*.+(ts)'"
   },
   "main": "dist/index.js",
+  "bin": "dist/index.js",
   "files": [
     "dist/**/*"
   ],

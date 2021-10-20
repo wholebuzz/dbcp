@@ -1,4 +1,4 @@
-# db-copy
+# dbcp
 
 Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage
 
@@ -6,9 +6,11 @@ Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage
 
 ### Copy SQLServer table to gzipped JSON file
 
+```
 yarn start --sourceType mssql --host localhost --dbname mymsdb --port 1433 \
   --user SA --password "MyP@ssw0rd#" \
   --table foobar --targetFile file.json.gz
+```
 
 ### Copy PostgreSQL table to Google Cloud Storage gzipped JSON file
 
