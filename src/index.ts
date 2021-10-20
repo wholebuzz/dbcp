@@ -2,6 +2,7 @@ import { AnyFileSystem, GoogleCloudFileSystem, LocalFileSystem, S3FileSystem } f
 import { serializeJSONStream } from '@wholebuzz/fs/lib/json'
 import { streamKnexRows } from 'db-watch/lib/knex'
 import Knex from 'knex'
+import { pumpWritable } from 'tree-stream'
 import yargs from 'yargs'
 
 const poolConfig = {
@@ -17,7 +18,7 @@ const poolConfig = {
 
 async function main() {
   const args = await yargs.strict().options({
-    db: {
+    dbname: {
       description: 'Database',
       type: 'string',
     },
@@ -33,7 +34,7 @@ async function main() {
       description: 'Database port',
       type: 'string',
     },
-    sourceDb: {
+    sourceName: {
       description: 'Source database',
       type: 'string',
     },
@@ -54,8 +55,8 @@ async function main() {
       type: 'string',
     },
     sourceType: {
-      choices: ['postgres', 'mysql'],
-      default: 'postgres',
+      choices: ['postgresql', 'mssql', 'mysql'],
+      default: 'postgresql',
       description: 'Source database type',
       type: 'string',
     },
@@ -86,7 +87,7 @@ async function main() {
   const sourcePort =
     args.sourcePort || process.env.SOURCE_DB_PORT || args.port || process.env.DB_PORT
   const sourceConnection = {
-    database: args.sourceDb || process.env.SOURCE_DB_NAME || args.db || process.env.DB_NAME,
+    database: args.sourceName || process.env.SOURCE_DB_NAME || args.dbname || process.env.DB_NAME,
     user: args.sourceUser || process.env.SOURCE_DB_USER || args.user || process.env.DB_USER,
     password:
       args.sourcePassword ||
@@ -100,10 +101,12 @@ async function main() {
       process.env.DB_HOST ||
       'localhost',
     port: sourcePort ? parseInt(sourcePort, 10) : undefined,
+    options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
 
-  if (!sourceConnection.database || !sourceConnection.user || !sourceTable)
+  if (!sourceConnection.database || !sourceConnection.user || !sourceTable) {
     throw new Error('No source')
+  }
   if (!args.targetFile) throw new Error('No file')
 
   const fileSystem = new AnyFileSystem([
@@ -114,16 +117,23 @@ async function main() {
 
   if (!args.sourceFile) {
     const sourceKnex = Knex({
-      client: args.sourceType === 'postgres' ? 'postgresql' : 'mysql',
+      client: args.sourceType,
       connection: sourceConnection,
       pool: poolConfig,
-    })
+    } as any)
     const query = sourceKnex(sourceTable)
     const input = streamKnexRows(sourceKnex, query)
     const output = await fileSystem.openWritableFile(args.targetFile)
     await serializeJSONStream(output, input.finish(), true)
     console.log(`Wrote ${args.targetFile}`)
+    await sourceKnex.destroy()
   } else {
+    if (args.targetFile) {
+      const input = await fileSystem.openReadableFile(args.sourceFile)
+      const output = await fileSystem.openWritableFile(args.targetFile)
+      return pumpWritable(output, undefined, input.finish())
+    } else {
+    }
   }
 }
 

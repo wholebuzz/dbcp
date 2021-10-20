@@ -1,18 +1,27 @@
-# pg-watch
+# db-copy
 
-Create Postgres triggers and watch notify listeners.
+Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage
 
 ## Example
 
+### Copy SQLServer table to gzipped JSON file
+
+yarn start --sourceType mssql --host localhost --dbname mymsdb --port 1433 \
+  --user SA --password "MyP@ssw0rd#" \
+  --table foobar --targetFile file.json.gz
+
+### Copy PostgreSQL table to Google Cloud Storage gzipped JSON file
+
 ```
-// Add to migrations
-// for (const query of setupQueries) await knex.raw(query)
+yarn start --sourceType postgresql --host localhost --dbname postgres --port 5433 \
+  --user postgres --password postgres \
+  --table foobar --targetFile gs://bucket/file.json.gz
+```
 
-// After CREATE TABLE users
-// await knex.raw(createNotifyRowFunction('users', 'updated', "'username', orig.username"))
-// await knex.raw(createNotifyTrigger('users', 'updated'))
+### Copy MySQL table to Amazon Web Services S3 gzipped JSON file
 
-// Maximum PostgreSQL NOTIFY payload is 8192 bytes.
-// await knex.raw(createNotifyRowFieldsFunction('event', 'updated', "'date', orig.date, 'guid', orig.guid))
-// await knex.raw(createNotifyTrigger('event', 'updated'))
+```
+yarn start --sourceType mysql --host localhost --dbname mydb --port 8083 \
+  --user root --password wp \
+  --table foobar --targetFile s3://bucket/object.json.gz
 ```

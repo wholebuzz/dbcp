@@ -29,6 +29,11 @@
     "@wholebuzz/fs": "^0.0.14",
     "db-watch": "^0.0.1",
     "knex": "^0.21.1",
+    "mssql": "^7.2.1",
+    "mysql": "^2.18.1",
+    "pg": "^8.2.0",
+    "pg-query-stream": "^3.1.1",
+    "tedious": "^14.0.0",
     "yargs": "^17.2.1"
   },
   "devDependencies": {
