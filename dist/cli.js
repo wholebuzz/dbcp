@@ -15,6 +15,10 @@ async function main() {
       description: 'Database',
       type: 'string',
     },
+    format: {
+      choices: ['json', 'jsonl', 'ndjson'],
+      default: 'json',
+    },
     host: {
       description: 'Database host',
       type: 'string',
@@ -53,7 +57,6 @@ async function main() {
     },
     sourceType: {
       choices: ['postgresql', 'mssql', 'mysql'],
-      default: 'postgresql',
       description: 'Source database type',
       type: 'string',
     },
@@ -91,7 +94,6 @@ async function main() {
     },
     targetType: {
       choices: ['postgresql', 'mssql', 'mysql'],
-      default: 'postgresql',
       description: 'Target database type',
       type: 'string',
     },

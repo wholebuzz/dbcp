@@ -1,7 +1,7 @@
 {
   "name": "dbcp",
-  "version": "0.0.1",
-  "description": "Dump Mysql and Postgres databases directly to AWS S3 or Google Cloud Storage",
+  "version": "0.0.2",
+  "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
   "author": "wholebuzz",
   "license": "Apache-2.0",
   "repository": {

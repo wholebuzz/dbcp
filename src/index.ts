@@ -50,7 +50,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (
     (!args.sourceFile || !args.fileSystem) &&
     !args.sourceKnex &&
-    (!sourceConnection.database || !sourceConnection.user || !args.sourceTable)
+    (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
   ) {
     throw new Error('No source')
   }
@@ -66,7 +66,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (
     (!args.targetFile || !args.fileSystem) &&
     !args.targetKnex &&
-    (!targetConnection.database || !targetConnection.user || !args.targetTable)
+    (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
     throw new Error('No target')
   }
@@ -85,8 +85,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
     if (args.targetFile) {
       // If the copy is database->file: JSON-formatting transform.
       let output = await args.fileSystem!.openWritableFile(args.targetFile)
-      output =
-        args.format === 'ndjson' ? pipeJSONFormatter(output, true) : pipeJSONLinesFormatter(output)
+      output = isNDJson(args.format)
+        ? pipeJSONFormatter(output, true)
+        : pipeJSONLinesFormatter(output)
       await pumpWritable(output, undefined, input.finish())
       console.log(`Wrote ${args.targetFile}`)
     } else {
@@ -111,7 +112,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       return pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      input = args.format === 'ndjson' ? pipeJSONLinesParser(input) : pipeJSONParser(input, true)
+      input = isNDJson(args.format) ? pipeJSONLinesParser(input) : pipeJSONParser(input, true)
       const targetKnex =
         args.targetKnex ??
         Knex({
@@ -132,6 +133,8 @@ async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: stri
     return transaction.commit().catch(transaction.rollback)
   })
 }
+
+const isNDJson = (x?: string) => x === 'ndjson' || x === 'jsonl'
 
 const poolConfig = {
   // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
