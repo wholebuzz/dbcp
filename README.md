@@ -1,6 +1,6 @@
 # dbcp
 
-Dump MySQL, PostgreSQL, and SQLServer databases directly to local (comrpessed) JSON, Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), or another database.
+Dump MySQL, PostgreSQL, or SQLServer database tables directly to local (compressed) JSON, Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), or another database.
 
 Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Unless a database-to-database requires both `--sourceUser` and `--targetUser` are required.
 
@@ -46,31 +46,32 @@ $ ./node_modules/.bin/dbcp \
 
 ```
 $ ./node_modules/.bin/dbcp --help
-  --help            Show help                                          [boolean]
-  --version         Show version number                                [boolean]
-  --dbname          Database                                            [string]
-  --format                [choices: "json", "jsonl", "ndjson"] [default: "json"]
-  --host            Database host                                       [string]
-  --password        Database password                                   [string]
-  --port            Database port                                       [string]
-  --sourceFile      Source file                                         [string]
-  --sourceHost      Source host                                         [string]
-  --sourceName      Source database                                     [string]
-  --sourcePassword  Source database password                            [string]
-  --sourcePort      Source database port                                [string]
-  --sourceTable     Source database table                               [string]
+Options:
+  --help            Show help                                     [boolean]
+  --version         Show version number                           [boolean]
+  --dbname          Database                                       [string]
+  --format           [choices: "json", "jsonl", "ndjson"] [default: "json"]
+  --host            Database host                                  [string]
+  --password        Database password                              [string]
+  --port            Database port                                  [string]
+  --sourceFile      Source file                                    [string]
+  --sourceHost      Source host                                    [string]
+  --sourceName      Source database                                [string]
+  --sourcePassword  Source database password                       [string]
+  --sourcePort      Source database port                           [string]
+  --sourceTable     Source database table                          [string]
   --sourceType      Source database type
-                              [string] [choices: "postgresql", "mssql", "mysql"]
-  --sourceUser      Source database user                                [string]
-  --table           Database table                                      [string]
-  --targetFile      Target file                                         [string]
-  --targetHost      Target host                                         [string]
-  --targetName      Target database                                     [string]
-  --targetPassword  Target database password                            [string]
-  --targetPort      Target database port                                [string]
-  --targetTable     Target database table                               [string]
+                         [string] [choices: "postgresql", "mssql", "mysql"]
+  --sourceUser      Source database user                           [string]
+  --table           Database table                                 [string]
+  --targetFile      Target file                                    [string]
+  --targetHost      Target host                                    [string]
+  --targetName      Target database                                [string]
+  --targetPassword  Target database password                       [string]
+  --targetPort      Target database port                           [string]
+  --targetTable     Target database table                          [string]
   --targetType      Target database type
-                              [string] [choices: "postgresql", "mssql", "mysql"]
-  --targetUser      Target database user                                [string]
-  --user            Database user                                       [string]
+                         [string] [choices: "postgresql", "mssql", "mysql"]
+  --targetUser      Target database user                           [string]
+  --user            Database user                                  [string]
 ```

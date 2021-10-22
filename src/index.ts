@@ -86,8 +86,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
       // If the copy is database->file: JSON-formatting transform.
       let output = await args.fileSystem!.openWritableFile(args.targetFile)
       output = isNDJson(args.format)
-        ? pipeJSONFormatter(output, true)
-        : pipeJSONLinesFormatter(output)
+        ? pipeJSONLinesFormatter(output)
+        : pipeJSONFormatter(output, true)
       await pumpWritable(output, undefined, input.finish())
       console.log(`Wrote ${args.targetFile}`)
     } else {
