@@ -1,8 +1,13 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
-import { pipeJSONFormatter, pipeJSONLinesFormatter, pipeJSONParser } from '@wholebuzz/fs/lib/json'
+import {
+  pipeJSONFormatter,
+  pipeJSONLinesFormatter,
+  pipeJSONLinesParser,
+  pipeJSONParser,
+} from '@wholebuzz/fs/lib/json'
 import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
 import Knex from 'knex'
-import { pumpWritable } from 'tree-stream'
+import { pumpWritable, ReadableStreamTree } from 'tree-stream'
 
 export interface DatabaseCopyOptions {
   dbname?: string
@@ -42,8 +47,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.sourcePort,
     options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if ((!args.sourceFile || !args.fileSystem) && !args.sourceKnex &&
-    (!sourceConnection.database || !sourceConnection.user || !args.sourceTable)) {
+  if (
+    (!args.sourceFile || !args.fileSystem) &&
+    !args.sourceKnex &&
+    (!sourceConnection.database || !sourceConnection.user || !args.sourceTable)
+  ) {
     throw new Error('No source')
   }
 
@@ -55,50 +63,74 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.targetPort,
     options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if ((!args.targetFile || !args.fileSystem) && !args.targetKnex &&
-    (!targetConnection.database || !targetConnection.user || !args.targetTable)) {
+  if (
+    (!args.targetFile || !args.fileSystem) &&
+    !args.targetKnex &&
+    (!targetConnection.database || !targetConnection.user || !args.targetTable)
+  ) {
     throw new Error('No target')
   }
 
+  // If the copy source is a database.
   if (!args.sourceFile) {
-    const sourceKnex = args.sourceKnex ?? Knex({
-      client: args.sourceType,
-      connection: sourceConnection,
-      pool: poolConfig,
-    } as any)
+    const sourceKnex =
+      args.sourceKnex ??
+      Knex({
+        client: args.sourceType,
+        connection: sourceConnection,
+        pool: poolConfig,
+      } as any)
     const query = sourceKnex(args.sourceTable)
     const input = streamFromKnex(sourceKnex, query)
     if (args.targetFile) {
+      // If the copy is database->file: JSON-formatting transform.
       let output = await args.fileSystem!.openWritableFile(args.targetFile)
-      if (args.format === 'ndjson') {
-        output = pipeJSONFormatter(output, true)
-      } else {
-        output = pipeJSONLinesFormatter(output)
-      }
+      output =
+        args.format === 'ndjson' ? pipeJSONFormatter(output, true) : pipeJSONLinesFormatter(output)
       await pumpWritable(output, undefined, input.finish())
       console.log(`Wrote ${args.targetFile}`)
     } else {
+      // If the copy is database->database: no transform.
+      const targetKnex =
+        args.targetKnex ??
+        Knex({
+          client: args.targetType,
+          connection: targetConnection,
+          pool: poolConfig,
+        })
+      await dumpToDatabase(input, targetKnex, args.targetTable!)
+      await targetKnex.destroy()
     }
     await sourceKnex.destroy()
   } else {
-    const input = await args.fileSystem!.openReadableFile(args.sourceFile)
+    // Else the copy source is a file.
+    let input = await args.fileSystem!.openReadableFile(args.sourceFile)
     if (args.targetFile) {
+      // If the copy is file->file: no transform.
       const output = await args.fileSystem!.openWritableFile(args.targetFile)
       return pumpWritable(output, undefined, input.finish())
     } else {
-      const targetKnex = args.targetKnex ?? Knex({
-        client: args.targetType,
-        connection: targetConnection,
-        pool: poolConfig,
-      } as any)
-      await targetKnex.transaction(async (transaction) => {
-        const output = streamToKnex({ transaction }, { table: args.targetTable!, returning: '*' })
-        await pumpWritable(output, undefined, pipeJSONParser(input, true).finish())
-        return transaction.commit().catch(transaction.rollback)
-      })
+      // If the copy is file->database: JSON-parsing transform.
+      input = args.format === 'ndjson' ? pipeJSONLinesParser(input) : pipeJSONParser(input, true)
+      const targetKnex =
+        args.targetKnex ??
+        Knex({
+          client: args.targetType,
+          connection: targetConnection,
+          pool: poolConfig,
+        })
+      await dumpToDatabase(input, targetKnex, args.targetTable!)
       await targetKnex.destroy()
     }
   }
+}
+
+async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: string) {
+  await knex.transaction(async (transaction) => {
+    const output = streamToKnex({ transaction }, { table })
+    await pumpWritable(output, undefined, input.finish())
+    return transaction.commit().catch(transaction.rollback)
+  })
 }
 
 const poolConfig = {
