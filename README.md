@@ -19,27 +19,42 @@ $ npm install dbcp
 
 ```
 $ ./node_modules/.bin/dbcp \
-  --sourceType mssql --host localhost --dbname mymsdb --port 1433 \
-  --user SA --password "MyP@ssw0rd#" \
-  --table foobar --targetFile file.json.gz
+  --sourceType mssql \
+  --host localhost \
+  --dbname mymsdb \
+  --port 1433 \
+  --user SA \
+  --password "MyP@ssw0rd#" \
+  --table foobar \
+  --targetFile file.json.gz
 ```
 
 ### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
 
 ```
 $ ./node_modules/.bin/dbcp \
-  --sourceType postgresql --host localhost --dbname postgres --port 5433 \
-  --user postgres --password postgres \
-  --table foobar --targetFile gs://bucket/file.json.gz
+  --sourceType postgresql \
+  --host localhost \
+  --dbname postgres \
+  --port 5433 \
+  --user postgres \
+  --password postgres \
+  --table foobar \
+  --targetFile gs://bucket/file.json.gz
 ```
 
 ### Dump MySQL table to Amazon Web Services S3 gzipped JSON file
 
 ```
 $ ./node_modules/.bin/dbcp \
-  --sourceType mysql --host localhost --dbname mydb --port 8083 \
-  --user root --password wp \
-  --table foobar --targetFile s3://bucket/object.json.gz
+  --sourceType mysql \
+  --host localhost \
+  --dbname mydb \
+  --port 8083 \
+  --user root \
+  --password wp \
+  --table foobar \
+  --targetFile s3://bucket/object.json.gz
 ```
 
 ## Options
