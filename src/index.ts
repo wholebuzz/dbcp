@@ -1,5 +1,7 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import {
+  pipeFilter,
+  pipeFromFilter,
   pipeJSONFormatter,
   pipeJSONLinesFormatter,
   pipeJSONLinesParser,
@@ -7,9 +9,11 @@ import {
 } from '@wholebuzz/fs/lib/json'
 import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
 import Knex from 'knex'
+import { Duplex } from 'stream'
 import { pumpWritable, ReadableStreamTree } from 'tree-stream'
 
 export interface DatabaseCopyOptions {
+  contentType?: string
   dbname?: string
   fileSystem?: FileSystem
   format?: string
@@ -35,10 +39,16 @@ export interface DatabaseCopyOptions {
   targetType?: string
   targetPort?: number
   targetUser?: string
+  transformJson?: (x: unknown) => unknown
+  transformJsonStream?: Duplex
+  transformBytes?: (x: string) => string
+  transformBytesStream?: Duplex
   user?: string
 }
 
 export async function dbcp(args: DatabaseCopyOptions) {
+  let contentType = args.contentType
+
   const sourceConnection = {
     database: args.sourceName,
     user: args.sourceUser,
@@ -81,13 +91,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
         pool: poolConfig,
       } as any)
     const query = sourceKnex(args.sourceTable)
-    const input = streamFromKnex(sourceKnex, query)
+    let input = streamFromKnex(sourceKnex, query)
+    if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
+    if (args.transformJson) input = pipeFilter(input, args.transformJson)
     if (args.targetFile) {
       // If the copy is database->file: JSON-formatting transform.
-      let output = await args.fileSystem!.openWritableFile(args.targetFile)
-      output = isNDJson(args.format)
-        ? pipeJSONLinesFormatter(output)
-        : pipeJSONFormatter(output, true)
+      let output = await args.fileSystem!.openWritableFile(args.targetFile, undefined, {
+        contentType,
+      })
+      const isJsonl = isNDJson(args.format)
+      output = isJsonl ? pipeJSONLinesFormatter(output) : pipeJSONFormatter(output, true)
+      if (!contentType) contentType = isJsonl ? 'application/x-ndjson' : 'application/json'
+      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
+      if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
       await pumpWritable(output, undefined, input.finish())
       console.log(`Wrote ${args.targetFile}`)
     } else {
@@ -108,11 +124,17 @@ export async function dbcp(args: DatabaseCopyOptions) {
     let input = await args.fileSystem!.openReadableFile(args.sourceFile)
     if (args.targetFile) {
       // If the copy is file->file: no transform.
-      const output = await args.fileSystem!.openWritableFile(args.targetFile)
+      let output = await args.fileSystem!.openWritableFile(args.targetFile, undefined, {
+        contentType,
+      })
+      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
+      if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
       return pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is file->database: JSON-parsing transform.
       input = isNDJson(args.format) ? pipeJSONLinesParser(input) : pipeJSONParser(input, true)
+      if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
+      if (args.transformJson) input = pipeFilter(input, args.transformJson)
       const targetKnex =
         args.targetKnex ??
         Knex({

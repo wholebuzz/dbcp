@@ -1,6 +1,6 @@
 # dbcp
 
-Dump MySQL, PostgreSQL, or SQLServer database tables directly to local (compressed) JSON, Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), or another database.
+Dump MySQL, PostgreSQL, or SQLServer database tables directly to Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), another database, or local file.
 
 Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Unless a database-to-database requires both `--sourceUser` and `--targetUser` are required.
 
@@ -8,7 +8,14 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 
 ## Example
 
-### Setup
+### Global install
+
+```
+$ npm install -g dbcp
+$ dbcp --help
+```
+
+### Local setup
 
 ```
 $ npm init
@@ -55,6 +62,14 @@ $ ./node_modules/.bin/dbcp \
   --password wp \
   --table foobar \
   --targetFile s3://bucket/object.json.gz
+```
+
+### Download a file
+
+```
+$ ./node_modules/.bin/dbcp \
+  --sourceFile "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" \
+  --targetFile foo.png
 ```
 
 ## Options

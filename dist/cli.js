@@ -3,14 +3,21 @@
 const {
   AnyFileSystem,
   GoogleCloudFileSystem,
+  HTTPFileSystem,
   LocalFileSystem,
   S3FileSystem,
 } = require('@wholebuzz/fs')
+const ora = require('ora')
+const progressStream = require('progress-stream')
 const yargs = require('yargs')
 const { dbcp } = require('./index')
 
 async function main() {
   const args = await yargs.strict().options({
+    contentType: {
+      description: 'Content type',
+      type: 'string',
+    },
     dbname: {
       description: 'Database',
       type: 'string',
@@ -112,13 +119,24 @@ async function main() {
   const targetPort =
     args.targetPort || process.env.TARGET_DB_PORT || args.port || process.env.DB_PORT
 
+  const httpFileSystem = new HTTPFileSystem()
   const fileSystem = new AnyFileSystem([
     { urlPrefix: 'gs://', fs: new GoogleCloudFileSystem() },
     { urlPrefix: 's3://', fs: new S3FileSystem() },
+    { urlPrefix: 'http://', fs: httpFileSystem },
+    { urlPrefix: 'https://', fs: httpFileSystem },
     { urlPrefix: '', fs: new LocalFileSystem() },
   ])
 
-  return dbcp({
+  const copyProgress = progressStream({ time: 100 })
+  const spinner = ora('Wrote 0 bytes')
+  copyProgress.on('progress', (progress) => {
+    spinner.text = `Wrote ${progress.transferred} bytes`
+    spinner.frame()
+    spinner.render()
+  })
+
+  const options = {
     ...args,
     fileSystem,
     sourceHost:
@@ -161,7 +179,14 @@ async function main() {
       args.targetType || process.env.TARGET_DB_TYPE || args.password || process.env.DB_TYPE,
     targetUser:
       args.targetUser || process.env.TARGET_DB_USER || args.password || process.env.DB_USER,
-  })
+    transformBytesStream: copyProgress,
+  }
+
+  await dbcp(options)
+  const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceFile}`
+  const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
+  const finalProgress = copyProgress.progress()
+  spinner.succeed(`Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`)
 }
 
 // tslint:disable-next-line

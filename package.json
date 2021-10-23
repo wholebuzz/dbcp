@@ -1,7 +1,8 @@
 {
   "name": "dbcp",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
+  "keywords": [ "database", "dump", "stream", "mysql", "postgres", "cloud", "aws", "s3", "gcp", "gcs" ],
   "author": "wholebuzz",
   "license": "Apache-2.0",
   "repository": {
@@ -28,13 +29,15 @@
     "dist/**/*"
   ],
   "dependencies": {
-    "@wholebuzz/fs": "^0.0.16",
+    "@wholebuzz/fs": "^0.0.18",
     "db-watch": "^0.0.2",
     "knex": "^0.21.1",
     "mssql": "^7.2.1",
     "mysql": "^2.18.1",
+    "ora": "^5.4.0",
     "pg": "^8.2.0",
     "pg-query-stream": "^3.1.1",
+    "progress-stream": "^2.0.0",
     "tedious": "^14.0.0",
     "yargs": "^17.2.1"
   },
