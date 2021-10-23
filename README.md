@@ -20,12 +20,13 @@ $ dbcp --help
 ```
 $ npm init
 $ npm install dbcp
+$ ./node_modules/.bin/dbcp --help
 ```
 
 ### Dump SQLServer table to gzipped JSON file
 
 ```
-$ ./node_modules/.bin/dbcp \
+$ dbcp \
   --sourceType mssql \
   --host localhost \
   --dbname mymsdb \
@@ -39,7 +40,7 @@ $ ./node_modules/.bin/dbcp \
 ### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
 
 ```
-$ ./node_modules/.bin/dbcp \
+$ dbcp \
   --sourceType postgresql \
   --host localhost \
   --dbname postgres \
@@ -53,7 +54,7 @@ $ ./node_modules/.bin/dbcp \
 ### Dump MySQL table to Amazon Web Services S3 gzipped JSON file
 
 ```
-$ ./node_modules/.bin/dbcp \
+$ dbcp \
   --sourceType mysql \
   --host localhost \
   --dbname mydb \
@@ -67,7 +68,7 @@ $ ./node_modules/.bin/dbcp \
 ### Download a file
 
 ```
-$ ./node_modules/.bin/dbcp \
+$ dbcp \
   --sourceFile "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" \
   --targetFile foo.png
 ```
@@ -75,7 +76,7 @@ $ ./node_modules/.bin/dbcp \
 ## Options
 
 ```
-$ ./node_modules/.bin/dbcp --help
+$ dbcp --help
 Options:
   --help            Show help                                     [boolean]
   --version         Show version number                           [boolean]
