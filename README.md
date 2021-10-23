@@ -23,20 +23,6 @@ $ npm install dbcp
 $ ./node_modules/.bin/dbcp --help
 ```
 
-### Dump SQLServer table to gzipped JSON file
-
-```
-$ dbcp \
-  --sourceType mssql \
-  --host localhost \
-  --dbname mymsdb \
-  --port 1433 \
-  --user SA \
-  --password "MyP@ssw0rd#" \
-  --table foobar \
-  --targetFile file.json.gz
-```
-
 ### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
 
 ```
@@ -51,7 +37,7 @@ $ dbcp \
   --targetFile gs://bucket/file.json.gz
 ```
 
-### Dump MySQL table to Amazon Web Services S3 gzipped JSON file
+### Dump MySQL table to Amazon Web Services S3 gzipped JSON-Lines file
 
 ```
 $ dbcp \
@@ -62,7 +48,30 @@ $ dbcp \
   --user root \
   --password wp \
   --table foobar \
-  --targetFile s3://bucket/object.json.gz
+  --format jsonl \
+  --targetFile s3://bucket/object.jsonl.gz
+```
+
+### Dump SQLServer table to gzipped JSON file
+
+```
+$ dbcp \
+  --sourceType mssql \
+  --host localhost \
+  --dbname mymsdb \
+  --port 1433 \
+  --user SA \
+  --password "MyP@ssw0rd#" \
+  --table foobar \
+  --targetFile file.json.gz
+```
+
+### Copy a file from AWS to GCP
+
+```
+$ dbcp \
+  --sourceFile s3://bucket/object.json.gz \
+  --targetFile gs://bucket/file.json.gz
 ```
 
 ### Download a file
@@ -71,6 +80,15 @@ $ dbcp \
 $ dbcp \
   --sourceFile "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" \
   --targetFile foo.png
+```
+
+### Post a file to HTTP endpoint
+
+```
+$ dbcp \
+  --contentType "image/png" \
+  --sourceFile "./foo.png" \
+  --targetFile "http://my.api/upload"
 ```
 
 ## Options
