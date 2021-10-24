@@ -6,6 +6,7 @@ const {
   HTTPFileSystem,
   LocalFileSystem,
   S3FileSystem,
+  SMBFileSystem,
 } = require('@wholebuzz/fs')
 const ora = require('ora')
 const progressStream = require('progress-stream')
@@ -63,7 +64,7 @@ async function main() {
       type: 'string',
     },
     sourceType: {
-      choices: ['postgresql', 'mssql', 'mysql'],
+      choices: ['postgresql', 'mssql', 'mysql', 'smb', 'stdin'],
       description: 'Source database type',
       type: 'string',
     },
@@ -100,7 +101,7 @@ async function main() {
       type: 'string',
     },
     targetType: {
-      choices: ['postgresql', 'mssql', 'mysql'],
+      choices: ['postgresql', 'mssql', 'mysql', 'smb', 'stdout'],
       description: 'Target database type',
       type: 'string',
     },
@@ -145,8 +146,7 @@ async function main() {
       args.host ||
       process.env.DB_HOST ||
       'localhost',
-    sourceName:
-      args.sourceName || process.env.SOURCE_DB_NAME || args.password || process.env.DB_NAME,
+    sourceName: args.sourceName || process.env.SOURCE_DB_NAME || args.dbname || process.env.DB_NAME,
     sourcePassword:
       args.sourcePassword ||
       process.env.SOURCE_DB_PASSWORD ||
@@ -155,18 +155,15 @@ async function main() {
     sourcePort: sourcePort ? parseInt(sourcePort, 10) : undefined,
     sourceTable:
       args.sourceTable || process.env.SOURCE_DB_TABLE || args.table || process.env.DB_TABLE,
-    sourceType:
-      args.sourceType || process.env.SOURCE_DB_TYPE || args.password || process.env.DB_TYPE,
-    sourceUser:
-      args.sourceUser || process.env.SOURCE_DB_USER || args.password || process.env.DB_USER,
+    sourceType: args.sourceType || process.env.SOURCE_DB_TYPE || process.env.DB_TYPE,
+    sourceUser: args.sourceUser || process.env.SOURCE_DB_USER || args.user || process.env.DB_USER,
     targetHost:
       args.targetHost ||
       process.env.TARGET_DB_HOST ||
       args.host ||
       process.env.DB_HOST ||
       'localhost',
-    targetName:
-      args.targetName || process.env.TARGET_DB_NAME || args.password || process.env.DB_NAME,
+    targetName: args.targetName || process.env.TARGET_DB_NAME || args.dbname || process.env.DB_NAME,
     targetPassword:
       args.targetPassword ||
       process.env.TARGET_DB_PASSWORD ||
@@ -175,18 +172,18 @@ async function main() {
     targetPort: targetPort ? parseInt(targetPort, 10) : undefined,
     targetTable:
       args.targetTable || process.env.TARGET_DB_TABLE || args.table || process.env.DB_TABLE,
-    targetType:
-      args.targetType || process.env.TARGET_DB_TYPE || args.password || process.env.DB_TYPE,
-    targetUser:
-      args.targetUser || process.env.TARGET_DB_USER || args.password || process.env.DB_USER,
-    transformBytesStream: copyProgress,
+    targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,
+    targetUser: args.targetUser || process.env.TARGET_DB_USER || args.user || process.env.DB_USER,
+    transformBytesStream: args.targetType !== 'stdout' ? copyProgress : undefined,
   }
 
   await dbcp(options)
-  const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceFile}`
+  const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
   const finalProgress = copyProgress.progress()
-  spinner.succeed(`Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`)
+  spinner.succeed(
+    `Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`
+  )
 }
 
 // tslint:disable-next-line

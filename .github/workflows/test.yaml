@@ -1,0 +1,37 @@
+name: test
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: dbcptest
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: abracadabra
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+        ports:
+          - 5432:5432
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Install dependencies
+      run: yarn --frozen-lockfile
+    - name: Build tree
+      run: yarn build
+    - name: Run tests
+      run: yarn test:coverage
+      shell: bash
+      env:
+        DB_USER: admin
+        DB_PASS: abracadabra
+        DB_NAME: dbcptest
+        DB_PORT: 5432
+        DB_HOST: 127.0.0.1

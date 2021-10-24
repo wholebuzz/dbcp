@@ -2,7 +2,7 @@
 
 Dump MySQL, PostgreSQL, or SQLServer database tables directly to Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), another database, or local file.
 
-Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Unless a database-to-database requires both `--sourceUser` and `--targetUser` are required.
+Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. If a filename ends with ".gz" then gzip compression (or decompression) is applied.
 
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
 

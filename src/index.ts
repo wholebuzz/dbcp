@@ -9,8 +9,8 @@ import {
 } from '@wholebuzz/fs/lib/json'
 import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
 import Knex from 'knex'
-import { Duplex } from 'stream'
-import { pumpWritable, ReadableStreamTree } from 'tree-stream'
+import { Duplex, Readable, Writable } from 'stream'
+import StreamTree, { pumpWritable, ReadableStreamTree } from 'tree-stream'
 
 export interface DatabaseCopyOptions {
   contentType?: string
@@ -25,6 +25,7 @@ export interface DatabaseCopyOptions {
   sourceHost?: string
   sourceKnex?: Knex
   sourcePassword?: string
+  sourceStream?: Readable
   sourceTable?: string
   sourceType?: string
   sourcePort?: number
@@ -35,6 +36,7 @@ export interface DatabaseCopyOptions {
   targetHost?: string
   targetKnex?: Knex
   targetPassword?: string
+  targetStream?: Writable
   targetTable?: string
   targetType?: string
   targetPort?: number
@@ -48,6 +50,8 @@ export interface DatabaseCopyOptions {
 
 export async function dbcp(args: DatabaseCopyOptions) {
   let contentType = args.contentType
+  let sourceStdin = false
+  let targetStdout = false
 
   const sourceConnection = {
     database: args.sourceName,
@@ -57,8 +61,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.sourcePort,
     options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if (
+  if (args.sourceType === 'stdin') {
+    sourceStdin = true
+  } else if (
     (!args.sourceFile || !args.fileSystem) &&
+    !args.sourceStream &&
     !args.sourceKnex &&
     (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
   ) {
@@ -73,8 +80,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.targetPort,
     options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if (
+  if (args.targetType === 'stdout') {
+    targetStdout = true
+  } else if (
     (!args.targetFile || !args.fileSystem) &&
+    !args.targetStream &&
     !args.targetKnex &&
     (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
@@ -82,7 +92,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 
   // If the copy source is a database.
-  if (!args.sourceFile) {
+  if (!args.sourceFile && !sourceStdin && !args.sourceStream) {
     const sourceKnex =
       args.sourceKnex ??
       Knex({
@@ -94,18 +104,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
     let input = streamFromKnex(sourceKnex, query)
     if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
     if (args.transformJson) input = pipeFilter(input, args.transformJson)
-    if (args.targetFile) {
+    if (args.targetFile || targetStdout) {
       // If the copy is database->file: JSON-formatting transform.
-      let output = await args.fileSystem!.openWritableFile(args.targetFile, undefined, {
-        contentType,
-      })
+      let output = targetStdout
+        ? StreamTree.writable(process.stdout)
+        : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
+            contentType,
+          })
+      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
+      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       const isJsonl = isNDJson(args.format)
       output = isJsonl ? pipeJSONLinesFormatter(output) : pipeJSONFormatter(output, true)
       if (!contentType) contentType = isJsonl ? 'application/x-ndjson' : 'application/json'
-      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
       await pumpWritable(output, undefined, input.finish())
-      console.log(`Wrote ${args.targetFile}`)
     } else {
       // If the copy is database->database: no transform.
       const targetKnex =
@@ -120,15 +131,36 @@ export async function dbcp(args: DatabaseCopyOptions) {
     }
     await sourceKnex.destroy()
   } else {
-    // Else the copy source is a file.
-    let input = await args.fileSystem!.openReadableFile(args.sourceFile)
-    if (args.targetFile) {
+    // Else the copy source is a file (or directory).
+    const directoryStream =
+      !sourceStdin &&
+      !args.sourceStream &&
+      args.sourceFile!.endsWith('/') &&
+      !args.sourceFile!.startsWith('http')
+        ? new Readable()
+        : undefined
+    let input =
+      args.sourceStream || sourceStdin
+        ? StreamTree.readable(process.stdin)
+        : directoryStream
+        ? StreamTree.readable(directoryStream)
+        : await args.fileSystem!.openReadableFile(args.sourceFile!)
+    // If the source is a directory, read the directory.
+    if (directoryStream) {
+      directoryStream.push(
+        JSON.stringify(await args.fileSystem!.readDirectory(args.sourceFile!), null, 2)
+      )
+      directoryStream.push(null)
+    }
+    if (args.targetFile || targetStdout) {
       // If the copy is file->file: no transform.
-      let output = await args.fileSystem!.openWritableFile(args.targetFile, undefined, {
-        contentType,
-      })
-      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
+      let output = targetStdout
+        ? StreamTree.writable(process.stdout)
+        : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
+            contentType,
+          })
       if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
+      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       return pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is file->database: JSON-parsing transform.
