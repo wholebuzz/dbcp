@@ -1,6 +1,7 @@
 import { LocalFileSystem } from '@wholebuzz/fs'
 import fs from 'fs'
 import hasha from 'hasha'
+import rimraf from 'rimraf'
 import { Readable } from 'stream'
 import { promisify } from 'util'
 import { dbcp } from './index'
@@ -33,7 +34,7 @@ it('Should hash test data stream', async () => {
   expect(await hashFile(testDataUrl)).toBe(testDataHash)
 })
 
-it('Should copy local file', async () => {a
+it('Should copy local file', async () => {
   await rmrf(targetDataUrl)
   await dbcp({ sourceFile: testDataUrl, targetFile: targetDataUrl, fileSystem })
   expect(await hashFile(targetDataUrl)).toBe(testDataHash)
