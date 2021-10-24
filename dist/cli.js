@@ -181,9 +181,11 @@ async function main() {
   const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
   const finalProgress = copyProgress.progress()
-  spinner.succeed(
-    `Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`
-  )
+  if (args.targetType !== 'stdout') {
+    spinner.succeed(
+      `Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`
+    )
+  }
 }
 
 // tslint:disable-next-line

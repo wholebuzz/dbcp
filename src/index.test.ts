@@ -1,8 +1,10 @@
 import { LocalFileSystem } from '@wholebuzz/fs'
+import { exec } from 'child_process'
 import fs from 'fs'
 import hasha from 'hasha'
 import rimraf from 'rimraf'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
+import StreamTree, { WritableStreamTree } from 'tree-stream'
 import { promisify } from 'util'
 import { dbcp } from './index'
 
@@ -32,6 +34,10 @@ it('Should hash test data as string', async () => {
 
 it('Should hash test data stream', async () => {
   expect(await hashFile(testDataUrl)).toBe(testDataHash)
+  expect(await dbcpHashFile(testDataUrl)).toBe(testDataHash)
+  expect(
+    await execCommand('node dist/cli.js --sourceFile ./test/test.json.gz --targetType stdout | md5')
+  ).toBe(testDataHash)
 })
 
 it('Should copy local file', async () => {
@@ -46,6 +52,16 @@ async function hashFile(path: string) {
   )
 }
 
+async function dbcpHashFile(path: string) {
+  const target = { value: '' }
+  await dbcp({
+    sourceFile: path,
+    targetStream: writableToString(target).pipeFrom(hasha.stream(hashOptions)),
+    fileSystem,
+  })
+  return target.value
+}
+
 function readableToString(stream: Readable): Promise<string> {
   const chunks: Buffer[] = []
   return new Promise((resolve, reject) => {
@@ -55,11 +71,26 @@ function readableToString(stream: Readable): Promise<string> {
   })
 }
 
-/*function writableToString(stream: Writable): Promise<string> {
+function writableToString(target: { value: string }): WritableStreamTree {
   const chunks: Buffer[] = []
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk: any) => chunks.push(Buffer.from(chunk)))
-    stream.on('error', (err: Error) => reject(err))
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+  const stream = new Writable({
+    write(chunk, _encoding, callback) {
+      chunks.push(Buffer.from(chunk))
+      callback()
+    },
   })
-}*/
+  stream.on('finish', () => (target.value = Buffer.concat(chunks).toString('utf8')))
+  return StreamTree.writable(stream)
+}
+
+export function execCommand(cmd: string, execOptions: any = {}): Promise<string> {
+  return new Promise((resolve, reject) =>
+    exec(cmd, { maxBuffer: 1024 * 10000, ...execOptions }, (err, stdout, stderr) => {
+      if (err) {
+        reject([err, stdout.toString(), stderr.toString()])
+      } else {
+        resolve(stdout.toString().trim())
+      }
+    })
+  )
+}

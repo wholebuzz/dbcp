@@ -9,8 +9,8 @@ import {
 } from '@wholebuzz/fs/lib/json'
 import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
 import Knex from 'knex'
-import { Duplex, Readable, Writable } from 'stream'
-import StreamTree, { pumpWritable, ReadableStreamTree } from 'tree-stream'
+import { Duplex, Readable } from 'stream'
+import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
 export interface DatabaseCopyOptions {
   contentType?: string
@@ -25,7 +25,7 @@ export interface DatabaseCopyOptions {
   sourceHost?: string
   sourceKnex?: Knex
   sourcePassword?: string
-  sourceStream?: Readable
+  sourceStream?: ReadableStreamTree
   sourceTable?: string
   sourceType?: string
   sourcePort?: number
@@ -36,7 +36,7 @@ export interface DatabaseCopyOptions {
   targetHost?: string
   targetKnex?: Knex
   targetPassword?: string
-  targetStream?: Writable
+  targetStream?: WritableStreamTree
   targetTable?: string
   targetType?: string
   targetPort?: number
@@ -133,18 +133,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
   } else {
     // Else the copy source is a file (or directory).
     const directoryStream =
-      !sourceStdin &&
       !args.sourceStream &&
+      !sourceStdin &&
       args.sourceFile!.endsWith('/') &&
       !args.sourceFile!.startsWith('http')
         ? new Readable()
         : undefined
     let input =
-      args.sourceStream || sourceStdin
+      args.sourceStream ||
+      (sourceStdin
         ? StreamTree.readable(process.stdin)
         : directoryStream
         ? StreamTree.readable(directoryStream)
-        : await args.fileSystem!.openReadableFile(args.sourceFile!)
+        : await args.fileSystem!.openReadableFile(args.sourceFile!))
     // If the source is a directory, read the directory.
     if (directoryStream) {
       directoryStream.push(
@@ -152,13 +153,15 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )
       directoryStream.push(null)
     }
-    if (args.targetFile || targetStdout) {
+    if (args.targetStream || args.targetFile || targetStdout) {
       // If the copy is file->file: no transform.
-      let output = targetStdout
-        ? StreamTree.writable(process.stdout)
-        : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
-            contentType,
-          })
+      let output =
+        args.targetStream ||
+        (targetStdout
+          ? StreamTree.writable(process.stdout)
+          : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
+              contentType,
+            }))
       if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       return pumpWritable(output, undefined, input.finish())
