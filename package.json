@@ -47,7 +47,7 @@
     "@wholebuzz/fs": "^0.0.20",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
-    "db-watch": "^0.0.2",
+    "db-watch": "^0.0.3",
     "fs-ext": "^2.0.0",
     "knex": "^0.21.1",
     "knex-schema-inspector": "^1.6.3",

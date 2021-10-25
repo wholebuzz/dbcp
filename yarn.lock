@@ -1843,15 +1843,15 @@ date-utils@*:
   resolved "https://registry.yarnpkg.com/date-utils/-/date-utils-1.2.21.tgz#61fb16cdc1274b3c9acaaffe9fc69df8720a2b64"
   integrity sha1-YfsWzcEnSzyayq/+n8ad+HIKK2Q=
 
-db-watch@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/db-watch/-/db-watch-0.0.2.tgz#6b70fde14f0cfc727e17ad0709e9d09d76135019"
-  integrity sha512-1d6F6HEILv0jkHF77x5ZQB0jHjWSQOQAEx9YAlDW2t43ElYh6u3qlRG8Wn4sVM5PHnQ7l+4VBRNelWm/sFdYVA==
+db-watch@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/db-watch/-/db-watch-0.0.3.tgz#dd7baf77c2c413c52592b5787547f7632bffa254"
+  integrity sha512-cORR87DYLTZEWgpjzu2p7h8QZYiYMFs7pkm2A0aAauZMouqFtuxYRv4USIbDiwIfDuhcIPbbRrsWy5EwN4Jq2Q==
   dependencies:
     batch2 "^2.0.0"
     sorted-array-functions "^1.3.0"
     through2 "^3.0.1"
-    tree-stream "^1.0.11"
+    tree-stream "^1.0.13"
 
 debug@4, debug@^4.1.0, debug@^4.1.1, debug@^4.3.2:
   version "4.3.2"
@@ -5644,16 +5644,6 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=
-
-tree-stream@^1.0.11:
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/tree-stream/-/tree-stream-1.0.11.tgz#1c98628074adf7860ce12747ed019c41613eb0a3"
-  integrity sha512-SkRueY62XCSUfvK7OuifAE0d1NyFfrh5Hu1tDuHB1dimOcOq4ptEV1VuJRKi+hNzwF999CT7bs63qn3B2iGN4g==
-  dependencies:
-    cloneable-readable "^2.0.1"
-    end-of-stream "^1.1.0"
-    multi-write-stream "^2.0.1"
-    once "^1.3.1"
 
 tree-stream@^1.0.13:
   version "1.0.13"
