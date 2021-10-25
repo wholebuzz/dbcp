@@ -36,7 +36,10 @@ it('Should hash test data stream', async () => {
   expect(await hashFile(testDataUrl)).toBe(testDataHash)
   expect(await dbcpHashFile(testDataUrl)).toBe(testDataHash)
   expect(
-    await execCommand('node dist/cli.js --sourceFile ./test/test.json.gz --targetType stdout | md5')
+    await execCommand(
+      'node dist/cli.js --sourceFile ./test/test.json.gz --targetType stdout' +
+        ' | ./node_modules/.bin/hasha --algorithm md5'
+    )
   ).toBe(testDataHash)
 })
 
