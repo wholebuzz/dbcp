@@ -11,9 +11,15 @@ const {
 const ora = require('ora')
 const progressStream = require('progress-stream')
 const yargs = require('yargs')
-const { dbcp } = require('./index')
+const {
+  DatabaseCopyFormat,
+  DatabaseCopySourceType,
+  DatabaseCopyTargetType,
+  dbcp,
+} = require('./index')
 
 async function main() {
+  const formats = Object.values(DatabaseCopyFormat)
   const args = await yargs.strict().options({
     contentType: {
       description: 'Content type',
@@ -24,8 +30,7 @@ async function main() {
       type: 'string',
     },
     format: {
-      choices: ['json', 'jsonl', 'ndjson'],
-      default: 'json',
+      choices: formats,
     },
     host: {
       description: 'Database host',
@@ -42,6 +47,9 @@ async function main() {
     sourceFile: {
       description: 'Source file',
       type: 'string',
+    },
+    sourceFormat: {
+      choices: formats,
     },
     sourceHost: {
       description: 'Source host',
@@ -64,7 +72,7 @@ async function main() {
       type: 'string',
     },
     sourceType: {
-      choices: ['postgresql', 'mssql', 'mysql', 'smb', 'stdin'],
+      choices: Object.values(DatabaseCopySourceType),
       description: 'Source database type',
       type: 'string',
     },
@@ -79,6 +87,9 @@ async function main() {
     targetFile: {
       description: 'Target file',
       type: 'string',
+    },
+    targetFormat: {
+      choices: formats,
     },
     targetHost: {
       description: 'Target host',
@@ -101,7 +112,7 @@ async function main() {
       type: 'string',
     },
     targetType: {
-      choices: ['postgresql', 'mssql', 'mysql', 'smb', 'stdout'],
+      choices: Object.values(DatabaseCopyTargetType),
       description: 'Target database type',
       type: 'string',
     },
@@ -140,6 +151,7 @@ async function main() {
   const options = {
     ...args,
     fileSystem,
+    sourceFormat: args.sourceFormat || args.format,
     sourceHost:
       args.sourceHost ||
       process.env.SOURCE_DB_HOST ||
@@ -157,6 +169,7 @@ async function main() {
       args.sourceTable || process.env.SOURCE_DB_TABLE || args.table || process.env.DB_TABLE,
     sourceType: args.sourceType || process.env.SOURCE_DB_TYPE || process.env.DB_TYPE,
     sourceUser: args.sourceUser || process.env.SOURCE_DB_USER || args.user || process.env.DB_USER,
+    targetFormat: args.targetFormat || args.format,
     targetHost:
       args.targetHost ||
       process.env.TARGET_DB_HOST ||

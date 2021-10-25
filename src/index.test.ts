@@ -13,40 +13,54 @@ const zlib = require('zlib')
 const fileSystem = new LocalFileSystem()
 const hashOptions = { algorithm: 'md5' }
 const rmrf = promisify(rimraf)
-const targetDataUrl = '/tmp/target.json.gz'
-const testDataUrl = './test/test.json.gz'
-const testDataHash = '23952a3a66162d2f7383680db832e02a'
+const targetJsonUrl = '/tmp/target.json.gz'
+const targetNDJsonUrl = '/tmp/target.jsonl.gz'
+const testNDJsonUrl = './test/test.jsonl.gz'
+const testNDJsonHash = '23952a3a66162d2f7383680db832e02a'
+const testJsonHash = '04c891fdb6e037ab2aad3658bcb92d1a'
 
 it('Should hash test data as string', async () => {
   expect(
     hasha(
-      await readableToString(fs.createReadStream(testDataUrl).pipe(zlib.createGunzip())),
+      await readableToString(fs.createReadStream(testNDJsonUrl).pipe(zlib.createGunzip())),
       hashOptions
     )
-  ).toBe(testDataHash)
+  ).toBe(testNDJsonHash)
   expect(
     hasha(
-      await readableToString((await fileSystem.openReadableFile(testDataUrl)).finish()),
+      await readableToString((await fileSystem.openReadableFile(testNDJsonUrl)).finish()),
       hashOptions
     )
-  ).toBe(testDataHash)
+  ).toBe(testNDJsonHash)
 })
 
 it('Should hash test data stream', async () => {
-  expect(await hashFile(testDataUrl)).toBe(testDataHash)
-  expect(await dbcpHashFile(testDataUrl)).toBe(testDataHash)
+  expect(await hashFile(testNDJsonUrl)).toBe(testNDJsonHash)
+  expect(await dbcpHashFile(testNDJsonUrl)).toBe(testNDJsonHash)
   expect(
     await execCommand(
-      'node dist/cli.js --sourceFile ./test/test.json.gz --targetType stdout' +
-        ' | ./node_modules/.bin/hasha --algorithm md5'
+      `node dist/cli.js --sourceFile ${testNDJsonUrl} --targetType stdout` +
+        ` | ./node_modules/.bin/hasha --algorithm md5`
     )
-  ).toBe(testDataHash)
+  ).toBe(testNDJsonHash)
 })
 
 it('Should copy local file', async () => {
-  await rmrf(targetDataUrl)
-  await dbcp({ sourceFile: testDataUrl, targetFile: targetDataUrl, fileSystem })
-  expect(await hashFile(targetDataUrl)).toBe(testDataHash)
+  await rmrf(targetNDJsonUrl)
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
+  await dbcp({ sourceFile: testNDJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+})
+
+it('Should convert to json from jsonl and back', async () => {
+  await rmrf(targetJsonUrl)
+  expect(await fileSystem.fileExists(targetJsonUrl)).toBe(false)
+  await rmrf(targetNDJsonUrl)
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
+  await dbcp({ sourceFile: testNDJsonUrl, targetFile: targetJsonUrl, fileSystem })
+  expect(await hashFile(targetJsonUrl)).toBe(testJsonHash)
+  await dbcp({ sourceFile: targetJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
 })
 
 async function hashFile(path: string) {
@@ -86,7 +100,7 @@ function writableToString(target: { value: string }): WritableStreamTree {
   return StreamTree.writable(stream)
 }
 
-export function execCommand(cmd: string, execOptions: any = {}): Promise<string> {
+function execCommand(cmd: string, execOptions: any = {}): Promise<string> {
   return new Promise((resolve, reject) =>
     exec(cmd, { maxBuffer: 1024 * 10000, ...execOptions }, (err, stdout, stderr) => {
       if (err) {

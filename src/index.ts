@@ -12,14 +12,35 @@ import Knex from 'knex'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
+export enum DatabaseCopySourceType {
+  mssql = 'mssql',
+  mysql = 'mysql',
+  postgresql = 'postgresql',
+  smb = 'smb',
+  stdin = 'stdin',
+}
+
+export enum DatabaseCopyTargetType {
+  mssql = 'mssql',
+  mysql = 'mysql',
+  postgresql = 'postgresql',
+  smb = 'smb',
+  stdout = 'stdout',
+}
+
+export enum DatabaseCopyFormat {
+  json = 'json',
+  jsonl = 'jsonl',
+  ndjson = 'ndjson',
+  sql = 'sql',
+}
+
 export interface DatabaseCopyOptions {
   contentType?: string
   dbname?: string
   fileSystem?: FileSystem
-  format?: string
-  host?: string
   password?: string
-  port?: string
+  sourceFormat?: DatabaseCopyFormat
   sourceName?: string
   sourceFile?: string
   sourceHost?: string
@@ -27,10 +48,10 @@ export interface DatabaseCopyOptions {
   sourcePassword?: string
   sourceStream?: ReadableStreamTree
   sourceTable?: string
-  sourceType?: string
+  sourceType?: DatabaseCopySourceType
   sourcePort?: number
   sourceUser?: string
-  table?: string
+  targetFormat?: DatabaseCopyFormat
   targetName?: string
   targetFile?: string
   targetHost?: string
@@ -38,21 +59,25 @@ export interface DatabaseCopyOptions {
   targetPassword?: string
   targetStream?: WritableStreamTree
   targetTable?: string
-  targetType?: string
+  targetType?: DatabaseCopyTargetType
   targetPort?: number
   targetUser?: string
   transformJson?: (x: unknown) => unknown
   transformJsonStream?: Duplex
   transformBytes?: (x: string) => string
   transformBytesStream?: Duplex
-  user?: string
 }
 
 export async function dbcp(args: DatabaseCopyOptions) {
-  let contentType = args.contentType
-  let sourceStdin = false
-  let targetStdout = false
-
+  const sourceStdin = args.sourceType === DatabaseCopySourceType.stdin
+  const targetStdout = args.targetType === DatabaseCopyTargetType.stdout
+  const sourceFormat =
+    args.sourceFormat || guessFormatFromFilename(args.sourceFile) || DatabaseCopyFormat.json
+  const targetFormat =
+    args.targetFormat ||
+    guessFormatFromFilename(args.targetFile) ||
+    (args.sourceFile && sourceFormat) ||
+    DatabaseCopyFormat.json
   const sourceConnection = {
     database: args.sourceName,
     user: args.sourceUser,
@@ -61,17 +86,6 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.sourcePort,
     options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if (args.sourceType === 'stdin') {
-    sourceStdin = true
-  } else if (
-    (!args.sourceFile || !args.fileSystem) &&
-    !args.sourceStream &&
-    !args.sourceKnex &&
-    (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
-  ) {
-    throw new Error('No source')
-  }
-
   const targetConnection = {
     database: args.targetName,
     user: args.targetUser,
@@ -80,19 +94,29 @@ export async function dbcp(args: DatabaseCopyOptions) {
     port: args.targetPort,
     options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
   }
-  if (args.targetType === 'stdout') {
-    targetStdout = true
-  } else if (
-    (!args.targetFile || !args.fileSystem) &&
+
+  if (
+    !sourceStdin &&
+    !args.sourceStream &&
+    !args.sourceKnex &&
+    (!args.sourceFile || !args.fileSystem) &&
+    (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
+  ) {
+    throw new Error('No source')
+  }
+
+  if (
+    !targetStdout &&
     !args.targetStream &&
     !args.targetKnex &&
+    (!args.targetFile || !args.fileSystem) &&
     (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
     throw new Error('No target')
   }
 
   // If the copy source is a database.
-  if (!args.sourceFile && !sourceStdin && !args.sourceStream) {
+  if (!sourceStdin && !args.sourceStream && !args.sourceFile) {
     const sourceKnex =
       args.sourceKnex ??
       Knex({
@@ -109,13 +133,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
       let output = targetStdout
         ? StreamTree.writable(process.stdout)
         : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
-            contentType,
+            contentType: formatContentType(targetFormat),
           })
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      const isJsonl = isNDJson(args.format)
-      output = isJsonl ? pipeJSONLinesFormatter(output) : pipeJSONFormatter(output, true)
-      if (!contentType) contentType = isJsonl ? 'application/x-ndjson' : 'application/json'
+      output = pipeFromOutputFormatTransform(output, targetFormat)
       await pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is database->database: no transform.
@@ -133,10 +155,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
   } else {
     // Else the copy source is a file (or directory).
     const directoryStream =
-      !args.sourceStream &&
-      !sourceStdin &&
       args.sourceFile!.endsWith('/') &&
-      !args.sourceFile!.startsWith('http')
+      !args.sourceFile!.startsWith('http') &&
+      !args.sourceStream &&
+      !sourceStdin
         ? new Readable()
         : undefined
     let input =
@@ -160,14 +182,18 @@ export async function dbcp(args: DatabaseCopyOptions) {
         (targetStdout
           ? StreamTree.writable(process.stdout)
           : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
-              contentType,
+              contentType: formatContentType(sourceFormat),
             }))
-      if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
+      if (sourceFormat !== targetFormat) input = pipeInputFormatTransform(input, sourceFormat)
+      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
+      if (sourceFormat !== targetFormat) {
+        output = pipeFromOutputFormatTransform(output, targetFormat)
+      }
       return pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      input = isNDJson(args.format) ? pipeJSONLinesParser(input) : pipeJSONParser(input, true)
+      input = pipeInputFormatTransform(input, sourceFormat)
       if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       if (args.transformJson) input = pipeFilter(input, args.transformJson)
       const targetKnex =
@@ -183,6 +209,54 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 }
 
+export function guessFormatFromFilename(filename?: string) {
+  if (!filename) return null
+  if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
+  if (filename.endsWith('.json')) return DatabaseCopyFormat.json
+  if (filename.endsWith('.jsonl') || filename.endsWith('.ndjson')) return DatabaseCopyFormat.jsonl
+  if (filename.endsWith('.sql')) return DatabaseCopyFormat.sql
+  return null
+}
+
+export function pipeInputFormatTransform(input: ReadableStreamTree, format: DatabaseCopyFormat) {
+  switch (format) {
+    case DatabaseCopyFormat.ndjson:
+    case DatabaseCopyFormat.jsonl:
+      return pipeJSONLinesParser(input)
+    case DatabaseCopyFormat.json:
+      return pipeJSONParser(input, true)
+    case DatabaseCopyFormat.sql:
+      return input
+  }
+}
+
+export function pipeFromOutputFormatTransform(
+  output: WritableStreamTree,
+  format: DatabaseCopyFormat
+) {
+  switch (format) {
+    case DatabaseCopyFormat.ndjson:
+    case DatabaseCopyFormat.jsonl:
+      return pipeJSONLinesFormatter(output)
+    case DatabaseCopyFormat.json:
+      return pipeJSONFormatter(output, true)
+    case DatabaseCopyFormat.sql:
+      return output
+  }
+}
+
+export function formatContentType(format: DatabaseCopyFormat) {
+  switch (format) {
+    case DatabaseCopyFormat.ndjson:
+    case DatabaseCopyFormat.jsonl:
+      return 'application/x-ndjson'
+    case DatabaseCopyFormat.json:
+      return 'application/json'
+    case DatabaseCopyFormat.sql:
+      return ''
+  }
+}
+
 async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: string) {
   await knex.transaction(async (transaction) => {
     const output = streamToKnex({ transaction }, { table })
@@ -190,9 +264,6 @@ async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: stri
     return transaction.commit().catch(transaction.rollback)
   })
 }
-
-const isNDJson = (x?: string) => x === 'ndjson' || x === 'jsonl'
-
 const poolConfig = {
   // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
   // https://github.com/GoogleCloudPlatform/nodejs-docs-samples/blob/master/cloud-sql/postgres/knex/server.js

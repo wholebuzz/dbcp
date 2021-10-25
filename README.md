@@ -74,6 +74,14 @@ $ dbcp \
   --targetFile gs://bucket/file.json.gz
 ```
 
+### Convert file from ND-JSON to JSON
+
+```
+$ dbcp \
+  --sourceFile foobar.jsonl \
+  --targetFile bazbat.json
+```
+
 ### Download a file
 
 ```
