@@ -2,7 +2,7 @@
 
 Dump MySQL, PostgreSQL, or SQLServer database tables directly to Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), another database, or local file.
 
-Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. If a filename ends with ".gz" then gzip compression (or decompression) is applied.
+Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format (JSON, ND-JSON, SQL) and compression (gzip, none) is inferred from the filename.
 
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
 
@@ -103,32 +103,34 @@ $ dbcp \
 
 ```
 $ dbcp --help
-Options:
   --help            Show help                                     [boolean]
   --version         Show version number                           [boolean]
+  --contentType     Content type                                   [string]
   --dbname          Database                                       [string]
-  --format           [choices: "json", "jsonl", "ndjson"] [default: "json"]
+  --format                      [choices: "json", "jsonl", "ndjson", "sql"]
   --host            Database host                                  [string]
   --password        Database password                              [string]
   --port            Database port                                  [string]
   --sourceFile      Source file                                    [string]
+  --sourceFormat                [choices: "json", "jsonl", "ndjson", "sql"]
   --sourceHost      Source host                                    [string]
   --sourceName      Source database                                [string]
   --sourcePassword  Source database password                       [string]
   --sourcePort      Source database port                           [string]
   --sourceTable     Source database table                          [string]
   --sourceType      Source database type
-                         [string] [choices: "postgresql", "mssql", "mysql"]
+         [string] [choices: "mssql", "mysql", "postgresql", "smb", "stdin"]
   --sourceUser      Source database user                           [string]
   --table           Database table                                 [string]
   --targetFile      Target file                                    [string]
+  --targetFormat                [choices: "json", "jsonl", "ndjson", "sql"]
   --targetHost      Target host                                    [string]
   --targetName      Target database                                [string]
   --targetPassword  Target database password                       [string]
   --targetPort      Target database port                           [string]
   --targetTable     Target database table                          [string]
   --targetType      Target database type
-                         [string] [choices: "postgresql", "mssql", "mysql"]
+        [string] [choices: "mssql", "mysql", "postgresql", "smb", "stdout"]
   --targetUser      Target database user                           [string]
   --user            Database user                                  [string]
 ```

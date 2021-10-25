@@ -40,10 +40,11 @@
     "dist/**/*"
   ],
   "dependencies": {
+    "@azure/identity": "^2.0.0",
     "@azure/storage-blob": "^12.8.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
-    "@wholebuzz/fs": "^0.0.18",
+    "@wholebuzz/fs": "^0.0.20",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
     "db-watch": "^0.0.2",

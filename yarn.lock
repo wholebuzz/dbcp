@@ -104,6 +104,13 @@
     "@opentelemetry/api" "^1.0.1"
     tslib "^2.2.0"
 
+"@azure/core-util@^1.0.0-beta.1":
+  version "1.0.0-beta.1"
+  resolved "https://registry.yarnpkg.com/@azure/core-util/-/core-util-1.0.0-beta.1.tgz#2efd2c74b4b0a38180369f50fe274a3c4cd36e98"
+  integrity sha512-pS6cup979/qyuyNP9chIybK2qVkJ3MarbY/bx3JcGKE6An6dRweLnsfJfU2ydqUI/B51Rjnn59ajHIhCUTwWZw==
+  dependencies:
+    tslib "^2.0.0"
+
 "@azure/identity@^1.3.0", "@azure/identity@^1.5.2":
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/@azure/identity/-/identity-1.5.2.tgz#09da6aa8e14f2dace3dd8f66de7d7d56bfee5db7"
@@ -127,6 +134,29 @@
     uuid "^8.3.0"
   optionalDependencies:
     keytar "^7.3.0"
+
+"@azure/identity@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@azure/identity/-/identity-2.0.0.tgz#a78ed764b7607fe1217fbfe68b2213a02b51a744"
+  integrity sha512-mbgNutcAELqwGLnpzD5BruJNcowjg5qTXAsIZOTYc4e5fNS/5v2HBGg7BZ9rJv0MjTqztn81Ew8Uqa+tebItxw==
+  dependencies:
+    "@azure/abort-controller" "^1.0.0"
+    "@azure/core-auth" "^1.3.0"
+    "@azure/core-client" "^1.0.0"
+    "@azure/core-rest-pipeline" "^1.1.0"
+    "@azure/core-tracing" "1.0.0-preview.13"
+    "@azure/core-util" "^1.0.0-beta.1"
+    "@azure/logger" "^1.0.0"
+    "@azure/msal-browser" "^2.16.0"
+    "@azure/msal-common" "^4.5.1"
+    "@azure/msal-node" "^1.3.0"
+    "@types/stoppable" "^1.1.0"
+    events "^3.0.0"
+    jws "^4.0.0"
+    open "^8.0.0"
+    stoppable "^1.1.0"
+    tslib "^2.2.0"
+    uuid "^8.3.0"
 
 "@azure/keyvault-keys@^4.1.0", "@azure/keyvault-keys@^4.3.0":
   version "4.3.0"
@@ -177,10 +207,24 @@
     "@azure/ms-rest-js" "^2.0.4"
     adal-node "^0.2.2"
 
-"@azure/msal-common@^4.0.0":
+"@azure/msal-browser@^2.16.0":
+  version "2.18.0"
+  resolved "https://registry.yarnpkg.com/@azure/msal-browser/-/msal-browser-2.18.0.tgz#c614296cc78ad77e64e9aeb900cb01bc106f402b"
+  integrity sha512-YiWsimjsjjVu56+zOUDB1U3BCD9YNPIEZmw5iHzMk14aanqxWIvJlo+Ewo5/3FqxILgBOFWliH2hZCQPRIqKSg==
+  dependencies:
+    "@azure/msal-common" "^5.0.1"
+
+"@azure/msal-common@^4.0.0", "@azure/msal-common@^4.5.1":
   version "4.5.1"
   resolved "https://registry.yarnpkg.com/@azure/msal-common/-/msal-common-4.5.1.tgz#f35af8b634ae24aebd0906deb237c0db1afa5826"
   integrity sha512-/i5dXM+QAtO+6atYd5oHGBAx48EGSISkXNXViheliOQe+SIFMDo3gSq3lL54W0suOSAsVPws3XnTaIHlla0PIQ==
+  dependencies:
+    debug "^4.1.1"
+
+"@azure/msal-common@^5.0.1":
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/@azure/msal-common/-/msal-common-5.0.1.tgz#234030b340cc63575e84190b96a8a336b69c7698"
+  integrity sha512-CmPR3XM9+CGUu7V/+bAwDxyN6XqWJJhVLmv7utT3sbgay4l5roVXsD1t4wURTs8PwzxmmnJOrhvvGhoDxUW69g==
   dependencies:
     debug "^4.1.1"
 
@@ -191,6 +235,16 @@
   dependencies:
     "@azure/msal-common" "^4.0.0"
     axios "^0.21.1"
+    jsonwebtoken "^8.5.1"
+    uuid "^8.3.0"
+
+"@azure/msal-node@^1.3.0":
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/@azure/msal-node/-/msal-node-1.3.2.tgz#17665397c04b9cad57b42eb6e21d5d6f35d9b83a"
+  integrity sha512-aKU2lVRKhZa1IJ/Za/Ir6qlythQ3FHz0g0px3SbM4iC1otyr3ANS4mIn/6fmkpZDIHc8eAgJh2KMep1Yn2zpig==
+  dependencies:
+    "@azure/msal-common" "^5.0.1"
+    axios "^0.21.4"
     jsonwebtoken "^8.5.1"
     uuid "^8.3.0"
 
@@ -953,22 +1007,17 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@wholebuzz/fs@^0.0.18":
-  version "0.0.18"
-  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-0.0.18.tgz#63a0656415528d2ebb1965af73a1133b5ee87971"
-  integrity sha512-2NAgqmqVEC8EDWbyMiHd1sQICmsavkRfO1f2EPFuq+oA4YXN4AkXU9kp1q/R5fl289QHbCe9vMKt7oRWQqmq2w==
+"@wholebuzz/fs@^0.0.20":
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-0.0.20.tgz#aa9418c48669dc001a0839f44b490e4b07e8b3b8"
+  integrity sha512-xAaO6Z6+soYwGbIy0BxVkglpgkjTQPlo5H107hYgQsKpTfY/IxDxhpnv6vMIc41lKUi4A2tN7JUMbzrNcQG/cg==
   dependencies:
-    "@google-cloud/storage" "^5.8.1"
     JSONStream "^1.3.5"
-    aws-sdk "^2.975.0"
-    axios "^0.20.0"
-    fs-ext "^2.0.0"
     ndjson "^2.0.0"
-    s3-stream-upload "^2.0.2"
     sha.js "^2.4.11"
     stream-json "^1.7.3"
     through2 "^3.0.1"
-    tree-stream "^1.0.11"
+    tree-stream "^1.0.13"
     uuid "^8.1.0"
     yargs "^17.1.1"
     zlib "^1.0.5"
@@ -1210,7 +1259,7 @@ axios@^0.20.0:
   dependencies:
     follow-redirects "^1.10.0"
 
-axios@^0.21.1:
+axios@^0.21.1, axios@^0.21.4:
   version "0.21.4"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
   integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
@@ -1876,6 +1925,11 @@ defaults@^1.0.3:
   integrity sha1-xlYFHpgX2f8I7YgUd/P+QBnz730=
   dependencies:
     clone "^1.0.2"
+
+define-lazy-prop@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/define-lazy-prop/-/define-lazy-prop-2.0.0.tgz#3f7ae421129bcaaac9bc74905c98a0009ec9ee7f"
+  integrity sha512-Ds09qNh8yw3khSjiJjiUInaGX9xlqZDY7JVryGxdxV7NPeuqQfplOpQ66yJFZut3jLa5zOwkXw1g9EI2uKh4Og==
 
 define-property@^0.2.5:
   version "0.2.5"
@@ -2842,7 +2896,7 @@ is-descriptor@^1.0.0, is-descriptor@^1.0.2:
     is-data-descriptor "^1.0.0"
     kind-of "^6.0.2"
 
-is-docker@^2.0.0:
+is-docker@^2.0.0, is-docker@^2.1.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/is-docker/-/is-docker-2.2.1.tgz#33eeabe23cfe86f14bde4408a02c0cfb853acdaa"
   integrity sha512-F+i2BKsFrH66iaUFc0woD8sLy8getkwTwtOBjvs56Cx4CgJDeKQeqfz8wAYiSb8JOprWhHH5p77PbmYCvvUuXQ==
@@ -4279,6 +4333,15 @@ open@^7.0.0:
     is-docker "^2.0.0"
     is-wsl "^2.1.1"
 
+open@^8.0.0:
+  version "8.4.0"
+  resolved "https://registry.yarnpkg.com/open/-/open-8.4.0.tgz#345321ae18f8138f82565a910fdc6b39e8c244f8"
+  integrity sha512-XgFPPM+B28FtCCgSb9I+s9szOC1vZRSwgWsRUA5ylIxRTgKozqjOCrVOqGsYABPYK5qnfqClxZTFBa8PKt2v6Q==
+  dependencies:
+    define-lazy-prop "^2.0.0"
+    is-docker "^2.1.1"
+    is-wsl "^2.2.0"
+
 optionator@^0.8.1:
   version "0.8.3"
   resolved "https://registry.yarnpkg.com/optionator/-/optionator-0.8.3.tgz#84fa1d036fe9d3c7e21d99884b601167ec8fb495"
@@ -5586,6 +5649,16 @@ tree-stream@^1.0.11:
   version "1.0.11"
   resolved "https://registry.yarnpkg.com/tree-stream/-/tree-stream-1.0.11.tgz#1c98628074adf7860ce12747ed019c41613eb0a3"
   integrity sha512-SkRueY62XCSUfvK7OuifAE0d1NyFfrh5Hu1tDuHB1dimOcOq4ptEV1VuJRKi+hNzwF999CT7bs63qn3B2iGN4g==
+  dependencies:
+    cloneable-readable "^2.0.1"
+    end-of-stream "^1.1.0"
+    multi-write-stream "^2.0.1"
+    once "^1.3.1"
+
+tree-stream@^1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/tree-stream/-/tree-stream-1.0.13.tgz#acc9f3eeb53b88422e7bb8dd24c92f89ae9a54e9"
+  integrity sha512-X4F8ybPxKnNRTPAI1pZP/rGZ/JO4EDW/lA4LxPXmGSjhp1t36sMbfqGoul/Kh6F0/QAytE8Ygp7B/8ZmD2Z2GQ==
   dependencies:
     cloneable-readable "^2.0.1"
     end-of-stream "^1.1.0"

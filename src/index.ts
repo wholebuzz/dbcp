@@ -9,6 +9,7 @@ import {
 } from '@wholebuzz/fs/lib/json'
 import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
 import Knex from 'knex'
+import schemaInspector from 'knex-schema-inspector'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
@@ -124,6 +125,15 @@ export async function dbcp(args: DatabaseCopyOptions) {
         connection: sourceConnection,
         pool: poolConfig,
       } as any)
+    let createTable
+    if (args.targetFile && targetFormat === DatabaseCopyFormat.sql) {
+      const inspector = schemaInspector(sourceKnex)
+      const columns = await inspector.columnInfo()
+      let createColumns = ''
+      for (const column of columns)
+        createColumns += `${createColumns ? ', ' : ''} ${column.name} ${column.data_type}`
+      createTable = `CREATE TABLE ${args.sourceTable} (${createColumns});\n`
+    }
     const query = sourceKnex(args.sourceTable)
     let input = streamFromKnex(sourceKnex, query)
     if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
@@ -137,7 +147,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
           })
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      output = pipeFromOutputFormatTransform(output, targetFormat)
+      if (createTable) output.node.stream.push(createTable)
+      output = pipeFromOutputFormatTransform(output, targetFormat, args.sourceTable)
       await pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is database->database: no transform.
@@ -232,7 +243,8 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
 
 export function pipeFromOutputFormatTransform(
   output: WritableStreamTree,
-  format: DatabaseCopyFormat
+  format: DatabaseCopyFormat,
+  tableName?: string
 ) {
   switch (format) {
     case DatabaseCopyFormat.ndjson:
@@ -241,7 +253,12 @@ export function pipeFromOutputFormatTransform(
     case DatabaseCopyFormat.json:
       return pipeJSONFormatter(output, true)
     case DatabaseCopyFormat.sql:
-      return output
+      return pipeFromFilter(
+        output,
+        (x) =>
+          `INSERT (${Object.keys(x).join(',')}) ` +
+          `VALUES (${Object.values(x).join(',')}) INTO ${tableName};\n`
+      )
   }
 }
 
@@ -264,6 +281,7 @@ async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: stri
     return transaction.commit().catch(transaction.rollback)
   })
 }
+
 const poolConfig = {
   // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
   // https://github.com/GoogleCloudPlatform/nodejs-docs-samples/blob/master/cloud-sql/postgres/knex/server.js
