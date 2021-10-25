@@ -125,15 +125,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
         connection: sourceConnection,
         pool: poolConfig,
       } as any)
-    let createTable
-    if (args.targetFile && targetFormat === DatabaseCopyFormat.sql) {
-      const inspector = schemaInspector(sourceKnex)
-      const columns = await inspector.columnInfo()
-      let createColumns = ''
-      for (const column of columns)
-        createColumns += `${createColumns ? ', ' : ''} ${column.name} ${column.data_type}`
-      createTable = `CREATE TABLE ${args.sourceTable} (${createColumns});\n`
-    }
+    const createTable =
+      (targetStdout || args.targetFile) && targetFormat === DatabaseCopyFormat.sql
+        ? await inspectCreateTableSchema(sourceKnex, args.sourceTable ?? '')
+        : undefined
     const query = sourceKnex(args.sourceTable)
     let input = streamFromKnex(sourceKnex, query)
     if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
@@ -147,8 +142,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
           })
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      if (createTable) output.node.stream.push(createTable)
-      output = pipeFromOutputFormatTransform(output, targetFormat, args.sourceTable)
+      if (createTable) output.node.stream.write(createTable)
+      output = pipeFromOutputFormatTransform(output, targetFormat, sourceKnex, args.sourceTable)
       await pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is database->database: no transform.
@@ -220,6 +215,33 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 }
 
+export async function inspectCreateTableSchema(sourceKnex: Knex, sourceTable: string) {
+  const inspector = schemaInspector(sourceKnex)
+  const columnsInfo = await inspector.columnInfo()
+  return (
+    sourceKnex.schema
+      .createTableIfNotExists(sourceTable ?? '', (t) => {
+        for (const columnInfo of columnsInfo) {
+          let column
+          switch (columnInfo.data_type) {
+            case 'float':
+              column = t.float(columnInfo.name)
+            case 'integer':
+              column = t.integer(columnInfo.name)
+            case 'varchar':
+              column = t.string(columnInfo.name, columnInfo.max_length ?? undefined)
+          }
+          if (!column) continue
+          if (columnInfo.is_primary_key) column = column.primary()
+          if (columnInfo.is_unique) column = column.unique()
+          if (columnInfo.is_nullable) column = column.nullable()
+          if (columnInfo.is_nullable === false) column = column.notNullable()
+        }
+      })
+      .toString() + ';\n'
+  )
+}
+
 export function guessFormatFromFilename(filename?: string) {
   if (!filename) return null
   if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
@@ -244,6 +266,7 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
 export function pipeFromOutputFormatTransform(
   output: WritableStreamTree,
   format: DatabaseCopyFormat,
+  knex?: Knex,
   tableName?: string
 ) {
   switch (format) {
@@ -256,8 +279,10 @@ export function pipeFromOutputFormatTransform(
       return pipeFromFilter(
         output,
         (x) =>
-          `INSERT (${Object.keys(x).join(',')}) ` +
-          `VALUES (${Object.values(x).join(',')}) INTO ${tableName};\n`
+          knex
+            ?.table(tableName ?? '')
+            .insert(x)
+            .toString() + ';\n'
       )
   }
 }
