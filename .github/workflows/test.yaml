@@ -30,8 +30,8 @@ jobs:
       run: yarn test:coverage
       shell: bash
       env:
-        DB_USER: admin
-        DB_PASS: abracadabra
-        DB_NAME: dbcptest
-        DB_PORT: 5432
-        DB_HOST: 127.0.0.1
+        POSTGRES_DB_USER: admin
+        POSTGRES_DB_PASS: abracadabra
+        POSTGRES_DB_NAME: postgres
+        POSTGRES_DB_HOST: 127.0.0.1
+        POSTGRES_DB_PORT: 5432

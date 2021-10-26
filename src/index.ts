@@ -103,7 +103,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.sourceFile || !args.fileSystem) &&
     (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
   ) {
-    throw new Error('No source')
+    throw new Error(`No source for ${JSON.stringify(args, null, 2)}`)
   }
 
   if (
@@ -113,7 +113,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.targetFile || !args.fileSystem) &&
     (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
-    throw new Error('No target')
+    throw new Error(`No target for ${JSON.stringify(args, null, 2)}`)
   }
 
   // If the copy source is a database.
@@ -123,7 +123,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       Knex({
         client: args.sourceType,
         connection: sourceConnection,
-        pool: poolConfig,
+        pool: knexPoolConfig,
       } as any)
     const createTable =
       (targetStdout || args.targetFile) && targetFormat === DatabaseCopyFormat.sql
@@ -152,7 +152,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         Knex({
           client: args.targetType,
           connection: targetConnection,
-          pool: poolConfig,
+          pool: knexPoolConfig,
         })
       await dumpToDatabase(input, targetKnex, args.targetTable!)
       await targetKnex.destroy()
@@ -207,7 +207,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         Knex({
           client: args.targetType,
           connection: targetConnection,
-          pool: poolConfig,
+          pool: knexPoolConfig,
         })
       await dumpToDatabase(input, targetKnex, args.targetTable!)
       await targetKnex.destroy()
@@ -307,7 +307,7 @@ async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: stri
   })
 }
 
-const poolConfig = {
+export const knexPoolConfig = {
   // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
   // https://github.com/GoogleCloudPlatform/nodejs-docs-samples/blob/master/cloud-sql/postgres/knex/server.js
   acquireTimeoutMillis: 60000,
