@@ -54,3 +54,12 @@ jobs:
         POSTGRES_DB_NAME: postgres
         POSTGRES_DB_HOST: 127.0.0.1
         POSTGRES_DB_PORT: 5432
+    - name: Setup gcloud
+      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        project_id: ${{ secrets.GCLOUD_PROJECT }}
+        service_account_key: ${{ secrets.GCLOUD_SA_KEY }}
+        export_default_credentials: true
+    - name: Upload test coverage
+      run: 'yarn badge:coverage && gsutil cp coverage/coverage.svg gs://wholebuzz/dbcp/coverage.svg'
+      shell: bash
