@@ -36,11 +36,29 @@ export enum DatabaseCopyFormat {
   sql = 'sql',
 }
 
+export enum DatabaseCopySchema {
+  dataOnly,
+  schemaOnly,
+}
+
+export interface DatabaseCopyOrderBy {
+  column: string
+  order: DatabaseCopyOrderByDirection
+}
+
+export enum DatabaseCopyOrderByDirection {
+  asc = 'asc',
+  desc = 'desc',
+}
+
 export interface DatabaseCopyOptions {
   contentType?: string
+  copySchema?: DatabaseCopySchema
   dbname?: string
   fileSystem?: FileSystem
+  orderBy?: DatabaseCopyOrderBy[]
   password?: string
+  sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
   sourceFile?: string
@@ -52,6 +70,7 @@ export interface DatabaseCopyOptions {
   sourceType?: DatabaseCopySourceType
   sourcePort?: number
   sourceUser?: string
+  targetConnection?: Record<string, any>
   targetFormat?: DatabaseCopyFormat
   targetName?: string
   targetFile?: string
@@ -86,6 +105,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
     host: args.sourceHost,
     port: args.sourcePort,
     options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
+    charset: args.sourceType === 'mysql' ? 'utf8mb4' : undefined,
+    ...args.sourceConnection,
   }
   const targetConnection = {
     database: args.targetName,
@@ -94,6 +115,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
     host: args.targetHost,
     port: args.targetPort,
     options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
+    charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
+    ...args.targetConnection,
   }
 
   if (
@@ -103,7 +126,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.sourceFile || !args.fileSystem) &&
     (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
   ) {
-    throw new Error(`No source for ${JSON.stringify(args, null, 2)}`)
+    throw new Error(`Missing source parameters ${JSON.stringify(args, null, 2)}`)
   }
 
   if (
@@ -113,7 +136,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.targetFile || !args.fileSystem) &&
     (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
-    throw new Error(`No target for ${JSON.stringify(args, null, 2)}`)
+    throw new Error(`Missing target parameters ${JSON.stringify(args, null, 2)}`)
   }
 
   // If the copy source is a database.
@@ -125,14 +148,17 @@ export async function dbcp(args: DatabaseCopyOptions) {
         connection: sourceConnection,
         pool: knexPoolConfig,
       } as any)
-    const createTable =
-      (targetStdout || args.targetFile) && targetFormat === DatabaseCopyFormat.sql
-        ? await inspectCreateTableSchema(sourceKnex, args.sourceTable ?? '')
-        : undefined
-    const query = sourceKnex(args.sourceTable)
-    let input = streamFromKnex(sourceKnex, query)
-    if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
-    if (args.transformJson) input = pipeFilter(input, args.transformJson)
+    const shouldInspectSchema =
+      targetFormat === DatabaseCopyFormat.sql &&
+      (targetStdout || args.targetFile) &&
+      args.copySchema !== DatabaseCopySchema.dataOnly
+    const formattingKnex =
+      shouldInspectSchema && args.targetType && args.targetType !== DatabaseCopyTargetType.stdout
+        ? Knex({ client: args.targetType, log: knexLogConfig })
+        : sourceKnex
+    const createTable = shouldInspectSchema
+      ? await inspectCreateTableSchema(sourceKnex, formattingKnex, args.sourceTable ?? '')
+      : undefined
     if (args.targetFile || targetStdout) {
       // If the copy is database->file: JSON-formatting transform.
       let output = targetStdout
@@ -142,11 +168,25 @@ export async function dbcp(args: DatabaseCopyOptions) {
           })
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      if (createTable) output.node.stream.write(createTable)
-      output = pipeFromOutputFormatTransform(output, targetFormat, sourceKnex, args.sourceTable)
-      await pumpWritable(output, undefined, input.finish())
+      if (args.copySchema === DatabaseCopySchema.schemaOnly) {
+        const readable = new Readable()
+        if (createTable) readable.push(createTable)
+        readable.push(null)
+        await pumpWritable(output, undefined, readable)
+      } else {
+        const input = queryDatabase(sourceKnex, args.sourceTable!, args)
+        if (createTable) output.node.stream.write(createTable)
+        output = pipeFromOutputFormatTransform(
+          output,
+          targetFormat,
+          formattingKnex,
+          args.sourceTable
+        )
+        await pumpWritable(output, undefined, input.finish())
+      }
     } else {
       // If the copy is database->database: no transform.
+      const input = queryDatabase(sourceKnex, args.sourceTable!, args)
       const targetKnex =
         args.targetKnex ??
         Knex({
@@ -215,26 +255,43 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 }
 
-export async function inspectCreateTableSchema(sourceKnex: Knex, sourceTable: string) {
+export async function inspectCreateTableSchema(
+  sourceKnex: Knex,
+  targetKnex: Knex,
+  tableName: string
+) {
   const inspector = schemaInspector(sourceKnex)
-  const columnsInfo = await inspector.columnInfo()
+  const columnsInfo = await inspector.columnInfo(tableName)
   return (
-    sourceKnex.schema
-      .createTableIfNotExists(sourceTable ?? '', (t) => {
+    targetKnex.schema
+      .createTableIfNotExists(tableName ?? '', (t) => {
         for (const columnInfo of columnsInfo) {
           let column
           switch (columnInfo.data_type) {
+            case 'timestamp with time zone':
+              column = t.dateTime(columnInfo.name, { precision: 6 })
+              break
             case 'float':
               column = t.float(columnInfo.name)
+              break
             case 'integer':
               column = t.integer(columnInfo.name)
-            case 'varchar':
-              column = t.string(columnInfo.name, columnInfo.max_length ?? undefined)
+              break
+            case 'json':
+              column = t.json(columnInfo.name)
+              break
+            case 'jsonb':
+              column = t.jsonb(columnInfo.name)
+              break
+            case 'character varying':
+            case 'text':
+              column = t.text(columnInfo.name)
+              break
           }
           if (!column) continue
           if (columnInfo.is_primary_key) column = column.primary()
           if (columnInfo.is_unique) column = column.unique()
-          if (columnInfo.is_nullable) column = column.nullable()
+          // if (columnInfo.is_nullable) column = column.nullable()
           if (columnInfo.is_nullable === false) column = column.notNullable()
         }
       })
@@ -295,8 +352,27 @@ export function formatContentType(format: DatabaseCopyFormat) {
     case DatabaseCopyFormat.json:
       return 'application/json'
     case DatabaseCopyFormat.sql:
-      return ''
+      return 'application/sql'
   }
+}
+
+function queryDatabase(
+  knex: Knex,
+  table: string,
+  options: {
+    orderBy?: DatabaseCopyOrderBy[]
+    transformJson?: (x: unknown) => unknown
+    transformJsonStream?: Duplex
+  }
+) {
+  let query = knex(table)
+  if (options.orderBy) {
+    for (const order of options.orderBy) query = query.orderBy(order.column, order.order)
+  }
+  let input = streamFromKnex(knex, query)
+  if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
+  if (options.transformJson) input = pipeFilter(input, options.transformJson)
+  return input
 }
 
 async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: string) {
@@ -305,6 +381,21 @@ async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: stri
     await pumpWritable(output, undefined, input.finish())
     return transaction.commit().catch(transaction.rollback)
   })
+}
+
+export const knexLogConfig = {
+  warn(_message: any) {
+    /* */
+  },
+  error(_message: any) {
+    /* */
+  },
+  deprecate(_message: any) {
+    /* */
+  },
+  debug(_message: any) {
+    /* */
+  },
 }
 
 export const knexPoolConfig = {

@@ -16,6 +16,7 @@ const {
   DatabaseCopySourceType,
   DatabaseCopyTargetType,
   dbcp,
+  DatabaseCopySchema,
 } = require('./index')
 
 async function main() {
@@ -24,6 +25,10 @@ async function main() {
     contentType: {
       description: 'Content type',
       type: 'string',
+    },
+    dataOnly: {
+      description: 'Dump only the data, not the schema (data definitions).',
+      type: 'boolean',
     },
     dbname: {
       description: 'Database',
@@ -43,6 +48,10 @@ async function main() {
     port: {
       description: 'Database port',
       type: 'string',
+    },
+    schemaOnly: {
+      description: 'Dump only the object definitions (schema), not data.',
+      type: 'boolean',
     },
     sourceFile: {
       description: 'Source file',
@@ -150,6 +159,11 @@ async function main() {
 
   const options = {
     ...args,
+    copySchema: args.schemaOnly
+      ? DatabaseCopySchema.schemaOnly
+      : args.dataOnly
+      ? DatabaseCopySchema.dataOnly
+      : undefined,
     fileSystem,
     sourceFormat: args.sourceFormat || args.format,
     sourceHost:

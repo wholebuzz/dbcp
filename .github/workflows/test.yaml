@@ -4,6 +4,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
+      mysql:
+        image: mysql:5.7.8
+        env:
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: rootpassword
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
       postgres:
         image: postgres
         env:
@@ -30,6 +44,11 @@ jobs:
       run: yarn test:coverage
       shell: bash
       env:
+        MYSQL_DB_USER: root
+        MYSQL_DB_PASS: rootpassword
+        MYSQL_DB_NAME: test_db
+        MYSQL_DB_HOST: 127.0.0.1
+        MYSQL_DB_PORT: 3306
         POSTGRES_DB_USER: admin
         POSTGRES_DB_PASS: abracadabra
         POSTGRES_DB_NAME: postgres
