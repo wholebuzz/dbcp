@@ -7,11 +7,11 @@ import {
   pipeJSONLinesParser,
   pipeJSONParser,
 } from '@wholebuzz/fs/lib/json'
-import { streamFromKnex, streamToKnex } from 'db-watch/lib/knex'
+import { streamFromKnex, streamToKnex, streamToKnexRaw } from 'db-watch/lib/knex'
 import Knex from 'knex'
-import schemaInspector from 'knex-schema-inspector'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
+import { knexInspectCreateTableSchema, pipeKnexInsertTextTransform } from './knex'
 
 export enum DatabaseCopySourceType {
   mssql = 'mssql',
@@ -157,7 +157,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         ? Knex({ client: args.targetType, log: knexLogConfig })
         : sourceKnex
     const createTable = shouldInspectSchema
-      ? await inspectCreateTableSchema(sourceKnex, formattingKnex, args.sourceTable ?? '')
+      ? await knexInspectCreateTableSchema(sourceKnex, formattingKnex, args.sourceTable ?? '')
       : undefined
     if (args.targetFile || targetStdout) {
       // If the copy is database->file: JSON-formatting transform.
@@ -234,7 +234,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       if (sourceFormat !== targetFormat) {
-        output = pipeFromOutputFormatTransform(output, targetFormat)
+        output = pipeFromOutputFormatTransform(
+          output,
+          targetFormat,
+          args.targetType ? Knex({ client: args.targetType, log: knexLogConfig }) : undefined,
+          args.targetTable
+        )
       }
       return pumpWritable(output, undefined, input.finish())
     } else {
@@ -249,54 +254,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
           connection: targetConnection,
           pool: knexPoolConfig,
         })
-      await dumpToDatabase(input, targetKnex, args.targetTable!)
+      await dumpToDatabase(
+        input,
+        targetKnex,
+        sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!
+      )
       await targetKnex.destroy()
     }
   }
-}
-
-export async function inspectCreateTableSchema(
-  sourceKnex: Knex,
-  targetKnex: Knex,
-  tableName: string
-) {
-  const inspector = schemaInspector(sourceKnex)
-  const columnsInfo = await inspector.columnInfo(tableName)
-  return (
-    targetKnex.schema
-      .createTableIfNotExists(tableName ?? '', (t) => {
-        for (const columnInfo of columnsInfo) {
-          let column
-          switch (columnInfo.data_type) {
-            case 'timestamp with time zone':
-              column = t.dateTime(columnInfo.name, { precision: 6 })
-              break
-            case 'float':
-              column = t.float(columnInfo.name)
-              break
-            case 'integer':
-              column = t.integer(columnInfo.name)
-              break
-            case 'json':
-              column = t.json(columnInfo.name)
-              break
-            case 'jsonb':
-              column = t.jsonb(columnInfo.name)
-              break
-            case 'character varying':
-            case 'text':
-              column = t.text(columnInfo.name)
-              break
-          }
-          if (!column) continue
-          if (columnInfo.is_primary_key) column = column.primary()
-          if (columnInfo.is_unique) column = column.unique()
-          // if (columnInfo.is_nullable) column = column.nullable()
-          if (columnInfo.is_nullable === false) column = column.notNullable()
-        }
-      })
-      .toString() + ';\n'
-  )
 }
 
 export function guessFormatFromFilename(filename?: string) {
@@ -333,14 +298,7 @@ export function pipeFromOutputFormatTransform(
     case DatabaseCopyFormat.json:
       return pipeJSONFormatter(output, true)
     case DatabaseCopyFormat.sql:
-      return pipeFromFilter(
-        output,
-        (x) =>
-          knex
-            ?.table(tableName ?? '')
-            .insert(x)
-            .toString() + ';\n'
-      )
+      return pipeKnexInsertTextTransform(output, knex, tableName)
   }
 }
 
@@ -376,8 +334,11 @@ function queryDatabase(
 }
 
 async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: string) {
+  if (!table) input.node.stream.setEncoding('utf8')
   await knex.transaction(async (transaction) => {
-    const output = streamToKnex({ transaction }, { table })
+    const output = table
+      ? streamToKnex({ transaction }, { table })
+      : streamToKnexRaw({ transaction })
     await pumpWritable(output, undefined, input.finish())
     return transaction.commit().catch(transaction.rollback)
   })

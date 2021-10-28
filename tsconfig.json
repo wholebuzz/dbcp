@@ -4,6 +4,7 @@
     "target": "es5",
     "outDir": "./dist",
     "rootDir": "./src",
+    "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "composite": true,
     "declaration": true,

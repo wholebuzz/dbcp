@@ -8,6 +8,7 @@ const {
   S3FileSystem,
   SMBFileSystem,
 } = require('@wholebuzz/fs')
+const dotenv = require('dotenv')
 const ora = require('ora')
 const progressStream = require('progress-stream')
 const yargs = require('yargs')
@@ -18,6 +19,8 @@ const {
   dbcp,
   DatabaseCopySchema,
 } = require('./index')
+
+dotenv.config()
 
 async function main() {
   const formats = Object.values(DatabaseCopyFormat)

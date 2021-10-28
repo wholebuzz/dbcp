@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
   "keywords": [
     "database",
@@ -48,7 +48,7 @@
     "@wholebuzz/fs": "^0.0.20",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
-    "db-watch": "^0.0.3",
+    "db-watch": "^0.0.4",
     "fs-ext": "^2.0.0",
     "knex": "^0.21.1",
     "knex-schema-inspector": "^1.6.3",

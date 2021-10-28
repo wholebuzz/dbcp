@@ -25,7 +25,7 @@ const targetJsonUrl = '/tmp/target.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
 const targetSQLUrl = '/tmp/target.sql.gz'
 const testSchemaTableName = 'dbcptest'
-const textSchemaUrl = './test/schema.sql'
+const testSchemaUrl = './test/schema.sql'
 const testNDJsonUrl = './test/test.jsonl.gz'
 const testNDJsonHash = '9c51a21c2d8a717f3def11864b62378e'
 const testJsonHash = 'e64068fcf1837e9e3eced54f198ced32'
@@ -117,7 +117,7 @@ it('Should copy local file', async () => {
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
 })
 
-it('Should convert to json from jsonl and back', async () => {
+it('Should convert to JSON from ND-JSON and back', async () => {
   await rmrf(targetJsonUrl)
   expect(await fileSystem.fileExists(targetJsonUrl)).toBe(false)
   await dbcp({ sourceFile: testNDJsonUrl, targetFile: targetJsonUrl, fileSystem })
@@ -131,20 +131,80 @@ it('Should convert to json from jsonl and back', async () => {
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
 })
 
-it('Should restore to and dump from Postgres', async () => {
-  // Load schema and copy from textSchemaUrl to Postgres
+it('Should restore to and dump from Postgres to ND-JSON', async () => {
+  // Load schema
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFile: testSchemaUrl,
+  })
+
+  // Copy from testNDJsonUrl to PostgreSQL
   const knex = Knex({
     client: 'postgresql',
     connection: postgresConnection,
     pool: knexPoolConfig,
   } as any)
-  const sql = await readableToString((await fileSystem.openReadableFile(textSchemaUrl)).finish())
-  await knex.raw(sql)
   expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe('0')
   await dbcp({
     fileSystem,
     ...postgresTarget,
     sourceFile: testNDJsonUrl,
+  })
+  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe(
+    '10000'
+  )
+  await knex.destroy()
+
+  // Dump and verify PostgreSQL
+  await rmrf(targetNDJsonUrl)
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
+  await dbcp({
+    fileSystem,
+    ...postgresSource,
+    targetFile: targetNDJsonUrl,
+    orderBy: [{ column: 'id', order: DatabaseCopyOrderByDirection.asc }],
+  })
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
+  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+})
+
+it('Should restore to and dump from Postgres to SQL', async () => {
+  // Dump database to targetSQLUrl
+  await rmrf(targetSQLUrl)
+  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(false)
+  await dbcp({
+    fileSystem,
+    ...postgresSource,
+    copySchema: DatabaseCopySchema.dataOnly,
+    targetFile: targetSQLUrl,
+    targetType: DatabaseCopyTargetType.postgresql,
+    transformJson: (x: any) => {
+      x.props = JSON.stringify(x.props)
+      x.tags = JSON.stringify(x.tags)
+      return x
+    },
+  })
+  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(true)
+
+  // Load schema and copy from testSchemaUrl to Postgres
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFile: testSchemaUrl,
+  })
+
+  // Copy from targetSQLUrl to PostgreSQL
+  const knex = Knex({
+    client: 'postgresql',
+    connection: postgresConnection,
+    pool: knexPoolConfig,
+  } as any)
+  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe('0')
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFile: targetSQLUrl,
   })
   expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe(
     '10000'

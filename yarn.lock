@@ -1496,6 +1496,11 @@ builtin-modules@^1.1.1:
   resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-1.1.1.tgz#270f076c5a72c02f5b65a47df94c5fe3a278892f"
   integrity sha1-Jw8HbFpywC9bZaR9+Uxf46J4iS8=
 
+byline@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/byline/-/byline-5.0.0.tgz#741c5216468eadc457b03410118ad77de8c1ddb1"
+  integrity sha1-dBxSFkaOrcRXsDQQEYrXfejB3bE=
+
 cache-base@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/cache-base/-/cache-base-1.0.1.tgz#0a7f46416831c8b662ee36fe4e7c59d76f666ab2"
@@ -1848,15 +1853,22 @@ date-utils@*:
   resolved "https://registry.yarnpkg.com/date-utils/-/date-utils-1.2.21.tgz#61fb16cdc1274b3c9acaaffe9fc69df8720a2b64"
   integrity sha1-YfsWzcEnSzyayq/+n8ad+HIKK2Q=
 
-db-watch@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/db-watch/-/db-watch-0.0.3.tgz#dd7baf77c2c413c52592b5787547f7632bffa254"
-  integrity sha512-cORR87DYLTZEWgpjzu2p7h8QZYiYMFs7pkm2A0aAauZMouqFtuxYRv4USIbDiwIfDuhcIPbbRrsWy5EwN4Jq2Q==
+db-watch@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/db-watch/-/db-watch-0.0.4.tgz#7be1aecde14071c7a61afc67021dcfff8fd45bbe"
+  integrity sha512-SJj4RpNeJLHJFhronJ7L+ailbm3FCqncZmFsNmZv75mTBVmb8q4FDBbVAHU4wGmwwE3agNbPYuXKcxRtPQ8pXA==
   dependencies:
     batch2 "^2.0.0"
+    byline "^5.0.0"
+    dbgate-query-splitter "4.4.0-alpha.2"
     sorted-array-functions "^1.3.0"
     through2 "^3.0.1"
     tree-stream "^1.0.13"
+
+dbgate-query-splitter@4.4.0-alpha.2:
+  version "4.4.0-alpha.2"
+  resolved "https://registry.yarnpkg.com/dbgate-query-splitter/-/dbgate-query-splitter-4.4.0-alpha.2.tgz#3f2295546a8273967bbc274facaf2071fc950d27"
+  integrity sha512-pXLtJvzh2DL1dSxL83FjLLkxyacT/X2a7YmmJajZHN4016GbOSxIpznIPI+MFTzJDjD7MVuUOW6v6HkcIjrC5Q==
 
 debug@4, debug@^4.1.0, debug@^4.1.1, debug@^4.3.2:
   version "4.3.2"
