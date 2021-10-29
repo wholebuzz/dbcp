@@ -119,11 +119,7 @@ it('Should copy local file', async () => {
 it('Should read local directory', async () => {
   const dir = { value: '' }
   await dbcp({ sourceFile: './test/', targetStream: writableToString(dir), fileSystem })
-  expect(JSON.parse(dir.value)).toEqual([
-    'test/schema.sql',
-    'test/test.jsonl.gz',
-    'test/test.sql.gz',
-  ])
+  expect(JSON.parse(dir.value)).toEqual(['test/schema.sql', 'test/test.jsonl.gz'])
 })
 
 it('Should convert to JSON from ND-JSON and back', async () => {
