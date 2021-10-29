@@ -40,23 +40,12 @@ export enum DatabaseCopySchema {
   dataOnly,
   schemaOnly,
 }
-
-export interface DatabaseCopyOrderBy {
-  column: string
-  order: DatabaseCopyOrderByDirection
-}
-
-export enum DatabaseCopyOrderByDirection {
-  asc = 'asc',
-  desc = 'desc',
-}
-
 export interface DatabaseCopyOptions {
   contentType?: string
   copySchema?: DatabaseCopySchema
   dbname?: string
   fileSystem?: FileSystem
-  orderBy?: DatabaseCopyOrderBy[]
+  orderBy?: string
   password?: string
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
@@ -86,6 +75,7 @@ export interface DatabaseCopyOptions {
   transformJsonStream?: Duplex
   transformBytes?: (x: string) => string
   transformBytesStream?: Duplex
+  where?: string
 }
 
 export async function dbcp(args: DatabaseCopyOptions) {
@@ -318,14 +308,18 @@ function queryDatabase(
   knex: Knex,
   table: string,
   options: {
-    orderBy?: DatabaseCopyOrderBy[]
+    orderBy?: string
     transformJson?: (x: unknown) => unknown
     transformJsonStream?: Duplex
+    where?: string
   }
 ) {
   let query = knex(table)
+  if (options.where) {
+    query = query.where(knex.raw(options.where))
+  }
   if (options.orderBy) {
-    for (const order of options.orderBy) query = query.orderBy(order.column, order.order)
+    query = query.orderByRaw(options.orderBy)
   }
   let input = streamFromKnex(knex, query)
   if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)

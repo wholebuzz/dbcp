@@ -44,6 +44,10 @@ async function main() {
       description: 'Database host',
       type: 'string',
     },
+    orderBy: {
+      description: 'Database query ORDER BY',
+      type: 'string',
+    },
     password: {
       description: 'Database password',
       type: 'string',
@@ -134,6 +138,10 @@ async function main() {
     },
     user: {
       description: 'Database user',
+      type: 'string',
+    },
+    where: {
+      description: 'Database query WHERE',
       type: 'string',
     },
   }).argv

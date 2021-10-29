@@ -8,7 +8,6 @@ import { Readable, Writable } from 'stream'
 import StreamTree, { WritableStreamTree } from 'tree-stream'
 import { promisify } from 'util'
 import {
-  DatabaseCopyOrderByDirection,
   DatabaseCopySchema,
   DatabaseCopySourceType,
   DatabaseCopyTargetType,
@@ -117,6 +116,16 @@ it('Should copy local file', async () => {
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
 })
 
+it('Should read local directory', async () => {
+  const dir = { value: '' }
+  await dbcp({ sourceFile: './test/', targetStream: writableToString(dir), fileSystem })
+  expect(JSON.parse(dir.value)).toEqual([
+    'test/schema.sql',
+    'test/test.jsonl.gz',
+    'test/test.sql.gz',
+  ])
+})
+
 it('Should convert to JSON from ND-JSON and back', async () => {
   await rmrf(targetJsonUrl)
   expect(await fileSystem.fileExists(targetJsonUrl)).toBe(false)
@@ -163,7 +172,7 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
     fileSystem,
     ...postgresSource,
     targetFile: targetNDJsonUrl,
-    orderBy: [{ column: 'id', order: DatabaseCopyOrderByDirection.asc }],
+    orderBy: 'id ASC',
   })
   expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
@@ -179,11 +188,6 @@ it('Should restore to and dump from Postgres to SQL', async () => {
     copySchema: DatabaseCopySchema.dataOnly,
     targetFile: targetSQLUrl,
     targetType: DatabaseCopyTargetType.postgresql,
-    transformJson: (x: any) => {
-      x.props = JSON.stringify(x.props)
-      x.tags = JSON.stringify(x.tags)
-      return x
-    },
   })
   expect(await fileSystem.fileExists(targetSQLUrl)).toBe(true)
 
@@ -218,7 +222,7 @@ it('Should restore to and dump from Postgres to SQL', async () => {
     fileSystem,
     ...postgresSource,
     targetFile: targetNDJsonUrl,
-    orderBy: [{ column: 'id', order: DatabaseCopyOrderByDirection.asc }],
+    orderBy: 'id ASC',
   })
   expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
@@ -272,7 +276,7 @@ it('Should copy from Postgres to Mysql', async () => {
   await dbcp({
     fileSystem,
     ...mysqlSource,
-    orderBy: [{ column: 'id', order: DatabaseCopyOrderByDirection.asc }],
+    orderBy: 'id ASC',
     targetFile: targetNDJsonUrl,
     transformJson: (x: any) => {
       x.props = JSON.parse(x.props)

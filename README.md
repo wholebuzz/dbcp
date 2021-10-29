@@ -103,14 +103,20 @@ $ dbcp \
 
 ```
 $ dbcp --help
+Options:
   --help            Show help                                     [boolean]
   --version         Show version number                           [boolean]
   --contentType     Content type                                   [string]
+  --dataOnly        Dump only the data, not the schema (data definitions).
+                                                                  [boolean]
   --dbname          Database                                       [string]
   --format                      [choices: "json", "jsonl", "ndjson", "sql"]
   --host            Database host                                  [string]
+  --orderBy         Database query ORDER BY                        [string]
   --password        Database password                              [string]
   --port            Database port                                  [string]
+  --schemaOnly      Dump only the object definitions (schema), not data.
+                                                                  [boolean]
   --sourceFile      Source file                                    [string]
   --sourceFormat                [choices: "json", "jsonl", "ndjson", "sql"]
   --sourceHost      Source host                                    [string]
@@ -133,4 +139,5 @@ $ dbcp --help
         [string] [choices: "mssql", "mysql", "postgresql", "smb", "stdout"]
   --targetUser      Target database user                           [string]
   --user            Database user                                  [string]
+  --where           Database query WHERE                           [string]
 ```

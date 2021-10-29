@@ -12,8 +12,12 @@ export function pipeKnexInsertTextTransform(
     const insert = { ...x }
     for (const key of Object.keys(insert)) {
       const val = insert[key]
-      if (val instanceof Date) {
+      if (val === null || val === undefined) {
+        continue
+      } else if (val instanceof Date) {
         insert[key] = new Date(val.getTime() + val.getTimezoneOffset() * 60 * 1000)
+      } else if (typeof val === 'object') {
+        insert[key] = JSON.stringify(val)
       }
     }
     const ret =
