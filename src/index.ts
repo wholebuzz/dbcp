@@ -7,11 +7,16 @@ import {
   pipeJSONLinesParser,
   pipeJSONParser,
 } from '@wholebuzz/fs/lib/json'
-import { streamFromKnex, streamToKnex, streamToKnexRaw } from 'db-watch/lib/knex'
 import Knex from 'knex'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
-import { knexInspectCreateTableSchema, pipeKnexInsertTextTransform } from './knex'
+import {
+  knexInspectCreateTableSchema,
+  pipeKnexInsertTextTransform,
+  streamFromKnex,
+  streamToKnex,
+  streamToKnexRaw,
+} from './knex'
 
 export enum DatabaseCopySourceType {
   mssql = 'mssql',
@@ -321,7 +326,7 @@ function queryDatabase(
   if (options.orderBy) {
     query = query.orderByRaw(options.orderBy)
   }
-  let input = streamFromKnex(knex, query)
+  let input = streamFromKnex(query)
   if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
   if (options.transformJson) input = pipeFilter(input, options.transformJson)
   return input

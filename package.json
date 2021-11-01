@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
   "keywords": [
     "database",
@@ -48,7 +48,10 @@
     "@wholebuzz/fs": "^0.0.20",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
+    "batch2": "^2.0.0",
+    "byline": "^5.0.0",
     "db-watch": "^0.0.4",
+    "dbgate-query-splitter": "4.4.0-alpha.2",
     "fs-ext": "^2.0.0",
     "knex": "^0.21.1",
     "knex-schema-inspector": "^1.6.3",
@@ -61,12 +64,15 @@
     "rimraf": "^3.0.2",
     "s3-stream-upload": "^2.0.2",
     "tedious": "^14.0.0",
+    "through2": "^3.0.1",
     "yargs": "^17.2.1"
   },
   "devDependencies": {
+    "@types/byline": "^4.2.33",
     "@types/jest": "^26.0.22",
     "@types/node": "^13.13.5",
     "@types/rimraf": "^3.0.0",
+    "@types/through2": "^2.0.36",
     "dotenv": "^10.0.0",
     "hasha": "^5.2.2",
     "hasha-cli": "^4.1.0",

@@ -1,7 +1,84 @@
 import { pipeFromFilter } from '@wholebuzz/fs/lib/json'
+import byline from 'byline'
+import {
+  defaultSplitterOptions,
+  mssqlSplitterOptions,
+  mysqlSplitterOptions,
+  postgreSplitterOptions,
+  sqliteSplitterOptions,
+} from 'dbgate-query-splitter/lib/options'
+import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
 import Knex from 'knex'
 import schemaInspector from 'knex-schema-inspector'
-import { WritableStreamTree } from 'tree-stream'
+import through2 from 'through2'
+import StreamTree, { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
+
+export const batch2 = require('batch2')
+
+export function streamFromKnex(query: Knex.QueryBuilder): ReadableStreamTree {
+  return StreamTree.readable(query.stream())
+}
+
+export function streamToKnex(
+  source: {
+    knex?: Knex
+    transaction?: Knex.Transaction
+  },
+  options: {
+    table: string
+    batchSize?: number
+    returning?: string
+  }
+) {
+  const stream = StreamTree.writable(
+    through2.obj(function (data: any[], _: string, callback: () => void) {
+      let query = source.transaction
+        ? source.transaction.batchInsert(options.table, data)
+        : source.knex!.batchInsert(options.table, data)
+      if (options.returning) query = query.returning(options.returning)
+      if (source.transaction) query = query.transacting(source.transaction)
+      query
+        .then((result) => {
+          if (options.returning) this.push(result)
+          callback()
+        })
+        .catch((err) => {
+          throw err
+        })
+    })
+  )
+  return stream.pipeFrom(batch2.obj({ size: options.batchSize ?? 4000 }))
+}
+
+export function streamToKnexRaw(
+  source: {
+    knex?: Knex
+    transaction?: Knex.Transaction
+  },
+  options?: { returning?: boolean }
+) {
+  let stream = StreamTree.writable(
+    through2.obj(function (data: string, _: string, callback: () => void) {
+      const text = data.replace(/\?/g, '\\?')
+      const query = source.transaction ? source.transaction.raw(text) : source.knex!.raw(text)
+      query
+        .then((result) => {
+          if (options?.returning) this.push(result)
+          callback()
+        })
+        .catch((err) => {
+          throw err
+        })
+    })
+  )
+  stream = stream.pipeFrom(
+    newDBGateQuerySplitterStream(
+      ((source.transaction || source.knex) as any).context.client.config.client
+    )
+  )
+  stream = stream.pipeFrom(byline.createStream())
+  return stream
+}
 
 export function pipeKnexInsertTextTransform(
   output: WritableStreamTree,
@@ -71,4 +148,19 @@ export async function knexInspectCreateTableSchema(
       })
       .toString() + ';\n'
   )
+}
+
+export function newDBGateQuerySplitterStream(type?: any) {
+  switch (type) {
+    case 'postgresql':
+      return new SplitQueryStream(postgreSplitterOptions)
+    case 'mysql':
+      return new SplitQueryStream(mysqlSplitterOptions)
+    case 'mssql':
+      return new SplitQueryStream(mssqlSplitterOptions)
+    case 'sqlite':
+      return new SplitQueryStream(sqliteSplitterOptions)
+    default:
+      return new SplitQueryStream(defaultSplitterOptions)
+  }
 }
