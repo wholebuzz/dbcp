@@ -121,7 +121,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.sourceFile || !args.fileSystem) &&
     (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
   ) {
-    throw new Error(`Missing source parameters ${JSON.stringify(args, null, 2)}`)
+    throw new Error(
+      `Missing source parameters ${JSON.stringify(
+        {
+          sourceType: args.sourceType,
+          sourceFile: args.sourceFile,
+          sourceDatabase: sourceConnection.database,
+          sourceUser: sourceConnection.user,
+          sourceTable: args.sourceTable,
+        },
+        null,
+        2
+      )}`
+    )
   }
 
   if (
@@ -131,7 +143,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
     (!args.targetFile || !args.fileSystem) &&
     (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
   ) {
-    throw new Error(`Missing target parameters ${JSON.stringify(args, null, 2)}`)
+    throw new Error(
+      `Missing target parameters ${JSON.stringify(
+        {
+          targetType: args.targetType,
+          targetFile: args.targetFile,
+          targetDatabase: targetConnection.database,
+          targetUser: targetConnection.user,
+          targetTable: args.targetTable,
+        },
+        null,
+        2
+      )}`
+    )
   }
 
   // If the copy source is a database.
@@ -240,8 +264,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
     } else {
       // If the copy is file->database: JSON-parsing transform.
       input = pipeInputFormatTransform(input, sourceFormat)
-      if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       if (args.transformJson) input = pipeFilter(input, args.transformJson)
+      if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       const targetKnex =
         args.targetKnex ??
         Knex({
@@ -327,8 +351,8 @@ function queryDatabase(
     query = query.orderByRaw(options.orderBy)
   }
   let input = streamFromKnex(query)
-  if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
   if (options.transformJson) input = pipeFilter(input, options.transformJson)
+  if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
   return input
 }
 

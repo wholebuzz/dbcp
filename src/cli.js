@@ -146,6 +146,11 @@ async function main() {
     },
   }).argv
 
+  if (process.argv.length < 3) {
+    yargs.showHelp()
+    process.exit(1)
+  }
+
   const sourcePort =
     args.sourcePort || process.env.SOURCE_DB_PORT || args.port || process.env.DB_PORT
   const targetPort =
@@ -215,7 +220,14 @@ async function main() {
     transformBytesStream: args.targetType !== 'stdout' ? copyProgress : undefined,
   }
 
-  await dbcp(options)
+  try {
+    await dbcp(options)
+  } catch (err) {
+    // tslint:disable-next-line:no-console
+    console.log(err.message)
+    process.exit(-1)
+  }
+
   const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
   const finalProgress = copyProgress.progress()
