@@ -1,22 +1,27 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import {
-  pipeFilter,
-  pipeFromFilter,
   pipeJSONFormatter,
   pipeJSONLinesFormatter,
   pipeJSONLinesParser,
   pipeJSONParser,
 } from '@wholebuzz/fs/lib/json'
+import { openParquetFile, pipeParquetFormatter } from '@wholebuzz/fs/lib/parquet'
+import { pipeFilter, pipeFromFilter } from '@wholebuzz/fs/lib/stream'
 import Knex from 'knex'
+import { Column } from 'knex-schema-inspector/dist/types/column'
+import { ParquetSchema } from 'parquetjs'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import {
-  knexInspectCreateTableSchema,
+  knexFormatCreateTableSchema,
+  knexInspectTableSchema,
   pipeKnexInsertTextTransform,
   streamFromKnex,
   streamToKnex,
   streamToKnexRaw,
 } from './knex'
+
+const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
 export enum DatabaseCopySourceType {
   mssql = 'mssql',
@@ -38,6 +43,7 @@ export enum DatabaseCopyFormat {
   json = 'json',
   jsonl = 'jsonl',
   ndjson = 'ndjson',
+  parquet = 'parquet',
   sql = 'sql',
 }
 
@@ -52,6 +58,7 @@ export interface DatabaseCopyOptions {
   fileSystem?: FileSystem
   orderBy?: string
   password?: string
+  query?: string
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
@@ -168,38 +175,45 @@ export async function dbcp(args: DatabaseCopyOptions) {
         pool: knexPoolConfig,
       } as any)
     const shouldInspectSchema =
-      targetFormat === DatabaseCopyFormat.sql &&
+      formatHasSchema(targetFormat) &&
       (targetStdout || args.targetFile) &&
       args.copySchema !== DatabaseCopySchema.dataOnly
     const formattingKnex =
       shouldInspectSchema && args.targetType && args.targetType !== DatabaseCopyTargetType.stdout
         ? Knex({ client: args.targetType, log: knexLogConfig })
         : sourceKnex
-    const createTable = shouldInspectSchema
-      ? await knexInspectCreateTableSchema(sourceKnex, formattingKnex, args.sourceTable ?? '')
+    const schema = shouldInspectSchema
+      ? await knexInspectTableSchema(sourceKnex, args.sourceTable ?? '')
       : undefined
     if (args.targetFile || targetStdout) {
       // If the copy is database->file: JSON-formatting transform.
       let output = targetStdout
         ? StreamTree.writable(process.stdout)
-        : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
+        : await args.fileSystem!.openWritableFile(args.targetFile!, {
             contentType: formatContentType(targetFormat),
           })
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       if (args.copySchema === DatabaseCopySchema.schemaOnly) {
         const readable = new Readable()
-        if (createTable) readable.push(createTable)
+        if (schema) {
+          readable.push(knexFormatCreateTableSchema(formattingKnex, args.sourceTable ?? '', schema))
+        }
         readable.push(null)
         await pumpWritable(output, undefined, readable)
       } else {
         const input = queryDatabase(sourceKnex, args.sourceTable!, args)
-        if (createTable) output.node.stream.write(createTable)
+        if (schema && targetFormat === DatabaseCopyFormat.sql) {
+          output.node.stream.write(
+            knexFormatCreateTableSchema(formattingKnex, args.sourceTable ?? '', schema)
+          )
+        }
         output = pipeFromOutputFormatTransform(
           output,
           targetFormat,
           formattingKnex,
-          args.sourceTable
+          args.sourceTable,
+          schema
         )
         await pumpWritable(output, undefined, input.finish())
       }
@@ -218,6 +232,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
     }
     await sourceKnex.destroy()
   } else {
+    if (sourceFormat === DatabaseCopyFormat.parquet) {
+      PARQUET_LOGICAL_TYPES.TIMESTAMP_MILLIS.fromPrimitive = (x: any) => new Date(Number(BigInt(x)))
+    }
     // Else the copy source is a file (or directory).
     const directoryStream =
       args.sourceFile!.endsWith('/') &&
@@ -232,7 +249,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
         ? StreamTree.readable(process.stdin)
         : directoryStream
         ? StreamTree.readable(directoryStream)
-        : await args.fileSystem!.openReadableFile(args.sourceFile!))
+        : sourceFormat === DatabaseCopyFormat.parquet
+        ? await openParquetFile(args.fileSystem!, args.sourceFile!)
+        : await args.fileSystem!.openReadableFile(args.sourceFile!, { query: args.query }))
     // If the source is a directory, read the directory.
     if (directoryStream) {
       directoryStream.push(
@@ -246,10 +265,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
         args.targetStream ||
         (targetStdout
           ? StreamTree.writable(process.stdout)
-          : await args.fileSystem!.openWritableFile(args.targetFile!, undefined, {
+          : await args.fileSystem!.openWritableFile(args.targetFile!, {
               contentType: formatContentType(sourceFormat),
             }))
-      if (sourceFormat !== targetFormat) input = pipeInputFormatTransform(input, sourceFormat)
+      if (sourceFormat !== targetFormat) {
+        input = pipeInputFormatTransform(input, sourceFormat)
+        if (args.transformJson) input = pipeFilter(input, args.transformJson)
+        if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
+      }
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       if (sourceFormat !== targetFormat) {
@@ -288,6 +311,7 @@ export function guessFormatFromFilename(filename?: string) {
   if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
   if (filename.endsWith('.json')) return DatabaseCopyFormat.json
   if (filename.endsWith('.jsonl') || filename.endsWith('.ndjson')) return DatabaseCopyFormat.jsonl
+  if (filename.endsWith('.parquet')) return DatabaseCopyFormat.parquet
   if (filename.endsWith('.sql')) return DatabaseCopyFormat.sql
   return null
 }
@@ -299,8 +323,12 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
       return pipeJSONLinesParser(input)
     case DatabaseCopyFormat.json:
       return pipeJSONParser(input, true)
+    case DatabaseCopyFormat.parquet:
+      return input
     case DatabaseCopyFormat.sql:
       return input
+    default:
+      throw new Error(`Unsupported input format: ${format}`)
   }
 }
 
@@ -308,7 +336,8 @@ export function pipeFromOutputFormatTransform(
   output: WritableStreamTree,
   format: DatabaseCopyFormat,
   knex?: Knex,
-  tableName?: string
+  tableName?: string,
+  schema?: Column[]
 ) {
   switch (format) {
     case DatabaseCopyFormat.ndjson:
@@ -316,8 +345,18 @@ export function pipeFromOutputFormatTransform(
       return pipeJSONLinesFormatter(output)
     case DatabaseCopyFormat.json:
       return pipeJSONFormatter(output, true)
+    case DatabaseCopyFormat.parquet:
+      const parquetSchema = new ParquetSchema(
+        (schema ?? []).reduce((fields: Record<string, any>, column) => {
+          fields[column.name] = parquetFieldFromSchema(column)
+          return fields
+        }, {})
+      )
+      return pipeParquetFormatter(output, parquetSchema)
     case DatabaseCopyFormat.sql:
       return pipeKnexInsertTextTransform(output, knex, tableName)
+    default:
+      throw new Error(`Unsupported output format: ${format}`)
   }
 }
 
@@ -330,6 +369,36 @@ export function formatContentType(format: DatabaseCopyFormat) {
       return 'application/json'
     case DatabaseCopyFormat.sql:
       return 'application/sql'
+    default:
+      return undefined
+  }
+}
+
+export function formatHasSchema(format: DatabaseCopyFormat) {
+  switch (format) {
+    case DatabaseCopyFormat.parquet:
+    case DatabaseCopyFormat.sql:
+      return true
+    default:
+      return false
+  }
+}
+
+export function parquetFieldFromSchema(schema: Column) {
+  switch (schema.data_type) {
+    case 'timestamp with time zone':
+      return { type: 'TIMESTAMP_MILLIS', optional: schema.is_nullable !== false }
+    case 'float':
+      return { type: 'DOUBLE', optional: schema.is_nullable !== false }
+    case 'integer':
+      return { type: 'INT32', optional: schema.is_nullable !== false }
+    case 'json':
+    case 'jsonb':
+      return { type: 'JSON', optional: schema.is_nullable !== false, compression: 'GZIP' }
+    case 'character varying':
+    case 'text':
+    default:
+      return { type: 'UTF8', optional: schema.is_nullable !== false, compression: 'GZIP' }
   }
 }
 

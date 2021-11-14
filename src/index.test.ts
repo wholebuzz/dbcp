@@ -1,11 +1,10 @@
-import { LocalFileSystem } from '@wholebuzz/fs'
+import { LocalFileSystem } from '@wholebuzz/fs/lib/local'
+import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
 import { exec } from 'child_process'
 import fs from 'fs'
 import hasha from 'hasha'
 import Knex from 'knex'
 import rimraf from 'rimraf'
-import { Readable, Writable } from 'stream'
-import StreamTree, { WritableStreamTree } from 'tree-stream'
 import { promisify } from 'util'
 import {
   DatabaseCopySchema,
@@ -22,6 +21,7 @@ const hashOptions = { algorithm: 'md5' }
 const rmrf = promisify(rimraf)
 const targetJsonUrl = '/tmp/target.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
+const targetParquetUrl = '/tmp/target.parquet'
 const targetSQLUrl = '/tmp/target.sql.gz'
 const testSchemaTableName = 'dbcptest'
 const testSchemaUrl = './test/schema.sql'
@@ -119,7 +119,7 @@ it('Should copy local file', async () => {
 it('Should read local directory', async () => {
   const dir = { value: '' }
   await dbcp({ sourceFile: './test/', targetStream: writableToString(dir), fileSystem })
-  expect(JSON.parse(dir.value)).toEqual(['test/schema.sql', 'test/test.jsonl.gz'])
+  expect(JSON.parse(dir.value)).toEqual([{ url: 'test/schema.sql' }, { url: 'test/test.jsonl.gz' }])
 })
 
 it('Should convert to JSON from ND-JSON and back', async () => {
@@ -224,6 +224,39 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
 })
 
+it('Should dump from Postgres to Parquet file', async () => {
+  // Dump database to targetParquetUrl
+  await rmrf(targetParquetUrl)
+  expect(await fileSystem.fileExists(targetParquetUrl)).toBe(false)
+  await dbcp({
+    fileSystem,
+    ...postgresSource,
+    targetFile: targetParquetUrl,
+    orderBy: 'id ASC',
+  })
+  expect(await fileSystem.fileExists(targetParquetUrl)).toBe(true)
+
+  // Convert Parquet to ND-JSON and verify
+  await rmrf(targetNDJsonUrl)
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
+  await dbcp({
+    sourceFile: targetParquetUrl,
+    targetFile: targetNDJsonUrl,
+    fileSystem,
+    transformJson: (x: any) => ({
+      id: x.id,
+      date: x.date,
+      guid: x.guid,
+      link: x.link || null,
+      feed: x.feed,
+      props: x.props,
+      tags: x.tags,
+    }),
+  })
+  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
+  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+})
+
 it('Should copy from Postgres to Mysql', async () => {
   // Dump schema to targetSQLUrl
   await rmrf(targetSQLUrl)
@@ -298,27 +331,6 @@ async function dbcpHashFile(path: string) {
     fileSystem,
   })
   return target.value
-}
-
-function readableToString(stream: Readable): Promise<string> {
-  const chunks: Buffer[] = []
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk: any) => chunks.push(Buffer.from(chunk)))
-    stream.on('error', (err: Error) => reject(err))
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
-  })
-}
-
-function writableToString(target: { value: string }): WritableStreamTree {
-  const chunks: Buffer[] = []
-  const stream = new Writable({
-    write(chunk, _encoding, callback) {
-      chunks.push(Buffer.from(chunk))
-      callback()
-    },
-  })
-  stream.on('finish', () => (target.value = Buffer.concat(chunks).toString('utf8')))
-  return StreamTree.writable(stream)
 }
 
 function execCommand(cmd: string, execOptions: any = {}): Promise<string> {

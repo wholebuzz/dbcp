@@ -1,4 +1,4 @@
-import { pipeFromFilter } from '@wholebuzz/fs/lib/json'
+import { pipeFromFilter } from '@wholebuzz/fs/lib/stream'
 import byline from 'byline'
 import {
   defaultSplitterOptions,
@@ -10,6 +10,7 @@ import {
 import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
 import Knex from 'knex'
 import schemaInspector from 'knex-schema-inspector'
+import { Column } from 'knex-schema-inspector/dist/types/column'
 import through2 from 'through2'
 import StreamTree, { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
@@ -111,8 +112,19 @@ export async function knexInspectCreateTableSchema(
   targetKnex: Knex,
   tableName: string
 ) {
-  const inspector = schemaInspector(sourceKnex)
-  const columnsInfo = await inspector.columnInfo(tableName)
+  const columnsInfo = await knexInspectTableSchema(sourceKnex, tableName)
+  return knexFormatCreateTableSchema(targetKnex, tableName, columnsInfo)
+}
+
+export async function knexInspectTableSchema(sourceKnex: Knex, tableName: string) {
+  return schemaInspector(sourceKnex).columnInfo(tableName)
+}
+
+export function knexFormatCreateTableSchema(
+  targetKnex: Knex,
+  tableName: string,
+  columnsInfo: Column[]
+) {
   return (
     targetKnex.schema
       .createTableIfNotExists(tableName ?? '', (t) => {

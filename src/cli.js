@@ -56,6 +56,10 @@ async function main() {
       description: 'Database port',
       type: 'string',
     },
+    query: {
+      description: 'Query',
+      type: 'string',
+    },
     schemaOnly: {
       description: 'Dump only the object definitions (schema), not data.',
       type: 'boolean',

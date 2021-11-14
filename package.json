@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
   "keywords": [
     "database",
@@ -12,7 +12,8 @@
     "aws",
     "s3",
     "gcp",
-    "gcs"
+    "gcs",
+    "parquet"
   ],
   "author": "wholebuzz",
   "license": "Apache-2.0",
@@ -45,11 +46,12 @@
     "@azure/storage-blob": "^12.8.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
-    "@wholebuzz/fs": "^0.0.21",
+    "@wholebuzz/fs": "^1.0.1",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
     "batch2": "^2.0.0",
     "byline": "^5.0.0",
+    "db-json-column": "^0.0.1",
     "db-watch": "^0.0.4",
     "dbgate-query-splitter": "4.4.0-alpha.2",
     "fs-ext": "^2.0.0",
@@ -58,6 +60,7 @@
     "mssql": "^7.2.1",
     "mysql": "^2.18.1",
     "ora": "^5.4.0",
+    "parquetjs": "npm:@entitycs/parquetjs-micro",
     "pg": "^8.2.0",
     "pg-query-stream": "^3.1.1",
     "progress-stream": "^2.0.0",
@@ -71,6 +74,7 @@
     "@types/byline": "^4.2.33",
     "@types/jest": "^26.0.22",
     "@types/node": "^13.13.5",
+    "@types/parquetjs": "^0.10.3",
     "@types/rimraf": "^3.0.0",
     "@types/through2": "^2.0.36",
     "dotenv": "^10.0.0",
