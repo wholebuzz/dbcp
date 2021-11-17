@@ -4,8 +4,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_PID: Express
+          SA_PASSWORD: Secure-Password.1234
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Secure-Password.1234 -Q \"SELECT 1\" || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
       mysql:
-        image: mysql:5.7.8
+        image: mysql:5.7.13
         env:
           MYSQL_DATABASE: test_db
           MYSQL_USER: user

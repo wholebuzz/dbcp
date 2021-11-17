@@ -7,7 +7,7 @@ import {
 } from '@wholebuzz/fs/lib/json'
 import { openParquetFile, pipeParquetFormatter } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter } from '@wholebuzz/fs/lib/stream'
-import Knex from 'knex'
+import { Knex, knex } from 'knex'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import { ParquetSchema } from 'parquetjs'
 import { Duplex, Readable } from 'stream'
@@ -52,6 +52,7 @@ export enum DatabaseCopySchema {
   schemaOnly,
 }
 export interface DatabaseCopyOptions {
+  batchSize?: number
   contentType?: string
   copySchema?: DatabaseCopySchema
   dbname?: string
@@ -169,7 +170,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (!sourceStdin && !args.sourceStream && !args.sourceFile) {
     const sourceKnex =
       args.sourceKnex ??
-      Knex({
+      knex({
         client: args.sourceType,
         connection: sourceConnection,
         pool: knexPoolConfig,
@@ -180,7 +181,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       args.copySchema !== DatabaseCopySchema.dataOnly
     const formattingKnex =
       shouldInspectSchema && args.targetType && args.targetType !== DatabaseCopyTargetType.stdout
-        ? Knex({ client: args.targetType, log: knexLogConfig })
+        ? knex({ client: args.targetType, log: knexLogConfig })
         : sourceKnex
     const schema = shouldInspectSchema
       ? await knexInspectTableSchema(sourceKnex, args.sourceTable ?? '')
@@ -222,12 +223,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
       const input = queryDatabase(sourceKnex, args.sourceTable!, args)
       const targetKnex =
         args.targetKnex ??
-        Knex({
+        knex({
           client: args.targetType,
           connection: targetConnection,
           pool: knexPoolConfig,
         })
-      await dumpToDatabase(input, targetKnex, args.targetTable!)
+      await dumpToDatabase(input, targetKnex, args.targetTable!, { batchSize: args.batchSize })
       await targetKnex.destroy()
     }
     await sourceKnex.destroy()
@@ -279,7 +280,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         output = pipeFromOutputFormatTransform(
           output,
           targetFormat,
-          args.targetType ? Knex({ client: args.targetType, log: knexLogConfig }) : undefined,
+          args.targetType ? knex({ client: args.targetType, log: knexLogConfig }) : undefined,
           args.targetTable
         )
       }
@@ -291,7 +292,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       const targetKnex =
         args.targetKnex ??
-        Knex({
+        knex({
           client: args.targetType,
           connection: targetConnection,
           pool: knexPoolConfig,
@@ -299,7 +300,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
       await dumpToDatabase(
         input,
         targetKnex,
-        sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!
+        sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
+        { batchSize: args.batchSize }
       )
       await targetKnex.destroy()
     }
@@ -335,7 +337,7 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
 export function pipeFromOutputFormatTransform(
   output: WritableStreamTree,
   format: DatabaseCopyFormat,
-  knex?: Knex,
+  db?: Knex,
   tableName?: string,
   schema?: Column[]
 ) {
@@ -354,7 +356,7 @@ export function pipeFromOutputFormatTransform(
       )
       return pipeParquetFormatter(output, parquetSchema)
     case DatabaseCopyFormat.sql:
-      return pipeKnexInsertTextTransform(output, knex, tableName)
+      return pipeKnexInsertTextTransform(output, db, tableName)
     default:
       throw new Error(`Unsupported output format: ${format}`)
   }
@@ -385,25 +387,29 @@ export function formatHasSchema(format: DatabaseCopyFormat) {
 }
 
 export function parquetFieldFromSchema(schema: Column) {
+  const optional = schema.is_nullable !== false
   switch (schema.data_type) {
-    case 'timestamp with time zone':
-      return { type: 'TIMESTAMP_MILLIS', optional: schema.is_nullable !== false }
-    case 'float':
-      return { type: 'DOUBLE', optional: schema.is_nullable !== false }
+    case 'boolean':
+      return { type: 'BOOLEAN', optional }
     case 'integer':
-      return { type: 'INT32', optional: schema.is_nullable !== false }
+      return { type: 'INT32', optional }
+    case 'double precision':
+    case 'float':
+      return { type: 'DOUBLE', optional }
+    case 'timestamp with time zone':
+      return { type: 'TIMESTAMP_MILLIS', optional }
     case 'json':
     case 'jsonb':
-      return { type: 'JSON', optional: schema.is_nullable !== false, compression: 'GZIP' }
+      return { type: 'JSON', optional, compression: 'GZIP' }
     case 'character varying':
     case 'text':
     default:
-      return { type: 'UTF8', optional: schema.is_nullable !== false, compression: 'GZIP' }
+      return { type: 'UTF8', optional, compression: 'GZIP' }
   }
 }
 
 function queryDatabase(
-  knex: Knex,
+  db: Knex,
   table: string,
   options: {
     orderBy?: string
@@ -412,9 +418,9 @@ function queryDatabase(
     where?: string
   }
 ) {
-  let query = knex(table)
+  let query = db(table)
   if (options.where) {
-    query = query.where(knex.raw(options.where))
+    query = query.where(db.raw(options.where))
   }
   if (options.orderBy) {
     query = query.orderByRaw(options.orderBy)
@@ -425,11 +431,16 @@ function queryDatabase(
   return input
 }
 
-async function dumpToDatabase(input: ReadableStreamTree, knex: Knex, table: string) {
+async function dumpToDatabase(
+  input: ReadableStreamTree,
+  db: Knex,
+  table: string,
+  options?: { batchSize?: number; returning?: string }
+) {
   if (!table) input.node.stream.setEncoding('utf8')
-  await knex.transaction(async (transaction) => {
+  await db.transaction(async (transaction) => {
     const output = table
-      ? streamToKnex({ transaction }, { table })
+      ? streamToKnex({ transaction }, { table, ...options })
       : streamToKnexRaw({ transaction })
     await pumpWritable(output, undefined, input.finish())
     return transaction.commit().catch(transaction.rollback)

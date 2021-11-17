@@ -1,5 +1,6 @@
 import { pipeFromFilter } from '@wholebuzz/fs/lib/stream'
 import byline from 'byline'
+import { getClientType } from 'db-json-column/lib/knex'
 import {
   defaultSplitterOptions,
   mssqlSplitterOptions,
@@ -8,7 +9,7 @@ import {
   sqliteSplitterOptions,
 } from 'dbgate-query-splitter/lib/options'
 import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
-import Knex from 'knex'
+import { Knex } from 'knex'
 import schemaInspector from 'knex-schema-inspector'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import through2 from 'through2'
@@ -125,26 +126,30 @@ export function knexFormatCreateTableSchema(
   tableName: string,
   columnsInfo: Column[]
 ) {
+  const clientType = getClientType(targetKnex)
   return (
     targetKnex.schema
       .createTableIfNotExists(tableName ?? '', (t) => {
         for (const columnInfo of columnsInfo) {
           let column
           switch (columnInfo.data_type) {
-            case 'timestamp with time zone':
-              column = t.dateTime(columnInfo.name, { precision: 6 })
-              break
-            case 'float':
-              column = t.float(columnInfo.name)
-              break
+            case 'boolean':
+              column = t.boolean(columnInfo.name)
             case 'integer':
               column = t.integer(columnInfo.name)
               break
+            case 'double precision':
+            case 'float':
+              column = t.float(columnInfo.name)
+              break
+            case 'timestamp with time zone':
+              column = t.dateTime(columnInfo.name, { precision: 6 })
+              break
             case 'json':
-              column = t.json(columnInfo.name)
+              column = clientType === 'mssql' ? t.text(columnInfo.name) : t.json(columnInfo.name)
               break
             case 'jsonb':
-              column = t.jsonb(columnInfo.name)
+              column = clientType === 'mssql' ? t.text(columnInfo.name) : t.jsonb(columnInfo.name)
               break
             case 'character varying':
             case 'text':

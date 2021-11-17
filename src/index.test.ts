@@ -1,9 +1,10 @@
 import { LocalFileSystem } from '@wholebuzz/fs/lib/local'
 import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
 import { exec } from 'child_process'
+import { selectCount } from 'db-json-column/lib/knex'
 import fs from 'fs'
 import hasha from 'hasha'
-import Knex from 'knex'
+import { knex } from 'knex'
 import rimraf from 'rimraf'
 import { promisify } from 'util'
 import {
@@ -26,8 +27,36 @@ const targetSQLUrl = '/tmp/target.sql.gz'
 const testSchemaTableName = 'dbcptest'
 const testSchemaUrl = './test/schema.sql'
 const testNDJsonUrl = './test/test.jsonl.gz'
-const testNDJsonHash = '9c51a21c2d8a717f3def11864b62378e'
-const testJsonHash = 'e64068fcf1837e9e3eced54f198ced32'
+const testNDJsonHash = 'abb7fe0435d553c375c28e52aee28bdb'
+const testJsonHash = '30dbd4095c6308b560e449d1fdbf4a82'
+
+const mssqlConnection = {
+  database: process.env.MSSQL_DB_NAME ?? '',
+  user: process.env.MSSQL_DB_USER ?? '',
+  password: process.env.MSSQL_DB_PASS ?? '',
+  host: process.env.MSSQL_DB_HOST ?? '',
+  port: parseInt(process.env.MSSQL_DB_PORT ?? '', 10),
+  options: { trustServerCertificate: true },
+}
+const mssqlSource = {
+  sourceType: DatabaseCopySourceType.mssql,
+  sourceHost: mssqlConnection.host,
+  sourcePort: mssqlConnection.port,
+  sourceUser: mssqlConnection.user,
+  sourcePassword: mssqlConnection.password,
+  sourceName: mssqlConnection.database,
+  sourceTable: testSchemaTableName,
+}
+const mssqlTarget = {
+  batchSize: 100,
+  targetType: DatabaseCopyTargetType.mssql,
+  targetHost: mssqlConnection.host,
+  targetPort: mssqlConnection.port,
+  targetUser: mssqlConnection.user,
+  targetPassword: mssqlConnection.password,
+  targetName: mssqlConnection.database,
+  targetTable: testSchemaTableName,
+}
 
 const mysqlConnection = {
   database: process.env.MYSQL_DB_NAME ?? '',
@@ -109,11 +138,9 @@ it('Should hash test data stream', async () => {
 })
 
 it('Should copy local file', async () => {
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({ sourceFile: testNDJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({ sourceFile: testNDJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+  )
 })
 
 it('Should read local directory', async () => {
@@ -123,17 +150,12 @@ it('Should read local directory', async () => {
 })
 
 it('Should convert to JSON from ND-JSON and back', async () => {
-  await rmrf(targetJsonUrl)
-  expect(await fileSystem.fileExists(targetJsonUrl)).toBe(false)
-  await dbcp({ sourceFile: testNDJsonUrl, targetFile: targetJsonUrl, fileSystem })
-  expect(await fileSystem.fileExists(targetJsonUrl)).toBe(true)
-  expect(await hashFile(targetJsonUrl)).toBe(testJsonHash)
-
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({ sourceFile: targetJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetJsonUrl, testJsonHash, () =>
+    dbcp({ sourceFile: testNDJsonUrl, targetFile: targetJsonUrl, fileSystem })
+  )
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({ sourceFile: targetJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+  )
 })
 
 it('Should restore to and dump from Postgres to ND-JSON', async () => {
@@ -145,47 +167,36 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
   })
 
   // Copy from testNDJsonUrl to PostgreSQL
-  const knex = Knex({
-    client: 'postgresql',
-    connection: postgresConnection,
-    pool: knexPoolConfig,
-  } as any)
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe('0')
-  await dbcp({
-    fileSystem,
-    ...postgresTarget,
-    sourceFile: testNDJsonUrl,
-  })
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe(
-    '10000'
+  await expectFillDatabaseTable('postgresql', postgresConnection, testSchemaTableName, () =>
+    dbcp({
+      fileSystem,
+      ...postgresTarget,
+      sourceFile: testNDJsonUrl,
+    })
   )
-  await knex.destroy()
 
   // Dump and verify PostgreSQL
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...postgresSource,
-    targetFile: targetNDJsonUrl,
-    orderBy: 'id ASC',
-  })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      targetFile: targetNDJsonUrl,
+      orderBy: 'id ASC',
+    })
+  )
 })
 
 it('Should restore to and dump from Postgres to SQL', async () => {
   // Dump database to targetSQLUrl
-  await rmrf(targetSQLUrl)
-  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...postgresSource,
-    copySchema: DatabaseCopySchema.dataOnly,
-    targetFile: targetSQLUrl,
-    targetType: DatabaseCopyTargetType.postgresql,
-  })
-  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(true)
+  await expectCreateFileWithHash(targetSQLUrl, undefined, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      copySchema: DatabaseCopySchema.dataOnly,
+      targetFile: targetSQLUrl,
+      targetType: DatabaseCopyTargetType.postgresql,
+    })
+  )
 
   // Load schema and copy from testSchemaUrl to Postgres
   await dbcp({
@@ -195,127 +206,191 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   })
 
   // Copy from targetSQLUrl to PostgreSQL
-  const knex = Knex({
-    client: 'postgresql',
-    connection: postgresConnection,
-    pool: knexPoolConfig,
-  } as any)
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe('0')
-  await dbcp({
-    fileSystem,
-    ...postgresTarget,
-    sourceFile: targetSQLUrl,
-  })
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`)).rows[0].count).toBe(
-    '10000'
+  await expectFillDatabaseTable('postgresql', postgresConnection, testSchemaTableName, () =>
+    dbcp({
+      fileSystem,
+      ...postgresTarget,
+      sourceFile: targetSQLUrl,
+    })
   )
-  await knex.destroy()
 
   // Dump and verify PostgreSQL
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...postgresSource,
-    targetFile: targetNDJsonUrl,
-    orderBy: 'id ASC',
-  })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      targetFile: targetNDJsonUrl,
+      orderBy: 'id ASC',
+    })
+  )
 })
 
 it('Should dump from Postgres to Parquet file', async () => {
   // Dump database to targetParquetUrl
-  await rmrf(targetParquetUrl)
-  expect(await fileSystem.fileExists(targetParquetUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...postgresSource,
-    targetFile: targetParquetUrl,
-    orderBy: 'id ASC',
-  })
-  expect(await fileSystem.fileExists(targetParquetUrl)).toBe(true)
+  await expectCreateFileWithHash(targetParquetUrl, undefined, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      targetFile: targetParquetUrl,
+      orderBy: 'id ASC',
+    })
+  )
 
   // Convert Parquet to ND-JSON and verify
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({
-    sourceFile: targetParquetUrl,
-    targetFile: targetNDJsonUrl,
-    fileSystem,
-    transformJson: (x: any) => ({
-      id: x.id,
-      date: x.date,
-      guid: x.guid,
-      link: x.link || null,
-      feed: x.feed,
-      props: x.props,
-      tags: x.tags,
-    }),
-  })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      sourceFile: targetParquetUrl,
+      targetFile: targetNDJsonUrl,
+      fileSystem,
+      transformJson: (x: any) => ({
+        id: x.id,
+        date: x.date,
+        guid: x.guid,
+        link: x.link || null,
+        feed: x.feed,
+        props: x.props,
+        tags: x.tags,
+      }),
+    })
+  )
 })
 
 it('Should copy from Postgres to Mysql', async () => {
   // Dump schema to targetSQLUrl
-  await rmrf(targetSQLUrl)
-  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...postgresSource,
-    copySchema: DatabaseCopySchema.schemaOnly,
-    targetFile: targetSQLUrl,
-    targetType: DatabaseCopyTargetType.mysql,
-  })
-  expect(await fileSystem.fileExists(targetSQLUrl)).toBe(true)
+  await expectCreateFileWithHash(targetSQLUrl, undefined, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      copySchema: DatabaseCopySchema.schemaOnly,
+      targetFile: targetSQLUrl,
+      targetType: DatabaseCopyTargetType.mysql,
+    })
+  )
 
   // Load schema and copy from PostgreSQL to MySQL
-  const knex = Knex({
-    client: 'mysql',
-    connection: {
-      ...mysqlConnection,
-      multipleStatements: true,
-    },
-    pool: knexPoolConfig,
-  } as any)
   const sql =
     `DROP TABLE IF EXISTS dbcptest;\n` +
     (await readableToString((await fileSystem.openReadableFile(targetSQLUrl)).finish()))
-  await knex.raw(sql)
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`))[0][0]['COUNT(*)']).toBe(0)
-  await dbcp({
-    fileSystem,
-    ...mysqlTarget,
-    ...postgresSource,
-    transformJson: (x: any) => {
-      x.props = JSON.stringify(x.props)
-      x.tags = JSON.stringify(x.tags)
-      return x
+  await expectFillDatabaseTable(
+    'mysql',
+    {
+      ...mysqlConnection,
+      multipleStatements: true,
     },
-  })
-  expect((await knex.raw(`SELECT COUNT(*) from ${testSchemaTableName};`))[0][0]['COUNT(*)']).toBe(
-    10000
+    testSchemaTableName,
+    () =>
+      dbcp({
+        fileSystem,
+        ...mysqlTarget,
+        ...postgresSource,
+        transformJson: (x: any) => {
+          x.props = JSON.stringify(x.props)
+          x.tags = JSON.stringify(x.tags)
+          return x
+        },
+      }),
+    sql
   )
-  await knex.destroy()
 
   // Dump and verify MySQL
-  await rmrf(targetNDJsonUrl)
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(false)
-  await dbcp({
-    fileSystem,
-    ...mysqlSource,
-    orderBy: 'id ASC',
-    targetFile: targetNDJsonUrl,
-    transformJson: (x: any) => {
-      x.props = JSON.parse(x.props)
-      x.tags = JSON.parse(x.tags)
-      return x
-    },
-  })
-  expect(await fileSystem.fileExists(targetNDJsonUrl)).toBe(true)
-  expect(await hashFile(targetNDJsonUrl)).toBe(testNDJsonHash)
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...mysqlSource,
+      orderBy: 'id ASC',
+      targetFile: targetNDJsonUrl,
+      transformJson: (x: any) => {
+        x.props = JSON.parse(x.props)
+        x.tags = JSON.parse(x.tags)
+        return x
+      },
+    })
+  )
 })
+
+it('Should copy from Postgres to SQL Server', async () => {
+  // Dump schema to targetSQLUrl
+  await expectCreateFileWithHash(targetSQLUrl, undefined, () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      copySchema: DatabaseCopySchema.schemaOnly,
+      targetFile: targetSQLUrl,
+      targetType: DatabaseCopyTargetType.mssql,
+    })
+  )
+
+  // Load schema and copy from PostgreSQL to SQL Server
+  const sql =
+    `DROP TABLE IF EXISTS dbcptest;\n` +
+    (await readableToString((await fileSystem.openReadableFile(targetSQLUrl)).finish()))
+  await expectFillDatabaseTable(
+    'mssql',
+    {
+      ...mssqlConnection,
+      multipleStatements: true,
+    },
+    testSchemaTableName,
+    () =>
+      dbcp({
+        fileSystem,
+        ...mssqlTarget,
+        ...postgresSource,
+        transformJson: (x: any) => {
+          x.props = JSON.stringify(x.props)
+          x.tags = JSON.stringify(x.tags)
+          return x
+        },
+      }),
+    sql
+  )
+
+  // Dump and verify MySQL
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...mssqlSource,
+      orderBy: 'id ASC',
+      targetFile: targetNDJsonUrl,
+      transformJson: (x: any) => {
+        x.props = JSON.parse(x.props)
+        x.tags = JSON.parse(x.tags)
+        return x
+      },
+    })
+  )
+})
+
+async function expectFillDatabaseTable(
+  client: 'mssql' | 'mysql' | 'postgresql',
+  connection: Record<string, any>,
+  tableName: string,
+  fn: () => Promise<void>,
+  preambleSql?: string
+) {
+  const db = knex({
+    client,
+    connection,
+    pool: knexPoolConfig,
+  } as any)
+  if (preambleSql) await db.raw(preambleSql)
+  expect(await selectCount(db, tableName)).toBe(0)
+  await fn()
+  expect(await selectCount(db, tableName)).toBe(10000)
+  await db.destroy()
+}
+
+async function expectCreateFileWithHash(
+  fileUrl: string,
+  fileHash: string | undefined,
+  fn: () => Promise<void>
+) {
+  await rmrf(fileUrl)
+  expect(await fileSystem.fileExists(fileUrl)).toBe(false)
+  await fn()
+  expect(await fileSystem.fileExists(fileUrl)).toBe(true)
+  if (fileHash) expect(await hashFile(fileUrl)).toBe(fileHash)
+}
 
 async function hashFile(path: string) {
   return readableToString(
