@@ -225,36 +225,6 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   )
 })
 
-it('Should dump from Postgres to Parquet file', async () => {
-  // Dump database to targetParquetUrl
-  await expectCreateFileWithHash(targetParquetUrl, undefined, () =>
-    dbcp({
-      fileSystem,
-      ...postgresSource,
-      targetFile: targetParquetUrl,
-      orderBy: 'id ASC',
-    })
-  )
-
-  // Convert Parquet to ND-JSON and verify
-  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
-    dbcp({
-      sourceFile: targetParquetUrl,
-      targetFile: targetNDJsonUrl,
-      fileSystem,
-      transformJson: (x: any) => ({
-        id: x.id,
-        date: x.date,
-        guid: x.guid,
-        link: x.link || null,
-        feed: x.feed,
-        props: x.props,
-        tags: x.tags,
-      }),
-    })
-  )
-})
-
 it('Should copy from Postgres to Mysql', async () => {
   // Dump schema to targetSQLUrl
   await expectCreateFileWithHash(targetSQLUrl, undefined, () =>
@@ -345,7 +315,7 @@ it('Should copy from Postgres to SQL Server', async () => {
     sql
   )
 
-  // Dump and verify MySQL
+  // Dump and verify SQL Server
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
@@ -360,6 +330,92 @@ it('Should copy from Postgres to SQL Server', async () => {
     })
   )
 })
+
+it('Should dump from Postgres to Parquet file', async () => {
+  // Dump database to targetParquetUrl and verify
+  await expectCreateFileWithConvertHash(
+    targetParquetUrl,
+    targetNDJsonUrl,
+    testNDJsonHash,
+    () =>
+      dbcp({
+        fileSystem,
+        ...postgresSource,
+        targetFile: targetParquetUrl,
+        orderBy: 'id ASC',
+      })
+  )
+})
+
+it('Should dump from MySQL to Parquet file', async () => {
+  // Dump database to targetParquetUrl and verify
+  await expectCreateFileWithConvertHash(
+    targetParquetUrl,
+    targetJsonUrl,
+    testJsonHash,
+    () =>
+      dbcp({
+        fileSystem,
+        ...mysqlSource,
+        targetFile: targetParquetUrl,
+        orderBy: 'id ASC',
+        transformJson: (x: any) => {
+          x.props = JSON.parse(x.props)
+          x.tags = JSON.parse(x.tags)
+          return x
+        },
+      })
+  )
+})
+
+it('Should dump from SQL Server to Parquet file', async () => {
+  // Dump database to targetParquetUrl and verify
+  await expectCreateFileWithConvertHash(
+    targetParquetUrl,
+    targetNDJsonUrl,
+    testNDJsonHash,
+    () =>
+      dbcp({
+        fileSystem,
+        ...mssqlSource,
+        targetFile: targetParquetUrl,
+        orderBy: 'id ASC',
+        columnType: { props: 'json', tags: 'json' },
+        transformJson: (x: any) => {
+          x.props = JSON.parse(x.props)
+          x.tags = JSON.parse(x.tags)
+          return x
+        },
+      })
+  )
+})
+
+async function expectCreateFileWithConvertHash(
+  targetUrl: string,
+  convertToUrl: string,
+  convertToHash: string,
+  fn: () => Promise<void>
+) {
+  await expectCreateFileWithHash(targetUrl, undefined, fn)
+
+  // Convert and verify
+  await expectCreateFileWithHash(convertToUrl, convertToHash, () =>
+    dbcp({
+      sourceFile: targetUrl,
+      targetFile: convertToUrl,
+      fileSystem,
+      transformJson: (x: any) => ({
+        id: x.id,
+        date: x.date,
+        guid: x.guid,
+        link: x.link || null,
+        feed: x.feed,
+        props: x.props,
+        tags: x.tags,
+      }),
+    })
+  )
+}
 
 async function expectFillDatabaseTable(
   client: 'mssql' | 'mysql' | 'postgresql',

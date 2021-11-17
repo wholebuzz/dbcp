@@ -124,17 +124,21 @@ export async function knexInspectTableSchema(sourceKnex: Knex, tableName: string
 export function knexFormatCreateTableSchema(
   targetKnex: Knex,
   tableName: string,
-  columnsInfo: Column[]
+  columnsInfo: Column[],
+  columnType?: Record<string, string>
 ) {
   const clientType = getClientType(targetKnex)
   return (
     targetKnex.schema
       .createTableIfNotExists(tableName ?? '', (t) => {
         for (const columnInfo of columnsInfo) {
+          const type = columnType?.[columnInfo.name] || columnInfo.data_type
           let column
-          switch (columnInfo.data_type) {
+          switch (type) {
             case 'boolean':
               column = t.boolean(columnInfo.name)
+              break
+            case 'int':
             case 'integer':
               column = t.integer(columnInfo.name)
               break
@@ -142,6 +146,8 @@ export function knexFormatCreateTableSchema(
             case 'float':
               column = t.float(columnInfo.name)
               break
+            case 'datetime':
+            case 'datetime2':
             case 'timestamp with time zone':
               column = t.dateTime(columnInfo.name, { precision: 6 })
               break
@@ -152,6 +158,7 @@ export function knexFormatCreateTableSchema(
               column = clientType === 'mssql' ? t.text(columnInfo.name) : t.jsonb(columnInfo.name)
               break
             case 'character varying':
+            case 'nvarchar':
             case 'text':
               column = t.text(columnInfo.name)
               break

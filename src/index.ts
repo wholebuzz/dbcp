@@ -53,6 +53,7 @@ export enum DatabaseCopySchema {
 }
 export interface DatabaseCopyOptions {
   batchSize?: number
+  columnType?: Record<string, string>
   contentType?: string
   copySchema?: DatabaseCopySchema
   dbname?: string
@@ -198,7 +199,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
       if (args.copySchema === DatabaseCopySchema.schemaOnly) {
         const readable = new Readable()
         if (schema) {
-          readable.push(knexFormatCreateTableSchema(formattingKnex, args.sourceTable ?? '', schema))
+          readable.push(
+            knexFormatCreateTableSchema(
+              formattingKnex,
+              args.sourceTable ?? '',
+              schema,
+              args.columnType
+            )
+          )
         }
         readable.push(null)
         await pumpWritable(output, undefined, readable)
@@ -206,7 +214,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
         const input = queryDatabase(sourceKnex, args.sourceTable!, args)
         if (schema && targetFormat === DatabaseCopyFormat.sql) {
           output.node.stream.write(
-            knexFormatCreateTableSchema(formattingKnex, args.sourceTable ?? '', schema)
+            knexFormatCreateTableSchema(
+              formattingKnex,
+              args.sourceTable ?? '',
+              schema,
+              args.columnType
+            )
           )
         }
         output = pipeFromOutputFormatTransform(
@@ -214,7 +227,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           targetFormat,
           formattingKnex,
           args.sourceTable,
-          schema
+          { schema, columnType: args.columnType }
         )
         await pumpWritable(output, undefined, input.finish())
       }
@@ -339,7 +352,10 @@ export function pipeFromOutputFormatTransform(
   format: DatabaseCopyFormat,
   db?: Knex,
   tableName?: string,
-  schema?: Column[]
+  options?: {
+    schema?: Column[]
+    columnType?: Record<string, string>
+  }
 ) {
   switch (format) {
     case DatabaseCopyFormat.ndjson:
@@ -349,8 +365,8 @@ export function pipeFromOutputFormatTransform(
       return pipeJSONFormatter(output, true)
     case DatabaseCopyFormat.parquet:
       const parquetSchema = new ParquetSchema(
-        (schema ?? []).reduce((fields: Record<string, any>, column) => {
-          fields[column.name] = parquetFieldFromSchema(column)
+        (options?.schema ?? []).reduce((fields: Record<string, any>, column) => {
+          fields[column.name] = parquetFieldFromSchema(column, options?.columnType)
           return fields
         }, {})
       )
@@ -386,22 +402,27 @@ export function formatHasSchema(format: DatabaseCopyFormat) {
   }
 }
 
-export function parquetFieldFromSchema(schema: Column) {
+export function parquetFieldFromSchema(schema: Column, columnType?: Record<string, any>) {
+  const type = columnType?.[schema.name] || schema.data_type
   const optional = schema.is_nullable !== false
-  switch (schema.data_type) {
+  switch (type) {
     case 'boolean':
       return { type: 'BOOLEAN', optional }
+    case 'int':
     case 'integer':
       return { type: 'INT32', optional }
     case 'double precision':
     case 'float':
       return { type: 'DOUBLE', optional }
+    case 'datetime':
+    case 'datetime2':
     case 'timestamp with time zone':
       return { type: 'TIMESTAMP_MILLIS', optional }
     case 'json':
     case 'jsonb':
       return { type: 'JSON', optional, compression: 'GZIP' }
     case 'character varying':
+    case 'nvarchar':
     case 'text':
     default:
       return { type: 'UTF8', optional, compression: 'GZIP' }
