@@ -57,6 +57,11 @@ jobs:
       run: yarn test:coverage
       shell: bash
       env:
+        MSSQL_DB_USER: SA
+        MSSQL_DB_PASS: Secure-Password.1234
+        MSSQL_DB_NAME: master
+        MSSQL_DB_HOST: 127.0.0.1
+        MSSQL_DB_PORT: 1433
         MYSQL_DB_USER: root
         MYSQL_DB_PASS: rootpassword
         MYSQL_DB_NAME: test_db
