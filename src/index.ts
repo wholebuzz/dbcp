@@ -17,6 +17,7 @@ import StreamTree, {
   ReadableStreamTree,
   WritableStreamTree,
 } from 'tree-stream'
+import { streamToKnexCompoundInsert } from './compound'
 import {
   knexFormatCreateTableSchema,
   knexInspectTableSchema,
@@ -59,6 +60,7 @@ export enum DatabaseCopySchema {
 export interface DatabaseCopyOptions {
   batchSize?: number
   columnType?: Record<string, string>
+  compoundInsert?: boolean
   contentType?: string
   copySchema?: DatabaseCopySchema
   dbname?: string
@@ -133,7 +135,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.sourceStream &&
     !args.sourceKnex &&
     (!args.sourceFile || !args.fileSystem) &&
-    (!args.sourceType || !sourceConnection.database || !sourceConnection.user || !args.sourceTable)
+    (!args.sourceType ||
+      !sourceConnection.database ||
+      !sourceConnection.user ||
+      (!args.sourceTable && !args.query))
   ) {
     throw new Error(
       `Missing source parameters ${JSON.stringify(
@@ -155,7 +160,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.targetStream &&
     !args.targetKnex &&
     (!args.targetFile || !args.fileSystem) &&
-    (!args.targetType || !targetConnection.database || !targetConnection.user || !args.targetTable)
+    (!args.targetType ||
+      !targetConnection.database ||
+      !targetConnection.user ||
+      (!args.targetTable && !args.compoundInsert))
   ) {
     throw new Error(
       `Missing target parameters ${JSON.stringify(
@@ -248,7 +256,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
           connection: targetConnection,
           pool: knexPoolConfig,
         })
-      await dumpToDatabase(input, targetKnex, args.targetTable!, { batchSize: args.batchSize })
+      await dumpToDatabase(input, targetKnex, args.targetTable!, {
+        batchSize: args.batchSize,
+        compoundInsert: args.compoundInsert,
+      })
       await targetKnex.destroy()
     }
     await sourceKnex.destroy()
@@ -327,7 +338,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         input,
         targetKnex,
         sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
-        { batchSize: args.batchSize }
+        { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
       )
       await targetKnex.destroy()
     }
@@ -513,19 +524,25 @@ function queryDatabase(
   table: string,
   options: {
     orderBy?: string
+    query?: string
     transformJson?: (x: unknown) => unknown
     transformJsonStream?: Duplex
     where?: string
   }
 ) {
-  let query = db(table)
-  if (options.where) {
-    query = query.where(db.raw(options.where))
+  let input
+  if (options.query) {
+    input = StreamTree.readable(db.raw(options.query).stream())
+  } else {
+    let query = db(table)
+    if (options.where) {
+      query = query.where(db.raw(options.where))
+    }
+    if (options.orderBy) {
+      query = query.orderByRaw(options.orderBy)
+    }
+    input = streamFromKnex(query)
   }
-  if (options.orderBy) {
-    query = query.orderByRaw(options.orderBy)
-  }
-  let input = streamFromKnex(query)
   if (options.transformJson) input = pipeFilter(input, options.transformJson)
   if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
   return input
@@ -535,11 +552,13 @@ async function dumpToDatabase(
   input: ReadableStreamTree,
   db: Knex,
   table: string,
-  options?: { batchSize?: number; returning?: string }
+  options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
 ) {
-  if (!table) input.node.stream.setEncoding('utf8')
+  if (!table && !options?.compoundInsert) input.node.stream.setEncoding('utf8')
   await db.transaction(async (transaction) => {
-    const output = table
+    const output = options?.compoundInsert
+      ? streamToKnexCompoundInsert({ transaction }, { ...options })
+      : table
       ? streamToKnex({ transaction }, { table, ...options })
       : streamToKnexRaw({ transaction })
     await pumpWritable(output, undefined, input.finish())

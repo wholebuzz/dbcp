@@ -25,6 +25,10 @@ dotenv.config()
 async function main() {
   const formats = Object.values(DatabaseCopyFormat)
   const args = await yargs.strict().options({
+    compoundInsert: {
+      description: 'Compound insert mode can insert associated rows from multiple tables.',
+      type: 'boolean',
+    },
     contentType: {
       description: 'Content type',
       type: 'string',
