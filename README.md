@@ -6,6 +6,25 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
 
+## Tested
+
+```shell
+ PASS  src/index.test.ts (51.3 s)
+  ✓ Should hash test data as string (314 ms)
+  ✓ Should hash test data stream (947 ms)
+  ✓ Should copy local file (443 ms)
+  ✓ Should read local directory (2 ms)
+  ✓ Should convert to JSON from ND-JSON and back (2537 ms)
+  ✓ Should convert to Parquet from ND-JSON and back (2132 ms)
+  ✓ Should restore to and dump from Postgres to ND-JSON (2708 ms)
+  ✓ Should restore to and dump from Postgres to SQL (21912 ms)
+  ✓ Should copy from Postgres to Mysql (3547 ms)
+  ✓ Should copy from Postgres to SQL Server (8701 ms)
+  ✓ Should dump from Postgres to Parquet file (2429 ms)
+  ✓ Should dump from MySQL to Parquet file (2114 ms)
+  ✓ Should dump from SQL Server to Parquet file (2536 ms)
+```
+
 ## Example
 
 ### Global install

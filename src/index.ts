@@ -11,7 +11,12 @@ import { Knex, knex } from 'knex'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import { ParquetSchema } from 'parquetjs'
 import { Duplex, Readable } from 'stream'
-import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
+import StreamTree, {
+  pumpReadable,
+  pumpWritable,
+  ReadableStreamTree,
+  WritableStreamTree,
+} from 'tree-stream'
 import {
   knexFormatCreateTableSchema,
   knexInspectTableSchema,
@@ -166,6 +171,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )}`
     )
   }
+  const shouldInspectSchema =
+    (formatHasSchema(targetFormat) || args.copySchema === DatabaseCopySchema.schemaOnly) &&
+    (targetStdout || args.targetFile) &&
+    args.copySchema !== DatabaseCopySchema.dataOnly
 
   // If the copy source is a database.
   if (!sourceStdin && !args.sourceStream && !args.sourceFile) {
@@ -176,10 +185,6 @@ export async function dbcp(args: DatabaseCopyOptions) {
         connection: sourceConnection,
         pool: knexPoolConfig,
       } as any)
-    const shouldInspectSchema =
-      formatHasSchema(targetFormat) &&
-      (targetStdout || args.targetFile) &&
-      args.copySchema !== DatabaseCopySchema.dataOnly
     const formattingKnex =
       shouldInspectSchema && args.targetType && args.targetType !== DatabaseCopyTargetType.stdout
         ? knex({ client: args.targetType, log: knexLogConfig })
@@ -200,12 +205,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
         const readable = new Readable()
         if (schema) {
           readable.push(
-            knexFormatCreateTableSchema(
-              formattingKnex,
-              args.sourceTable ?? '',
-              schema,
-              args.columnType
-            )
+            targetFormat === DatabaseCopyFormat.sql
+              ? knexFormatCreateTableSchema(
+                  formattingKnex,
+                  args.sourceTable ?? '',
+                  schema,
+                  args.columnType
+                )
+              : JSON.stringify(schema)
           )
         }
         readable.push(null)
@@ -294,7 +301,13 @@ export async function dbcp(args: DatabaseCopyOptions) {
           output,
           targetFormat,
           args.targetType ? knex({ client: args.targetType, log: knexLogConfig }) : undefined,
-          args.targetTable
+          args.targetTable,
+          shouldInspectSchema && args.sourceFile
+            ? {
+                schema: Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFile)),
+                columnType: args.columnType,
+              }
+            : undefined
         )
       }
       return pumpWritable(output, undefined, input.finish())
@@ -319,6 +332,72 @@ export async function dbcp(args: DatabaseCopyOptions) {
       await targetKnex.destroy()
     }
   }
+}
+
+export async function guessSchemaFromFile(
+  fileSystem: FileSystem,
+  filename: string,
+  probeBytes = 65536
+) {
+  const schema: Record<string, Column> = {}
+  const format = guessFormatFromFilename(filename)
+  if (!format) throw new Error(`Unknown format: ${filename}`)
+  let input = await fileSystem.openReadableFile(
+    filename,
+    probeBytes
+      ? {
+          byteOffset: 0,
+          byteLength: probeBytes,
+        }
+      : undefined
+  )
+  input = pipeInputFormatTransform(input, format)
+  input = pipeFilter(input, (x: Record<string, any>) => {
+    for (const [key, value] of Object.entries(x)) {
+      if (!schema[key]) {
+        schema[key] = {
+          data_type: '',
+          default_value: null,
+          foreign_key_column: null,
+          foreign_key_table: null,
+          has_auto_increment: false,
+          is_generated: false,
+          is_nullable: false,
+          is_primary_key: false,
+          is_unique: false,
+          max_length: null,
+          name: key,
+          numeric_precision: null,
+          numeric_scale: null,
+          table: '',
+        }
+      }
+      if (value === null || value === undefined) {
+        schema[key].is_nullable = true
+      } else if (value instanceof Date) {
+        schema[key].data_type = 'date'
+      } else {
+        let valueType
+        switch (typeof value) {
+          case 'boolean':
+            valueType = 'boolean'
+            break
+          case 'number':
+            valueType = 'integer'
+            break
+          case 'object':
+            valueType = 'json'
+            break
+          default:
+            valueType = 'text'
+            break
+        }
+        schema[key].data_type = valueType
+      }
+    }
+  })
+  await pumpReadable(input, schema).catch((_x) => _x)
+  return schema
 }
 
 export function guessFormatFromFilename(filename?: string) {
