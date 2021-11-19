@@ -13,7 +13,8 @@
     "s3",
     "gcp",
     "gcs",
-    "parquet"
+    "parquet",
+    "tfrecord"
   ],
   "author": "wholebuzz",
   "license": "Apache-2.0",
@@ -46,7 +47,7 @@
     "@azure/storage-blob": "^12.8.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
-    "@wholebuzz/fs": "^1.0.2",
+    "@wholebuzz/fs": "^1.0.3",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
     "batch2": "^2.0.0",
@@ -68,6 +69,7 @@
     "rimraf": "^3.0.2",
     "s3-stream-upload": "^2.0.2",
     "tedious": "^14.0.0",
+    "tfrecord-stream": "^0.2.0",
     "through2": "^3.0.1",
     "toposort": "^2.0.2",
     "yargs": "^17.2.1"

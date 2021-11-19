@@ -18,6 +18,7 @@ const rmrf = promisify(rimraf)
 const targetJsonUrl = '/tmp/target.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
 const targetParquetUrl = '/tmp/target.parquet'
+const targetTfRecordUrl = '/tmp/target.tfrecord'
 const targetSQLUrl = '/tmp/target.sql.gz'
 const testSchemaTableName = 'dbcptest'
 const testSchemaUrl = './test/schema.sql'
@@ -159,8 +160,26 @@ it('Should convert to Parquet from ND-JSON and back', async () => {
       fileSystem,
       sourceFile: testNDJsonUrl,
       targetFile: targetParquetUrl,
-      orderBy: 'id ASC',
     })
+  )
+})
+
+it('Should convert to TFRecord from ND-JSON and back', async () => {
+  await expectCreateFileWithConvertHash(
+    targetTfRecordUrl,
+    targetNDJsonUrl,
+    testNDJsonHash,
+    () =>
+      dbcp({
+        fileSystem,
+        sourceFile: testNDJsonUrl,
+        targetFile: targetTfRecordUrl,
+      }),
+    (x: any) => {
+      x.props = JSON.parse(x.props)
+      x.tags = JSON.parse(x.tags)
+      return x
+    }
   )
 })
 
@@ -388,7 +407,8 @@ async function expectCreateFileWithConvertHash(
   targetUrl: string,
   convertToUrl: string,
   convertToHash: string,
-  fn: () => Promise<void>
+  fn: () => Promise<void>,
+  convertToTransform: (x: any) => any = (x) => x
 ) {
   await expectCreateFileWithHash(targetUrl, undefined, fn)
 
@@ -398,15 +418,16 @@ async function expectCreateFileWithConvertHash(
       sourceFile: targetUrl,
       targetFile: convertToUrl,
       fileSystem,
-      transformJson: (x: any) => ({
-        id: x.id,
-        date: x.date,
-        guid: x.guid,
-        link: x.link || null,
-        feed: x.feed,
-        props: x.props,
-        tags: x.tags,
-      }),
+      transformJson: (x: any) =>
+        convertToTransform({
+          id: x.id,
+          date: x.date,
+          guid: x.guid,
+          link: x.link || null,
+          feed: x.feed,
+          props: x.props,
+          tags: x.tags,
+        }),
     })
   )
 }

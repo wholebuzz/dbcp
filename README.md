@@ -2,13 +2,13 @@
 
 Dump MySQL, PostgreSQL, or SQLServer database tables directly to Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), another database, or local file.
 
-Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format (JSON, ND-JSON, Parquet) and compression (gzip, none) is inferred from the filename. The SQL file format is experimentally supported.
+Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format (JSON, ND-JSON, Parquet, TFRecord) and compression (gzip, none) is inferred from the filename. The SQL file format is experimentally supported.
 
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
 
 ## Tested
 
-```shell
+```
  PASS  src/index.test.ts (51.3 s)
   ✓ Should hash test data as string (314 ms)
   ✓ Should hash test data stream (947 ms)
@@ -16,6 +16,7 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
   ✓ Should read local directory (2 ms)
   ✓ Should convert to JSON from ND-JSON and back (2537 ms)
   ✓ Should convert to Parquet from ND-JSON and back (2132 ms)
+  ✓ Should convert to TFRecord from ND-JSON and back (2038 ms)
   ✓ Should restore to and dump from Postgres to ND-JSON (2708 ms)
   ✓ Should restore to and dump from Postgres to SQL (21912 ms)
   ✓ Should copy from Postgres to Mysql (3547 ms)

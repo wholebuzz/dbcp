@@ -211,7 +211,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
             )
           )
         }
-        output = pipeFromOutputFormatTransform(
+        output = await pipeFromOutputFormatTransform(
           output,
           targetFormat,
           formattingKnex,
@@ -275,14 +275,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
               contentType: formatContentType(sourceFormat),
             }))
       if (sourceFormat !== targetFormat) {
-        input = pipeInputFormatTransform(input, sourceFormat)
+        input = await pipeInputFormatTransform(input, sourceFormat)
         if (args.transformJson) input = pipeFilter(input, args.transformJson)
         if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       }
       if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       if (sourceFormat !== targetFormat) {
-        output = pipeFromOutputFormatTransform(
+        output = await pipeFromOutputFormatTransform(
           output,
           targetFormat,
           args.targetType ? knex({ client: args.targetType, log: knexLogConfig }) : undefined,
@@ -300,7 +300,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       // If the copy is file->database: JSON-parsing transform.
       if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
       if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
-      input = pipeInputFormatTransform(input, sourceFormat)
+      input = await pipeInputFormatTransform(input, sourceFormat)
       if (args.transformJson) input = pipeFilter(input, args.transformJson)
       if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
       const targetKnex =

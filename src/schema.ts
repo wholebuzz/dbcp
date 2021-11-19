@@ -2,6 +2,7 @@ import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { pipeFilter } from '@wholebuzz/fs/lib/stream'
 import { pumpReadable } from 'tree-stream'
 import { guessFormatFromFilename, pipeInputFormatTransform } from './format'
+
 export interface Column {
   name: string
   table: string
@@ -59,7 +60,7 @@ export async function guessSchemaFromFile(
         }
       : undefined
   )
-  input = pipeInputFormatTransform(input, format)
+  input = await pipeInputFormatTransform(input, format)
   input = pipeFilter(input, (x: Record<string, any>) => {
     for (const [key, value] of Object.entries(x)) {
       if (!schema[key]) schema[key] = newSchemaColumn('', key, '')

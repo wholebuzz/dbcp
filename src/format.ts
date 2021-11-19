@@ -5,6 +5,7 @@ import {
   pipeJSONParser,
 } from '@wholebuzz/fs/lib/json'
 import { pipeParquetFormatter } from '@wholebuzz/fs/lib/parquet'
+import { pipeTfRecordFormatter, pipeTfRecordParser } from '@wholebuzz/fs/lib/tfrecord'
 import { Knex } from 'knex'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import { ParquetSchema } from 'parquetjs'
@@ -33,6 +34,7 @@ export enum DatabaseCopyFormat {
   jsonl = 'jsonl',
   ndjson = 'ndjson',
   parquet = 'parquet',
+  tfrecord = 'tfrecord',
   sql = 'sql',
 }
 
@@ -47,6 +49,7 @@ export function guessFormatFromFilename(filename?: string) {
   if (filename.endsWith('.json')) return DatabaseCopyFormat.json
   if (filename.endsWith('.jsonl') || filename.endsWith('.ndjson')) return DatabaseCopyFormat.jsonl
   if (filename.endsWith('.parquet')) return DatabaseCopyFormat.parquet
+  if (filename.endsWith('.tfrecord')) return DatabaseCopyFormat.tfrecord
   if (filename.endsWith('.sql')) return DatabaseCopyFormat.sql
   return null
 }
@@ -58,6 +61,8 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
       return pipeJSONLinesParser(input)
     case DatabaseCopyFormat.json:
       return pipeJSONParser(input, true)
+    case DatabaseCopyFormat.tfrecord:
+      return pipeTfRecordParser(input)
     case DatabaseCopyFormat.parquet:
       return input
     case DatabaseCopyFormat.sql:
@@ -91,6 +96,8 @@ export function pipeFromOutputFormatTransform(
         }, {})
       )
       return pipeParquetFormatter(output, parquetSchema)
+    case DatabaseCopyFormat.tfrecord:
+      return pipeTfRecordFormatter(output)
     case DatabaseCopyFormat.sql:
       return pipeKnexInsertTextTransform(output, db, tableName)
     default:
