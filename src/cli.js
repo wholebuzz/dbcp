@@ -16,15 +16,15 @@ const {
   DatabaseCopyFormat,
   DatabaseCopySourceType,
   DatabaseCopyTargetType,
-  dbcp,
   DatabaseCopySchema,
-} = require('./index')
+} = require('./format')
+const { dbcp } = require('./index')
 
 dotenv.config()
 
 async function main() {
   const formats = Object.values(DatabaseCopyFormat)
-  const args = await yargs.strict().options({
+  const args = yargs.strict().options({
     compoundInsert: {
       description: 'Compound insert mode can insert associated rows from multiple tables.',
       type: 'boolean',
@@ -62,6 +62,10 @@ async function main() {
     },
     query: {
       description: 'Query',
+      type: 'string',
+    },
+    schemaFile: {
+      description: 'Use schema file if required, instead of schema inspection.',
       type: 'string',
     },
     schemaOnly: {

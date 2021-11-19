@@ -7,13 +7,8 @@ import hasha from 'hasha'
 import { knex } from 'knex'
 import rimraf from 'rimraf'
 import { promisify } from 'util'
-import {
-  DatabaseCopySchema,
-  DatabaseCopySourceType,
-  DatabaseCopyTargetType,
-  dbcp,
-  knexPoolConfig,
-} from './index'
+import { DatabaseCopySchema, DatabaseCopySourceType, DatabaseCopyTargetType } from './format'
+import { dbcp, knexPoolConfig } from './index'
 
 const zlib = require('zlib')
 
