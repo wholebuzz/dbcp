@@ -1,5 +1,6 @@
 import { LocalFileSystem } from '@wholebuzz/fs/lib/local'
 import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
+import { shardedFilenames } from '@wholebuzz/fs/lib/util'
 import { exec } from 'child_process'
 import { selectCount } from 'db-json-column/lib/knex'
 import fs from 'fs'
@@ -16,6 +17,7 @@ const fileSystem = new LocalFileSystem()
 const hashOptions = { algorithm: 'md5' }
 const rmrf = promisify(rimraf)
 const targetJsonUrl = '/tmp/target.json.gz'
+const targetShardedJsonUrl = '/tmp/target-SSS-of-NNN.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
 const targetParquetUrl = '/tmp/target.parquet'
 const targetTfRecordUrl = '/tmp/target.tfrecord'
@@ -141,7 +143,7 @@ it('Should copy local file', async () => {
 
 it('Should read local directory', async () => {
   const dir = { value: '' }
-  await dbcp({ sourceFile: './test/', targetStream: writableToString(dir), fileSystem })
+  await dbcp({ sourceFile: './test/', targetStream: [writableToString(dir)], fileSystem })
   expect(JSON.parse(dir.value)).toEqual([{ url: 'test/schema.sql' }, { url: 'test/test.jsonl.gz' }])
 })
 
@@ -151,6 +153,28 @@ it('Should convert to JSON from ND-JSON and back', async () => {
   )
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({ sourceFile: targetJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+  )
+})
+
+it('Should convert to sharded JSON from ND-JSON and back', async () => {
+  const shards = 4
+  await expectCreateFilesWithHashes(shardedFilenames(targetShardedJsonUrl, shards), undefined, () =>
+    dbcp({
+      shardBy: 'id',
+      shards,
+      sourceFile: testNDJsonUrl,
+      targetFile: targetShardedJsonUrl,
+      fileSystem,
+    })
+  )
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      shards,
+      orderBy: 'id',
+      sourceFile: targetShardedJsonUrl,
+      targetFile: targetNDJsonUrl,
+      fileSystem,
+    })
   )
 })
 
@@ -451,6 +475,22 @@ async function expectFillDatabaseTable(
   await db.destroy()
 }
 
+async function expectCreateFilesWithHashes(
+  fileUrl: string[],
+  fileHash: string[] | undefined,
+  fn: () => Promise<void>
+) {
+  for (const url of fileUrl) {
+    await rmrf(url)
+    expect(await fileSystem.fileExists(url)).toBe(false)
+  }
+  await fn()
+  for (let i = 0; i < fileUrl.length; i++) {
+    expect(await fileSystem.fileExists(fileUrl[i])).toBe(true)
+    if (fileHash) expect(await hashFile(fileUrl[i])).toBe(fileHash[i])
+  }
+}
+
 async function expectCreateFileWithHash(
   fileUrl: string,
   fileHash: string | undefined,
@@ -473,7 +513,7 @@ async function dbcpHashFile(path: string) {
   const target = { value: '' }
   await dbcp({
     sourceFile: path,
-    targetStream: writableToString(target).pipeFrom(hasha.stream(hashOptions)),
+    targetStream: [writableToString(target).pipeFrom(hasha.stream(hashOptions))],
     fileSystem,
   })
   return target.value

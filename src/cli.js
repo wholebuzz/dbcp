@@ -21,6 +21,8 @@ const {
 const { dbcp } = require('./index')
 
 dotenv.config()
+// tslint:disable-next-line:no-console
+process.on('uncaughtException', (err) => console.error('unhandled exception', err))
 
 async function main() {
   const formats = Object.values(DatabaseCopyFormat)
@@ -71,6 +73,14 @@ async function main() {
     schemaOnly: {
       description: 'Dump only the object definitions (schema), not data.',
       type: 'boolean',
+    },
+    shardBy: {
+      description: 'Shard (or split) the data based on key',
+      type: 'string',
+    },
+    shards: {
+      description: 'The number of shards to split the data into',
+      type: 'number',
     },
     sourceFile: {
       description: 'Source file',
@@ -177,13 +187,18 @@ async function main() {
     { urlPrefix: '', fs: new LocalFileSystem() },
   ])
 
-  const copyProgress = progressStream({ time: 100 })
+  let totalBytes = 0
   const spinner = ora('Wrote 0 bytes')
-  copyProgress.on('progress', (progress) => {
-    spinner.text = `Wrote ${progress.transferred} bytes`
-    spinner.frame()
-    spinner.render()
-  })
+  const newBytesTransform = () => {
+    const copyProgress = progressStream({ time: 100 })
+    copyProgress.on('progress', (progress) => {
+      totalBytes += progress.delta
+      spinner.text = `Wrote ${totalBytes} bytes`
+      spinner.frame()
+      spinner.render()
+    })
+    return copyProgress
+  }
 
   const options = {
     ...args,
@@ -229,7 +244,7 @@ async function main() {
       args.targetTable || process.env.TARGET_DB_TABLE || args.table || process.env.DB_TABLE,
     targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,
     targetUser: args.targetUser || process.env.TARGET_DB_USER || args.user || process.env.DB_USER,
-    transformBytesStream: args.targetType !== 'stdout' ? copyProgress : undefined,
+    transformBytesStream: args.targetType !== 'stdout' ? newBytesTransform : undefined,
   }
 
   try {
@@ -242,10 +257,9 @@ async function main() {
 
   const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
-  const finalProgress = copyProgress.progress()
   if (args.targetType !== 'stdout') {
     spinner.succeed(
-      `Wrote ${finalProgress.transferred} bytes to "${targetName}" from "${sourceName}"`
+      `Wrote ${totalBytes} bytes to "${targetName}" from "${sourceName}"`
     )
   }
 }

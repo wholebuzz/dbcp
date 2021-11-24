@@ -12,7 +12,7 @@ import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
 import { Knex } from 'knex'
 import schemaInspector from 'knex-schema-inspector'
 import { Column } from 'knex-schema-inspector/dist/types/column'
-import through2 from 'through2'
+import { Transform } from 'stream'
 import StreamTree, { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
 export const batch2 = require('batch2')
@@ -33,20 +33,23 @@ export function streamToKnex(
   }
 ) {
   const stream = StreamTree.writable(
-    through2.obj(function (data: any[], _: string, callback: () => void) {
-      let query = source.transaction
-        ? source.transaction.batchInsert(options.table, data)
-        : source.knex!.batchInsert(options.table, data)
-      if (options.returning) query = query.returning(options.returning)
-      if (source.transaction) query = query.transacting(source.transaction)
-      query
-        .then((result) => {
-          if (options.returning) this.push(result)
-          callback()
-        })
-        .catch((err) => {
-          throw err
-        })
+    new Transform({
+      objectMode: true,
+      transform(data: any[], _: string, callback: () => void) {
+        let query = source.transaction
+          ? source.transaction.batchInsert(options.table, data)
+          : source.knex!.batchInsert(options.table, data)
+        if (options.returning) query = query.returning(options.returning)
+        if (source.transaction) query = query.transacting(source.transaction)
+        query
+          .then((result) => {
+            if (options.returning) this.push(result)
+            callback()
+          })
+          .catch((err) => {
+            throw err
+          })
+      },
     })
   )
   return stream.pipeFrom(batch2.obj({ size: options.batchSize ?? 4000 }))
@@ -60,17 +63,20 @@ export function streamToKnexRaw(
   options?: { returning?: boolean }
 ) {
   let stream = StreamTree.writable(
-    through2.obj(function (data: string, _: string, callback: () => void) {
-      const text = data.replace(/\?/g, '\\?')
-      const query = source.transaction ? source.transaction.raw(text) : source.knex!.raw(text)
-      query
-        .then((result) => {
-          if (options?.returning) this.push(result)
-          callback()
-        })
-        .catch((err) => {
-          throw err
-        })
+    new Transform({
+      objectMode: true,
+      transform(data: string, _: string, callback: () => void) {
+        const text = data.replace(/\?/g, '\\?')
+        const query = source.transaction ? source.transaction.raw(text) : source.knex!.raw(text)
+        query
+          .then((result) => {
+            if (options?.returning) this.push(result)
+            callback()
+          })
+          .catch((err) => {
+            throw err
+          })
+      },
     })
   )
   stream = stream.pipeFrom(

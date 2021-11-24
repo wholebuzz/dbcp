@@ -1,7 +1,9 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { readJSON } from '@wholebuzz/fs/lib/json'
-import { openParquetFile } from '@wholebuzz/fs/lib/parquet'
-import { pipeFilter, pipeFromFilter } from '@wholebuzz/fs/lib/stream'
+import { mergeStreams } from '@wholebuzz/fs/lib/merge'
+import { openParquetFiles } from '@wholebuzz/fs/lib/parquet'
+import { pipeFilter, pipeFromFilter, shardWritables } from '@wholebuzz/fs/lib/stream'
+import { openReadableFiles, openWritableFiles, shardIndex } from '@wholebuzz/fs/lib/util'
 import { Knex, knex } from 'knex'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
@@ -27,6 +29,7 @@ import {
 import { Column, guessSchemaFromFile } from './schema'
 
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
+
 export interface DatabaseCopyOptions {
   batchSize?: number
   columnType?: Record<string, string>
@@ -39,6 +42,8 @@ export interface DatabaseCopyOptions {
   password?: string
   query?: string
   schemaFile?: string
+  shardBy?: string
+  shards?: number
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
@@ -58,15 +63,15 @@ export interface DatabaseCopyOptions {
   targetHost?: string
   targetKnex?: Knex
   targetPassword?: string
-  targetStream?: WritableStreamTree
+  targetStream?: WritableStreamTree[]
   targetTable?: string
   targetType?: DatabaseCopyTargetType
   targetPort?: number
   targetUser?: string
   transformJson?: (x: unknown) => unknown
-  transformJsonStream?: Duplex
+  transformJsonStream?: () => Duplex
   transformBytes?: (x: string) => string
-  transformBytesStream?: Duplex
+  transformBytesStream?: () => Duplex
   where?: string
 }
 
@@ -100,6 +105,19 @@ export async function dbcp(args: DatabaseCopyOptions) {
     charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
     ...args.targetConnection,
   }
+  const shardFunction = (x: Record<string, any>, modulus: number) => {
+    const value = x[args.shardBy ?? '']
+    return typeof value === 'number' ? value % modulus : shardIndex(value, modulus)
+  }
+  const orderByFunction = args.orderBy
+    ? (a: Record<string, any>, b: Record<string, any>) => {
+        const valA = a[args.orderBy!]
+        const valB = b[args.orderBy!]
+        if (valA < valB) return -1
+        else if (valB < valA) return 1
+        else return 0
+      }
+    : undefined
 
   if (
     !sourceStdin &&
@@ -180,24 +198,16 @@ export async function dbcp(args: DatabaseCopyOptions) {
         : await args.fileSystem!.openWritableFile(args.targetFile!, {
             contentType: formatContentType(targetFormat),
           })
-      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
+      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream())
       if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
       if (args.copySchema === DatabaseCopySchema.schemaOnly) {
-        const readable = new Readable()
-        if (schema) {
-          readable.push(
-            targetFormat === DatabaseCopyFormat.sql
-              ? knexFormatCreateTableSchema(
-                  formattingKnex,
-                  args.sourceTable ?? '',
-                  schema,
-                  args.columnType
-                )
-              : JSON.stringify(schema)
-          )
-        }
-        readable.push(null)
-        await pumpWritable(output, undefined, readable)
+        await writeSchema(output, {
+          columnType: args.columnType,
+          format: targetFormat,
+          formattingKnex,
+          schema,
+          table: args.sourceTable,
+        })
       } else {
         // If not schemaOnly
         const input = queryDatabase(sourceKnex, args.sourceTable!, args)
@@ -249,15 +259,18 @@ export async function dbcp(args: DatabaseCopyOptions) {
       !sourceStdin
         ? new Readable()
         : undefined
-    let input =
-      args.sourceStream ||
-      (sourceStdin
-        ? StreamTree.readable(process.stdin)
-        : directoryStream
-        ? StreamTree.readable(directoryStream)
-        : sourceFormat === DatabaseCopyFormat.parquet
-        ? await openParquetFile(args.fileSystem!, args.sourceFile!)
-        : await args.fileSystem!.openReadableFile(args.sourceFile!, { query: args.query }))
+    const inputs: ReadableStreamTree[] = args.sourceStream
+      ? [args.sourceStream]
+      : sourceStdin
+      ? [StreamTree.readable(process.stdin)]
+      : directoryStream
+      ? [StreamTree.readable(directoryStream)]
+      : sourceFormat === DatabaseCopyFormat.parquet && !args.query
+      ? await openParquetFiles(args.fileSystem!, args.sourceFile!)
+      : await openReadableFiles(args.fileSystem!, args.sourceFile!, {
+          query: args.query,
+          shards: args.shards,
+        })
     // If the source is a directory, read the directory.
     if (directoryStream) {
       directoryStream.push(
@@ -267,42 +280,75 @@ export async function dbcp(args: DatabaseCopyOptions) {
     }
     if (args.targetStream || args.targetFile || targetStdout) {
       // If the copy is file->file: no transform.
-      let output =
+      const outputs: WritableStreamTree[] =
         args.targetStream ||
         (targetStdout
-          ? StreamTree.writable(process.stdout)
-          : await args.fileSystem!.openWritableFile(args.targetFile!, {
+          ? [StreamTree.writable(process.stdout)]
+          : await openWritableFiles(args.fileSystem!, args.targetFile!, {
               contentType: formatContentType(sourceFormat),
+              shards: args.shards,
             }))
-      if (sourceFormat !== targetFormat) {
-        input = await pipeInputFormatTransform(input, sourceFormat)
-        if (args.transformJson) input = pipeFilter(input, args.transformJson)
-        if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
-      }
-      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream)
-      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
-      if (sourceFormat !== targetFormat) {
-        output = await pipeFromOutputFormatTransform(
-          output,
-          targetFormat,
-          args.targetType ? knex({ client: args.targetType, log: knexLogConfig }) : undefined,
-          args.targetTable,
-          shouldInspectSchema && args.sourceFile
-            ? {
-                schema: Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFile)),
-                columnType: args.columnType,
-              }
-            : undefined
+      const schema =
+        shouldInspectSchema && args.schemaFile
+          ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
+          : shouldInspectSchema && args.sourceFile
+          ? Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFile))
+          : undefined
+      if (args.copySchema === DatabaseCopySchema.schemaOnly) {
+        for (const output of outputs) {
+          await writeSchema(output, {
+            columnType: args.columnType,
+            format: targetFormat,
+            formattingKnex:
+              shouldInspectSchema &&
+              args.targetType &&
+              args.targetType !== DatabaseCopyTargetType.stdout
+                ? knex({ client: args.targetType, log: knexLogConfig })
+                : undefined,
+            schema,
+            table: args.sourceTable,
+          })
+        }
+      } else {
+        for (let i = 0; i < inputs.length; i++) {
+          if (sourceFormat !== targetFormat || args.shards) {
+            inputs[i] = await pipeInputFormatTransform(inputs[i], sourceFormat)
+            if (args.transformJson) inputs[i] = pipeFilter(inputs[i], args.transformJson)
+            if (args.transformJsonStream) inputs[i] = inputs[i].pipe(args.transformJsonStream())
+          }
+        }
+        for (let i = 0; i < outputs.length; i++) {
+          if (args.transformBytesStream) {
+            outputs[i] = outputs[i].pipeFrom(args.transformBytesStream())
+          }
+          if (args.transformBytes) outputs[i] = pipeFromFilter(outputs[i], args.transformBytes)
+          if (sourceFormat !== targetFormat || args.shards) {
+            outputs[i] = await pipeFromOutputFormatTransform(
+              outputs[i],
+              targetFormat,
+              args.targetType ? knex({ client: args.targetType, log: knexLogConfig }) : undefined,
+              args.targetTable,
+              shouldInspectSchema && args.sourceFile
+                ? { schema, columnType: args.columnType }
+                : undefined
+            )
+          }
+        }
+        return pumpWritable(
+          shardWritables(outputs, args.shards, shardFunction as any),
+          undefined,
+          mergeStreams(inputs, { compare: orderByFunction }).finish()
         )
       }
-      return pumpWritable(output, undefined, input.finish())
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
-      if (args.transformBytesStream) input = input.pipe(args.transformBytesStream)
-      input = await pipeInputFormatTransform(input, sourceFormat)
-      if (args.transformJson) input = pipeFilter(input, args.transformJson)
-      if (args.transformJsonStream) input = input.pipe(args.transformJsonStream)
+      for (let i = 0; i < inputs.length; i++) {
+        if (args.transformBytes) inputs[i] = pipeFilter(inputs[i], args.transformBytes)
+        if (args.transformBytesStream) inputs[i] = inputs[i].pipe(args.transformBytesStream())
+        inputs[i] = await pipeInputFormatTransform(inputs[i], sourceFormat)
+        if (args.transformJson) inputs[i] = pipeFilter(inputs[i], args.transformJson)
+        if (args.transformJsonStream) inputs[i] = inputs[i].pipe(args.transformJsonStream())
+      }
       const targetKnex =
         args.targetKnex ??
         knex({
@@ -311,7 +357,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           pool: knexPoolConfig,
         })
       await dumpToDatabase(
-        input,
+        mergeStreams(inputs, { compare: orderByFunction }),
         targetKnex,
         sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
         { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
@@ -321,6 +367,33 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 }
 
+async function writeSchema(
+  output: WritableStreamTree,
+  options: {
+    columnType?: Record<string, string>
+    format: DatabaseCopyFormat
+    formattingKnex?: Knex
+    schema?: Column[]
+    table?: string
+  }
+) {
+  const readable = new Readable()
+  if (options.schema) {
+    readable.push(
+      options.format === DatabaseCopyFormat.sql
+        ? knexFormatCreateTableSchema(
+            options.formattingKnex!,
+            options.table ?? '',
+            options.schema,
+            options.columnType
+          )
+        : JSON.stringify(options.schema)
+    )
+  }
+  readable.push(null)
+  await pumpWritable(output, undefined, readable)
+}
+
 function queryDatabase(
   db: Knex,
   table: string,
@@ -328,7 +401,7 @@ function queryDatabase(
     orderBy?: string
     query?: string
     transformJson?: (x: unknown) => unknown
-    transformJsonStream?: Duplex
+    transformJsonStream?: () => Duplex
     where?: string
   }
 ) {
@@ -346,7 +419,7 @@ function queryDatabase(
     input = streamFromKnex(query)
   }
   if (options.transformJson) input = pipeFilter(input, options.transformJson)
-  if (options.transformJsonStream) input = input.pipe(options.transformJsonStream)
+  if (options.transformJsonStream) input = input.pipe(options.transformJsonStream())
   return input
 }
 
