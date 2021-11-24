@@ -100,7 +100,7 @@ export function pipeKnexInsertTextTransform(
       if (val === null || val === undefined) {
         continue
       } else if (val instanceof Date) {
-        insert[key] = new Date(val.getTime() + val.getTimezoneOffset() * 60 * 1000)
+        insert[key] = val.toISOString()
       } else if (typeof val === 'object') {
         insert[key] = JSON.stringify(val)
       }

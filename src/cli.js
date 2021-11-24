@@ -105,6 +105,10 @@ async function main() {
       description: 'Source database port',
       type: 'string',
     },
+    sourceShards: {
+      description: 'Source shards',
+      type: 'number',
+    },
     sourceTable: {
       description: 'Source database table',
       type: 'string',
@@ -144,6 +148,10 @@ async function main() {
     targetPort: {
       description: 'Target database port',
       type: 'string',
+    },
+    targetShards: {
+      description: 'Target shards',
+      type: 'number',
     },
     targetTable: {
       description: 'Target database table',
@@ -222,6 +230,7 @@ async function main() {
       args.password ||
       process.env.DB_PASSWORD,
     sourcePort: sourcePort ? parseInt(sourcePort, 10) : undefined,
+    sourceShards: args.sourceShards || args.shards,
     sourceTable:
       args.sourceTable || process.env.SOURCE_DB_TABLE || args.table || process.env.DB_TABLE,
     sourceType: args.sourceType || process.env.SOURCE_DB_TYPE || process.env.DB_TYPE,
@@ -240,6 +249,7 @@ async function main() {
       args.password ||
       process.env.DB_PASSWORD,
     targetPort: targetPort ? parseInt(targetPort, 10) : undefined,
+    targetShards: args.targetShards || args.shards,
     targetTable:
       args.targetTable || process.env.TARGET_DB_TABLE || args.table || process.env.DB_TABLE,
     targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,

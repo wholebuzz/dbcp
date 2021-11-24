@@ -13,6 +13,7 @@
     "s3",
     "gcp",
     "gcs",
+    "shard",
     "parquet",
     "tfrecord"
   ],
@@ -52,7 +53,7 @@
     "axios": "^0.20.0",
     "batch2": "^2.0.0",
     "byline": "^5.0.0",
-    "db-json-column": "^0.0.2",
+    "db-json-column": "^0.0.3",
     "dbgate-query-splitter": "4.4.0-alpha.2",
     "dotenv": "^10.0.0",
     "fs-ext": "^2.0.0",

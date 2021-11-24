@@ -36,14 +36,11 @@ export interface DatabaseCopyOptions {
   compoundInsert?: boolean
   contentType?: string
   copySchema?: DatabaseCopySchema
-  dbname?: string
   fileSystem?: FileSystem
   orderBy?: string
-  password?: string
   query?: string
-  schemaFile?: string
   shardBy?: string
-  shards?: number
+  schemaFile?: string
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
@@ -51,6 +48,7 @@ export interface DatabaseCopyOptions {
   sourceHost?: string
   sourceKnex?: Knex
   sourcePassword?: string
+  sourceShards?: number
   sourceStream?: ReadableStreamTree
   sourceTable?: string
   sourceType?: DatabaseCopySourceType
@@ -63,6 +61,7 @@ export interface DatabaseCopyOptions {
   targetHost?: string
   targetKnex?: Knex
   targetPassword?: string
+  targetShards?: number
   targetStream?: WritableStreamTree[]
   targetTable?: string
   targetType?: DatabaseCopyTargetType
@@ -91,6 +90,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     password: args.sourcePassword,
     host: args.sourceHost,
     port: args.sourcePort,
+    timezone: 'UTC',
     options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
     charset: args.sourceType === 'mysql' ? 'utf8mb4' : undefined,
     ...args.sourceConnection,
@@ -101,14 +101,17 @@ export async function dbcp(args: DatabaseCopyOptions) {
     password: args.targetPassword,
     host: args.targetHost,
     port: args.targetPort,
+    timezone: 'UTC',
     options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
     charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
     ...args.targetConnection,
   }
-  const shardFunction = (x: Record<string, any>, modulus: number) => {
-    const value = x[args.shardBy ?? '']
-    return typeof value === 'number' ? value % modulus : shardIndex(value, modulus)
-  }
+  const shardFunction = args.shardBy
+    ? (x: Record<string, any>, modulus: number) => {
+        const value = x[args.shardBy!]
+        return typeof value === 'number' ? value % modulus : shardIndex(value, modulus)
+      }
+    : undefined
   const orderByFunction = args.orderBy
     ? (a: Record<string, any>, b: Record<string, any>) => {
         const valA = a[args.orderBy!]
@@ -193,42 +196,55 @@ export async function dbcp(args: DatabaseCopyOptions) {
       : undefined
     if (args.targetFile || targetStdout) {
       // If the copy is database->file: JSON-formatting transform.
-      let output = targetStdout
-        ? StreamTree.writable(process.stdout)
-        : await args.fileSystem!.openWritableFile(args.targetFile!, {
+      const outputs = targetStdout
+        ? [StreamTree.writable(process.stdout)]
+        : await openWritableFiles(args.fileSystem!, args.targetFile!, {
             contentType: formatContentType(targetFormat),
+            shards: args.targetShards,
           })
-      if (args.transformBytesStream) output = output.pipeFrom(args.transformBytesStream())
-      if (args.transformBytes) output = pipeFromFilter(output, args.transformBytes)
+      for (let i = 0; i < outputs.length; i++) {
+        if (args.transformBytesStream) outputs[i] = outputs[i].pipeFrom(args.transformBytesStream())
+        if (args.transformBytes) outputs[i] = pipeFromFilter(outputs[i], args.transformBytes)
+      }
       if (args.copySchema === DatabaseCopySchema.schemaOnly) {
-        await writeSchema(output, {
-          columnType: args.columnType,
-          format: targetFormat,
-          formattingKnex,
-          schema,
-          table: args.sourceTable,
-        })
+        for (const output of outputs) {
+          await writeSchema(output, {
+            columnType: args.columnType,
+            format: targetFormat,
+            formattingKnex,
+            schema,
+            table: args.sourceTable,
+          })
+        }
       } else {
         // If not schemaOnly
         const input = queryDatabase(sourceKnex, args.sourceTable!, args)
         if (schema && targetFormat === DatabaseCopyFormat.sql) {
-          output.node.stream.write(
-            knexFormatCreateTableSchema(
-              formattingKnex,
-              args.sourceTable ?? '',
-              schema,
-              args.columnType
+          for (const output of outputs) {
+            output.node.stream.write(
+              knexFormatCreateTableSchema(
+                formattingKnex,
+                args.sourceTable ?? '',
+                schema,
+                args.columnType
+              )
             )
+          }
+        }
+        for (let i = 0; i < outputs.length; i++) {
+          outputs[i] = await pipeFromOutputFormatTransform(
+            outputs[i],
+            targetFormat,
+            formattingKnex,
+            args.sourceTable,
+            { schema, columnType: args.columnType }
           )
         }
-        output = await pipeFromOutputFormatTransform(
-          output,
-          targetFormat,
-          formattingKnex,
-          args.sourceTable,
-          { schema, columnType: args.columnType }
+        await pumpWritable(
+          shardWritables(outputs, args.targetShards, shardFunction),
+          undefined,
+          input.finish()
         )
-        await pumpWritable(output, undefined, input.finish())
       }
     } else {
       // If the copy is database->database: no transform.
@@ -269,7 +285,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       ? await openParquetFiles(args.fileSystem!, args.sourceFile!)
       : await openReadableFiles(args.fileSystem!, args.sourceFile!, {
           query: args.query,
-          shards: args.shards,
+          shards: args.sourceShards,
         })
     // If the source is a directory, read the directory.
     if (directoryStream) {
@@ -286,7 +302,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           ? [StreamTree.writable(process.stdout)]
           : await openWritableFiles(args.fileSystem!, args.targetFile!, {
               contentType: formatContentType(sourceFormat),
-              shards: args.shards,
+              shards: args.targetShards,
             }))
       const schema =
         shouldInspectSchema && args.schemaFile
@@ -311,7 +327,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         }
       } else {
         for (let i = 0; i < inputs.length; i++) {
-          if (sourceFormat !== targetFormat || args.shards) {
+          if (sourceFormat !== targetFormat || args.sourceShards || args.targetShards) {
             inputs[i] = await pipeInputFormatTransform(inputs[i], sourceFormat)
             if (args.transformJson) inputs[i] = pipeFilter(inputs[i], args.transformJson)
             if (args.transformJsonStream) inputs[i] = inputs[i].pipe(args.transformJsonStream())
@@ -322,7 +338,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
             outputs[i] = outputs[i].pipeFrom(args.transformBytesStream())
           }
           if (args.transformBytes) outputs[i] = pipeFromFilter(outputs[i], args.transformBytes)
-          if (sourceFormat !== targetFormat || args.shards) {
+          if (sourceFormat !== targetFormat || args.sourceShards || args.targetShards) {
             outputs[i] = await pipeFromOutputFormatTransform(
               outputs[i],
               targetFormat,
@@ -335,7 +351,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           }
         }
         return pumpWritable(
-          shardWritables(outputs, args.shards, shardFunction as any),
+          shardWritables(outputs, args.targetShards, shardFunction),
           undefined,
           mergeStreams(inputs, { compare: orderByFunction }).finish()
         )

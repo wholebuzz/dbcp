@@ -161,16 +161,16 @@ it('Should convert to sharded JSON from ND-JSON and back', async () => {
   await expectCreateFilesWithHashes(shardedFilenames(targetShardedJsonUrl, shards), undefined, () =>
     dbcp({
       shardBy: 'id',
-      shards,
       sourceFile: testNDJsonUrl,
       targetFile: targetShardedJsonUrl,
+      targetShards: shards,
       fileSystem,
     })
   )
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
-      shards,
       orderBy: 'id',
+      sourceShards: shards,
       sourceFile: targetShardedJsonUrl,
       targetFile: targetNDJsonUrl,
       fileSystem,

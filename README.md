@@ -15,6 +15,7 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
   ✓ Should copy local file (443 ms)
   ✓ Should read local directory (2 ms)
   ✓ Should convert to JSON from ND-JSON and back (2537 ms)
+  ✓ Should convert to sharded JSON from ND-JSON and back (2104 ms)
   ✓ Should convert to Parquet from ND-JSON and back (2132 ms)
   ✓ Should convert to TFRecord from ND-JSON and back (2038 ms)
   ✓ Should restore to and dump from Postgres to ND-JSON (2708 ms)
