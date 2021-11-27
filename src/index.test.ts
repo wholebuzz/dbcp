@@ -129,7 +129,7 @@ it('Should hash test data stream', async () => {
   expect(await dbcpHashFile(testNDJsonUrl)).toBe(testNDJsonHash)
   expect(
     await execCommand(
-      `node dist/cli.js --sourceFile ${testNDJsonUrl} --targetType stdout` +
+      `node dist/cli.js --sourceFile ${testNDJsonUrl} --targetFile=-` +
         ` | ./node_modules/.bin/hasha --algorithm md5`
     )
   ).toBe(testNDJsonHash)
@@ -169,7 +169,7 @@ it('Should convert to sharded JSON from ND-JSON and back', async () => {
   )
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
-      orderBy: 'id',
+      orderBy: ['id'],
       sourceShards: shards,
       sourceFile: targetShardedJsonUrl,
       targetFile: targetNDJsonUrl,
@@ -230,7 +230,7 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
       fileSystem,
       ...postgresSource,
       targetFile: targetNDJsonUrl,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
     })
   )
 })
@@ -269,7 +269,7 @@ it('Should restore to and dump from Postgres to SQL', async () => {
       fileSystem,
       ...postgresSource,
       targetFile: targetNDJsonUrl,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
     })
   )
 })
@@ -316,7 +316,7 @@ it('Should copy from Postgres to Mysql', async () => {
     dbcp({
       fileSystem,
       ...mysqlSource,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
       targetFile: targetNDJsonUrl,
       transformJson: (x: any) => {
         x.props = JSON.parse(x.props)
@@ -369,7 +369,7 @@ it('Should copy from Postgres to SQL Server', async () => {
     dbcp({
       fileSystem,
       ...mssqlSource,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
       targetFile: targetNDJsonUrl,
       transformJson: (x: any) => {
         x.props = JSON.parse(x.props)
@@ -387,7 +387,7 @@ it('Should dump from Postgres to Parquet file', async () => {
       fileSystem,
       ...postgresSource,
       targetFile: targetParquetUrl,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
     })
   )
 })
@@ -399,7 +399,7 @@ it('Should dump from MySQL to Parquet file', async () => {
       fileSystem,
       ...mysqlSource,
       targetFile: targetParquetUrl,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
       transformJson: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
@@ -416,7 +416,7 @@ it('Should dump from SQL Server to Parquet file', async () => {
       fileSystem,
       ...mssqlSource,
       targetFile: targetParquetUrl,
-      orderBy: 'id ASC',
+      orderBy: ['id ASC'],
       columnType: { props: 'json', tags: 'json' },
       transformJson: (x: any) => {
         x.props = JSON.parse(x.props)

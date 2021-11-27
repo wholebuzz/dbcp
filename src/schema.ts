@@ -32,7 +32,7 @@ export function newSchemaColumn(table: string, name: string, type: string): Colu
     foreign_key_table: null,
     has_auto_increment: false,
     is_generated: false,
-    is_nullable: false,
+    is_nullable: true,
     is_primary_key: false,
     is_unique: false,
     max_length: null,

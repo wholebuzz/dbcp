@@ -18,7 +18,6 @@ export enum DatabaseCopySourceType {
   mysql = 'mysql',
   postgresql = 'postgresql',
   smb = 'smb',
-  stdin = 'stdin',
 }
 
 export enum DatabaseCopyTargetType {
@@ -26,7 +25,6 @@ export enum DatabaseCopyTargetType {
   mysql = 'mysql',
   postgresql = 'postgresql',
   smb = 'smb',
-  stdout = 'stdout',
 }
 
 export enum DatabaseCopyFormat {
@@ -105,7 +103,7 @@ export function pipeFromOutputFormatTransform(
   }
 }
 
-export function formatContentType(format: DatabaseCopyFormat) {
+export function formatContentType(format?: DatabaseCopyFormat) {
   switch (format) {
     case DatabaseCopyFormat.ndjson:
     case DatabaseCopyFormat.jsonl:

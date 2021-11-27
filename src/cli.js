@@ -50,9 +50,13 @@ async function main() {
       description: 'Database host',
       type: 'string',
     },
+    limit: {
+      description: 'Database query LIMIT',
+      type: 'number',
+    },
     orderBy: {
       description: 'Database query ORDER BY',
-      type: 'string',
+      type: 'array',
     },
     password: {
       description: 'Database password',
@@ -79,7 +83,7 @@ async function main() {
       type: 'string',
     },
     shards: {
-      description: 'The number of shards to split the data into',
+      description: 'The number of shards to split or join the data',
       type: 'number',
     },
     sourceFile: {
@@ -172,7 +176,7 @@ async function main() {
     },
     where: {
       description: 'Database query WHERE',
-      type: 'string',
+      type: 'array',
     },
   }).argv
 
@@ -268,9 +272,7 @@ async function main() {
   const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
   if (args.targetType !== 'stdout') {
-    spinner.succeed(
-      `Wrote ${totalBytes} bytes to "${targetName}" from "${sourceName}"`
-    )
+    spinner.succeed(`Wrote ${totalBytes} bytes to "${targetName}" from "${sourceName}"`)
   }
 }
 
