@@ -1,10 +1,11 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { readJSON } from '@wholebuzz/fs/lib/json'
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
-import { openParquetFiles } from '@wholebuzz/fs/lib/parquet'
+import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardWritables } from '@wholebuzz/fs/lib/stream'
-import { openReadableFiles, openWritableFiles, shardIndex } from '@wholebuzz/fs/lib/util'
+import { openWritableFiles, shardIndex } from '@wholebuzz/fs/lib/util'
 import { Knex, knex } from 'knex'
+import pSettle from 'p-settle'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
@@ -30,6 +31,16 @@ import { Column, guessSchemaFromFile } from './schema'
 
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
+export interface DatabaseCopySourceFile {
+  url: string
+  sourceFormat?: DatabaseCopyFormat
+  sourceShards?: number
+  columnType?: Record<string, string>
+  query?: string
+  schema?: Column[]
+  schemaFile?: string
+}
+
 export interface DatabaseCopyOptions {
   batchSize?: number
   columnType?: Record<string, string>
@@ -37,6 +48,7 @@ export interface DatabaseCopyOptions {
   contentType?: string
   copySchema?: DatabaseCopySchema
   fileSystem?: FileSystem
+  group?: boolean
   limit?: number
   orderBy?: string[]
   query?: string
@@ -46,7 +58,7 @@ export interface DatabaseCopyOptions {
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
-  sourceFile?: string
+  sourceFiles?: DatabaseCopySourceFile[]
   sourceHost?: string
   sourceKnex?: Knex
   sourcePassword?: string
@@ -124,39 +136,53 @@ export function getOrderByFunction(args: DatabaseCopyOptions) {
 }
 
 export function getSourceFormat(args: DatabaseCopyOptions) {
-  return args.sourceFormat || guessFormatFromFilename(args.sourceFile) || DatabaseCopyFormat.json
+  if (args.sourceFormat) return args.sourceFormat
+  if (!args.sourceFiles || !args.sourceFiles.length) return DatabaseCopyFormat.json
+  const formats = args.sourceFiles.map((sourceFile) => guessFormatFromFilename(sourceFile.url))
+  return formats[0] && formats.every((format) => format === formats[0]) ? formats[0] : DatabaseCopyFormat.json
 }
 
 export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: DatabaseCopyFormat) {
   return (
     args.targetFormat ||
     guessFormatFromFilename(args.targetFile) ||
-    (args.sourceFile && sourceFormat) ||
+    (args.sourceFiles && sourceFormat) ||
     DatabaseCopyFormat.json
   )
 }
 
-export async function openSources(args: DatabaseCopyOptions, format?: DatabaseCopyFormat) {
+export async function openSources(
+  args: DatabaseCopyOptions,
+  format?: DatabaseCopyFormat
+): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
-    args.sourceFile!.endsWith('/') && !args.sourceFile!.startsWith('http') && !args.sourceStream
+    args.sourceFiles?.length === 1 &&
+    args.sourceFiles[0].url.endsWith('/') &&
+    !args.sourceFiles[0].url.startsWith('http') &&
+    !args.sourceStream
       ? new Readable()
       : undefined
-  const inputs: ReadableStreamTree[] = args.sourceStream
+  const inputs: ReadableStreamTree[] | Record<string, ReadableStreamTree[]> = args.sourceStream
     ? [args.sourceStream]
-    : args.sourceFile === '-'
+    : args.sourceFiles?.length === 1 && args.sourceFiles[0].url === '-'
     ? [StreamTree.readable(process.stdin)]
     : directoryStream
     ? [StreamTree.readable(directoryStream)]
-    : format === DatabaseCopyFormat.parquet && !args.query
-    ? await openParquetFiles(args.fileSystem!, args.sourceFile!)
-    : await openReadableFiles(args.fileSystem!, args.sourceFile!, {
-        query: args.query,
-        shards: args.sourceShards,
-      })
+    : await openReadableFileSet(
+        args.fileSystem!,
+        args.sourceFiles!.map((sourceFile) => ({
+          format,
+          url: sourceFile.url,
+          options: {
+            query: args.query,
+            shards: args.sourceShards,
+          },
+        }))
+      )
   // If the source is a directory, read the directory.
   if (directoryStream) {
     directoryStream.push(
-      JSON.stringify(await args.fileSystem!.readDirectory(args.sourceFile!), null, 2)
+      JSON.stringify(await args.fileSystem!.readDirectory(args.sourceFiles![0].url), null, 2)
     )
     directoryStream.push(null)
   }
@@ -189,7 +215,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (
     !args.sourceStream &&
     !args.sourceKnex &&
-    (!args.sourceFile || !args.fileSystem) &&
+    (!(args.sourceFiles?.length ?? 0) || !args.fileSystem) &&
     (!args.sourceType ||
       !sourceConnection.database ||
       !sourceConnection.user ||
@@ -199,7 +225,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       `Missing source parameters ${JSON.stringify(
         {
           sourceType: args.sourceType,
-          sourceFile: args.sourceFile,
+          sourceFiles: args.sourceFiles,
           sourceDatabase: sourceConnection.database,
           sourceUser: sourceConnection.user,
           sourceTable: args.sourceTable,
@@ -239,7 +265,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     args.copySchema !== DatabaseCopySchema.dataOnly
 
   // If the copy source is a database.
-  if (!args.sourceStream && !args.sourceFile) {
+  if (!args.sourceStream && !args.sourceFiles) {
     const sourceKnex =
       args.sourceKnex ??
       knex({
@@ -306,18 +332,23 @@ export async function dbcp(args: DatabaseCopyOptions) {
         ? args.schema ||
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
-            : args.sourceFile
-            ? Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFile))
+            : args.sourceFiles?.length === 1
+            ? Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFiles[0].url))
             : undefined)
         : undefined
-      for (let i = 0; i < inputs.length; i++) {
-        if (sourceFormat !== targetFormat || args.sourceShards || args.targetShards) {
-          inputs[i] = await pipeInputFormatTransform(inputs[i], sourceFormat)
-          if (args.transformJson) inputs[i] = pipeFilter(inputs[i], args.transformJson)
-          if (args.transformJsonStream) inputs[i] = inputs[i].pipe(args.transformJsonStream())
-        }
-      }
-      await dumpToFile(mergeStreams(inputs, { compare: orderByFunction }), outputs, {
+      await updatePropertiesAsync(inputs, async (inputGroup) => {
+        const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
+        await updatePropertiesAsync(inputArray, async (input) => {
+          if (sourceFormat !== targetFormat || args.sourceShards || args.targetShards) {
+            input = await pipeInputFormatTransform(input, sourceFormat)
+            if (args.transformJson) input = pipeFilter(input, args.transformJson)
+            if (args.transformJsonStream) input = input.pipe(args.transformJsonStream())
+          }
+          return input
+        })
+        return Array.isArray(inputGroup) ? inputGroup : inputArray[0]
+      })
+      await dumpToFile(mergeStreams(inputs, { compare: orderByFunction, group: args.group }), outputs, {
         columnType: args.columnType,
         copySchema: args.copySchema,
         format:
@@ -335,13 +366,18 @@ export async function dbcp(args: DatabaseCopyOptions) {
       })
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      for (let i = 0; i < inputs.length; i++) {
-        if (args.transformBytes) inputs[i] = pipeFilter(inputs[i], args.transformBytes)
-        if (args.transformBytesStream) inputs[i] = inputs[i].pipe(args.transformBytesStream())
-        inputs[i] = await pipeInputFormatTransform(inputs[i], sourceFormat)
-        if (args.transformJson) inputs[i] = pipeFilter(inputs[i], args.transformJson)
-        if (args.transformJsonStream) inputs[i] = inputs[i].pipe(args.transformJsonStream())
-      }
+      await updatePropertiesAsync(inputs, async (inputGroup) => {
+        const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
+        await updatePropertiesAsync(inputArray, async (input) => {
+          if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
+          if (args.transformBytesStream) input = input.pipe(args.transformBytesStream())
+          input = await pipeInputFormatTransform(input, sourceFormat)
+          if (args.transformJson) input = pipeFilter(input, args.transformJson)
+          if (args.transformJsonStream) input = input.pipe(args.transformJsonStream())
+          return input
+        })
+        return Array.isArray(inputGroup) ? inputGroup : inputArray[0]
+      })
       const targetKnex =
         args.targetKnex ??
         knex({
@@ -350,7 +386,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           pool: knexPoolConfig,
         })
       await dumpToDatabase(
-        mergeStreams(inputs, { compare: orderByFunction }),
+        mergeStreams(inputs, { compare: orderByFunction, group: args.group }),
         targetKnex,
         sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
         { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
@@ -358,6 +394,31 @@ export async function dbcp(args: DatabaseCopyOptions) {
       await targetKnex.destroy()
     }
   }
+}
+
+export async function updatePropertiesAsync<X>(
+  x: X[] | Record<string, X>,
+  f: (x: X) => Promise<X>,
+  options?: { concurrency?: number }
+) {
+  if (Array.isArray(x)) {
+    const newValues = await pSettle(
+      x.map((v) => f(v)),
+      { concurrency: options?.concurrency || 1 }
+    )
+    newValues.forEach((v, i) => (x[i] = v.isFulfilled ? v.value : (null as any)))
+  } else {
+    const entries = Object.entries(x)
+    const newValues = await pSettle(
+      entries.map(
+        ([_, v]) =>
+          () =>
+            f(v)
+      )
+    )
+    newValues.forEach((v, i) => (x[entries[i][0]] = v.isFulfilled ? v.value : (null as any)))
+  }
+  return x
 }
 
 async function writeSchema(

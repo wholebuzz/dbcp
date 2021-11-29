@@ -88,7 +88,7 @@ async function main() {
     },
     sourceFile: {
       description: 'Source file',
-      type: 'string',
+      type: 'array',
     },
     sourceFormat: {
       choices: formats,
@@ -220,6 +220,7 @@ async function main() {
       ? DatabaseCopySchema.dataOnly
       : undefined,
     fileSystem,
+    sourceFiles: args.sourceFile ? args.sourceFile.map(url => ({ url })) : undefined,
     sourceFormat: args.sourceFormat || args.format,
     sourceHost:
       args.sourceHost ||

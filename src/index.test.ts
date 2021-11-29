@@ -137,22 +137,26 @@ it('Should hash test data stream', async () => {
 
 it('Should copy local file', async () => {
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
-    dbcp({ sourceFile: testNDJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+    dbcp({ sourceFiles: [{ url: testNDJsonUrl }], targetFile: targetNDJsonUrl, fileSystem })
   )
 })
 
 it('Should read local directory', async () => {
   const dir = { value: '' }
-  await dbcp({ sourceFile: './test/', targetStream: [writableToString(dir)], fileSystem })
+  await dbcp({
+    sourceFiles: [{ url: './test/' }],
+    targetStream: [writableToString(dir)],
+    fileSystem,
+  })
   expect(JSON.parse(dir.value)).toEqual([{ url: 'test/schema.sql' }, { url: 'test/test.jsonl.gz' }])
 })
 
 it('Should convert to JSON from ND-JSON and back', async () => {
   await expectCreateFileWithHash(targetJsonUrl, testJsonHash, () =>
-    dbcp({ sourceFile: testNDJsonUrl, targetFile: targetJsonUrl, fileSystem })
+    dbcp({ sourceFiles: [{ url: testNDJsonUrl }], targetFile: targetJsonUrl, fileSystem })
   )
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
-    dbcp({ sourceFile: targetJsonUrl, targetFile: targetNDJsonUrl, fileSystem })
+    dbcp({ sourceFiles: [{ url: targetJsonUrl }], targetFile: targetNDJsonUrl, fileSystem })
   )
 })
 
@@ -161,7 +165,7 @@ it('Should convert to sharded JSON from ND-JSON and back', async () => {
   await expectCreateFilesWithHashes(shardedFilenames(targetShardedJsonUrl, shards), undefined, () =>
     dbcp({
       shardBy: 'id',
-      sourceFile: testNDJsonUrl,
+      sourceFiles: [{ url: testNDJsonUrl }],
       targetFile: targetShardedJsonUrl,
       targetShards: shards,
       fileSystem,
@@ -171,7 +175,15 @@ it('Should convert to sharded JSON from ND-JSON and back', async () => {
     dbcp({
       orderBy: ['id'],
       sourceShards: shards,
-      sourceFile: targetShardedJsonUrl,
+      sourceFiles: [{ url: targetShardedJsonUrl }],
+      targetFile: targetNDJsonUrl,
+      fileSystem,
+    })
+  )
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      orderBy: ['id'],
+      sourceFiles: shardedFilenames(targetShardedJsonUrl, shards).map((url) => ({ url })),
       targetFile: targetNDJsonUrl,
       fileSystem,
     })
@@ -182,7 +194,7 @@ it('Should convert to Parquet from ND-JSON and back', async () => {
   await expectCreateFileWithConvertHash(targetParquetUrl, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      sourceFile: testNDJsonUrl,
+      sourceFiles: [{ url: testNDJsonUrl }],
       targetFile: targetParquetUrl,
     })
   )
@@ -196,7 +208,7 @@ it('Should convert to TFRecord from ND-JSON and back', async () => {
     () =>
       dbcp({
         fileSystem,
-        sourceFile: testNDJsonUrl,
+        sourceFiles: [{ url: testNDJsonUrl }],
         targetFile: targetTfRecordUrl,
       }),
     (x: any) => {
@@ -212,7 +224,7 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
   await dbcp({
     fileSystem,
     ...postgresTarget,
-    sourceFile: testSchemaUrl,
+    sourceFiles: [{ url: testSchemaUrl }],
   })
 
   // Copy from testNDJsonUrl to PostgreSQL
@@ -220,7 +232,7 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
     dbcp({
       fileSystem,
       ...postgresTarget,
-      sourceFile: testNDJsonUrl,
+      sourceFiles: [{ url: testNDJsonUrl }],
     })
   )
 
@@ -251,7 +263,7 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   await dbcp({
     fileSystem,
     ...postgresTarget,
-    sourceFile: testSchemaUrl,
+    sourceFiles: [{ url: testSchemaUrl }],
   })
 
   // Copy from targetSQLUrl to PostgreSQL
@@ -259,7 +271,7 @@ it('Should restore to and dump from Postgres to SQL', async () => {
     dbcp({
       fileSystem,
       ...postgresTarget,
-      sourceFile: targetSQLUrl,
+      sourceFiles: [{ url: targetSQLUrl }],
     })
   )
 
@@ -439,7 +451,7 @@ async function expectCreateFileWithConvertHash(
   // Convert and verify
   await expectCreateFileWithHash(convertToUrl, convertToHash, () =>
     dbcp({
-      sourceFile: targetUrl,
+      sourceFiles: [{ url: targetUrl }],
       targetFile: convertToUrl,
       fileSystem,
       transformJson: (x: any) =>
@@ -512,7 +524,7 @@ async function hashFile(path: string) {
 async function dbcpHashFile(path: string) {
   const target = { value: '' }
   await dbcp({
-    sourceFile: path,
+    sourceFiles: [{ url: path }],
     targetStream: [writableToString(target).pipeFrom(hasha.stream(hashOptions))],
     fileSystem,
   })

@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Dump Mysql, Postgres, and SQLServer databases directly to AWS S3 or Google Cloud Storage",
   "keywords": [
     "database",
@@ -48,7 +48,7 @@
     "@azure/storage-blob": "^12.8.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
-    "@wholebuzz/fs": "^1.0.4",
+    "@wholebuzz/fs": "^1.0.5",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
     "batch2": "^2.0.0",
@@ -64,6 +64,7 @@
     "mysql": "^2.18.1",
     "ora": "^5.4.0",
     "parquetjs": "npm:@entitycs/parquetjs-micro",
+    "p-settle": "^4.1.1",
     "pg": "^8.2.0",
     "pg-query-stream": "^3.1.1",
     "progress-stream": "^2.0.0",
