@@ -139,7 +139,9 @@ export function getSourceFormat(args: DatabaseCopyOptions) {
   if (args.sourceFormat) return args.sourceFormat
   if (!args.sourceFiles || !args.sourceFiles.length) return DatabaseCopyFormat.json
   const formats = args.sourceFiles.map((sourceFile) => guessFormatFromFilename(sourceFile.url))
-  return formats[0] && formats.every((format) => format === formats[0]) ? formats[0] : DatabaseCopyFormat.json
+  return formats[0] && formats.every((format) => format === formats[0])
+    ? formats[0]
+    : DatabaseCopyFormat.json
 }
 
 export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: DatabaseCopyFormat) {
@@ -339,7 +341,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
       await updatePropertiesAsync(inputs, async (inputGroup) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
         await updatePropertiesAsync(inputArray, async (input) => {
-          if (sourceFormat !== targetFormat || args.sourceShards || args.targetShards) {
+          if (
+            sourceFormat !== targetFormat ||
+            (args.sourceFiles?.length ?? 0) > 1 ||
+            args.sourceShards ||
+            args.targetShards
+          ) {
             input = await pipeInputFormatTransform(input, sourceFormat)
             if (args.transformJson) input = pipeFilter(input, args.transformJson)
             if (args.transformJsonStream) input = input.pipe(args.transformJsonStream())
@@ -348,22 +355,29 @@ export async function dbcp(args: DatabaseCopyOptions) {
         })
         return Array.isArray(inputGroup) ? inputGroup : inputArray[0]
       })
-      await dumpToFile(mergeStreams(inputs, { compare: orderByFunction, group: args.group }), outputs, {
-        columnType: args.columnType,
-        copySchema: args.copySchema,
-        format:
-          sourceFormat !== targetFormat || args.sourceShards || args.targetShards
-            ? targetFormat
-            : undefined,
-        formattingKnex:
-          shouldInspectSchema && args.targetType
-            ? knex({ client: args.targetType, log: knexLogConfig })
-            : undefined,
-        shardFunction: getShardFunction(args),
-        schema,
-        sourceTable: args.sourceTable,
-        targetShards: args.targetShards,
-      })
+      await dumpToFile(
+        mergeStreams(inputs, { compare: orderByFunction, group: args.group }),
+        outputs,
+        {
+          columnType: args.columnType,
+          copySchema: args.copySchema,
+          format:
+            sourceFormat !== targetFormat ||
+            (args.sourceFiles?.length ?? 0) > 1 ||
+            args.sourceShards ||
+            args.targetShards
+              ? targetFormat
+              : undefined,
+          formattingKnex:
+            shouldInspectSchema && args.targetType
+              ? knex({ client: args.targetType, log: knexLogConfig })
+              : undefined,
+          shardFunction: getShardFunction(args),
+          schema,
+          sourceTable: args.sourceTable,
+          targetShards: args.targetShards,
+        }
+      )
     } else {
       // If the copy is file->database: JSON-parsing transform.
       await updatePropertiesAsync(inputs, async (inputGroup) => {

@@ -46,6 +46,10 @@ async function main() {
     format: {
       choices: formats,
     },
+    group: {
+      description: 'Group inputs with equinvalent orderBy',
+      type: 'boolean',
+    },
     host: {
       description: 'Database host',
       type: 'string',
