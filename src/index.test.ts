@@ -148,7 +148,12 @@ it('Should read local directory', async () => {
     targetStream: [writableToString(dir)],
     fileSystem,
   })
-  expect(JSON.parse(dir.value)).toEqual([{ url: 'test/schema.sql' }, { url: 'test/test.jsonl.gz' }])
+  expect(JSON.parse(dir.value)).toEqual([
+    { url: 'test/compound-data.sql' },
+    { url: 'test/compound.sql' },
+    { url: 'test/schema.sql' },
+    { url: 'test/test.jsonl.gz' },
+  ])
 })
 
 it('Should convert to JSON from ND-JSON and back', async () => {
@@ -216,6 +221,72 @@ it('Should convert to TFRecord from ND-JSON and back', async () => {
       x.tags = JSON.parse(x.tags)
       return x
     }
+  )
+})
+
+it('Should restore to and dump compound data', async () => {
+  const query =
+    'select ' +
+    'to_json(a.*) as compoundA, ' +
+    'to_json(b.*) as compoundB, ' +
+    'to_json(c.*) as compoundC ' +
+    'from compoundA a ' +
+    'left join compoundB b on b.id = a.compoundB_id ' +
+    'left join compoundC c on c.id = b.compoundC_id;'
+
+  // Load schema
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFiles: [{ url: './test/compound.sql' }],
+  })
+
+  // Load data
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFiles: [{ url: './test/compound-data.sql' }],
+  })
+
+  // Dump to data
+  await dbcp({
+    fileSystem,
+    ...postgresSource,
+    query,
+    targetFile: targetJsonUrl,
+  })
+
+  // Reload schema
+  await dbcp({
+    fileSystem,
+    ...postgresTarget,
+    sourceFiles: [{ url: './test/compound.sql' }],
+  })
+
+  // Copy from testNDJsonUrl to PostgreSQL
+  await expectFillDatabaseTable(
+    'postgresql',
+    postgresConnection,
+    'compoundA',
+    () =>
+      dbcp({
+        fileSystem,
+        ...postgresTarget,
+        compoundInsert: true,
+        sourceFiles: [{ url: targetJsonUrl }],
+      }),
+    undefined,
+    2
+  )
+
+  // Dump again and verify
+  await expectCreateFileWithHash(targetJsonUrl, 'b97dec85da649680fc8206fd08c25624', () =>
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      query,
+      targetFile: targetJsonUrl,
+    })
   )
 })
 
@@ -473,7 +544,8 @@ async function expectFillDatabaseTable(
   connection: Record<string, any>,
   tableName: string,
   fn: () => Promise<void>,
-  preambleSql?: string
+  preambleSql?: string,
+  expectedCount = 10000
 ) {
   const db = knex({
     client,
@@ -483,7 +555,7 @@ async function expectFillDatabaseTable(
   if (preambleSql) await db.raw(preambleSql)
   expect(await selectCount(db, tableName)).toBe(0)
   await fn()
-  expect(await selectCount(db, tableName)).toBe(10000)
+  expect(await selectCount(db, tableName)).toBe(expectedCount)
   await db.destroy()
 }
 

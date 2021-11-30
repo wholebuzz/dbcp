@@ -85,7 +85,7 @@ export interface DatabaseCopyOptions {
   transformJsonStream?: () => Duplex
   transformBytes?: (x: string) => string
   transformBytesStream?: () => Duplex
-  where?: string[]
+  where?: Array<string | string[]>
 }
 
 export function getSourceConnection(args: DatabaseCopyOptions) {
@@ -545,7 +545,7 @@ function queryDatabase(
     query?: string
     transformJson?: (x: unknown) => unknown
     transformJsonStream?: () => Duplex
-    where?: string[]
+    where?: Array<string | string[]>
   }
 ) {
   let input
@@ -554,7 +554,9 @@ function queryDatabase(
   } else {
     let query = db(table)
     for (const where of options.where ?? []) {
-      query = query.where(db.raw(where))
+      query = Array.isArray(where)
+        ? query.where(where[0], where[1], where[2])
+        : query.where(db.raw(where))
     }
     for (const orderBy of options.orderBy ?? []) {
       query = query.orderByRaw(orderBy)

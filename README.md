@@ -9,22 +9,23 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 ## Tested
 
 ```
- PASS  src/index.test.ts (51.3 s)
-  ✓ Should hash test data as string (314 ms)
-  ✓ Should hash test data stream (947 ms)
-  ✓ Should copy local file (443 ms)
-  ✓ Should read local directory (2 ms)
-  ✓ Should convert to JSON from ND-JSON and back (2537 ms)
-  ✓ Should convert to sharded JSON from ND-JSON and back (2104 ms)
-  ✓ Should convert to Parquet from ND-JSON and back (2132 ms)
-  ✓ Should convert to TFRecord from ND-JSON and back (2038 ms)
-  ✓ Should restore to and dump from Postgres to ND-JSON (2708 ms)
-  ✓ Should restore to and dump from Postgres to SQL (21912 ms)
-  ✓ Should copy from Postgres to Mysql (3547 ms)
-  ✓ Should copy from Postgres to SQL Server (8701 ms)
-  ✓ Should dump from Postgres to Parquet file (2429 ms)
-  ✓ Should dump from MySQL to Parquet file (2114 ms)
-  ✓ Should dump from SQL Server to Parquet file (2536 ms)
+ PASS  src/index.test.ts
+  ✓ Should hash test data as string
+  ✓ Should hash test data stream
+  ✓ Should copy local file
+  ✓ Should read local directory
+  ✓ Should convert to JSON from ND-JSON and back
+  ✓ Should convert to sharded JSON from ND-JSON and back
+  ✓ Should convert to Parquet from ND-JSON and back
+  ✓ Should convert to TFRecord from ND-JSON and back
+  ✓ Should restore to and dump compound data
+  ✓ Should restore to and dump from Postgres to ND-JSON
+  ✓ Should restore to and dump from Postgres to SQL
+  ✓ Should copy from Postgres to Mysql
+  ✓ Should copy from Postgres to SQL Server
+  ✓ Should dump from Postgres to Parquet file
+  ✓ Should dump from MySQL to Parquet file
+  ✓ Should dump from SQL Server to Parquet file
 ```
 
 ## Example
@@ -127,35 +128,46 @@ $ dbcp --help
 Options:
   --help            Show help                                     [boolean]
   --version         Show version number                           [boolean]
+  --compoundInsert  Compound insert mode can insert associated rows from
+                    multiple tables.                              [boolean]
   --contentType     Content type                                   [string]
   --dataOnly        Dump only the data, not the schema (data definitions).
                                                                   [boolean]
   --dbname          Database                                       [string]
-  --format           [choices: "json", "jsonl", "ndjson", "parquet", "sql"]
+  --format
+         [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
   --host            Database host                                  [string]
   --orderBy         Database query ORDER BY                        [string]
   --password        Database password                              [string]
   --port            Database port                                  [string]
   --query           Query                                          [string]
+  --schemaFile      Use schema file if required, instead of schema
+                    inspection.                                    [string]
   --schemaOnly      Dump only the object definitions (schema), not data.
                                                                   [boolean]
+  --shardBy         Shard (or split) the data based on key         [string]
+  --shards          The number of shards to split the data into    [number]
   --sourceFile      Source file                                    [string]
-  --sourceFormat     [choices: "json", "jsonl", "ndjson", "parquet", "sql"]
+  --sourceFormat
+         [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
   --sourceHost      Source host                                    [string]
   --sourceName      Source database                                [string]
   --sourcePassword  Source database password                       [string]
   --sourcePort      Source database port                           [string]
+  --sourceShards    Source shards                                  [number]
   --sourceTable     Source database table                          [string]
   --sourceType      Source database type
          [string] [choices: "mssql", "mysql", "postgresql", "smb", "stdin"]
   --sourceUser      Source database user                           [string]
   --table           Database table                                 [string]
   --targetFile      Target file                                    [string]
-  --targetFormat     [choices: "json", "jsonl", "ndjson", "parquet", "sql"]
+  --targetFormat
+         [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
   --targetHost      Target host                                    [string]
   --targetName      Target database                                [string]
   --targetPassword  Target database password                       [string]
   --targetPort      Target database port                           [string]
+  --targetShards    Target shards                                  [number]
   --targetTable     Target database table                          [string]
   --targetType      Target database type
         [string] [choices: "mssql", "mysql", "postgresql", "smb", "stdout"]
