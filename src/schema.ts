@@ -92,6 +92,37 @@ export async function guessSchemaFromFile(
   return schema
 }
 
+export function normalizeToSchema(
+  record: any,
+  columns: Column[],
+  columnType?: Record<string, any>
+) {
+  for (const column of columns) {
+    const type = columnType?.[column.name] || column.data_type
+    const v = record[column.name]
+    switch (type) {
+      case 'boolean':
+        if (v != null && typeof v !== 'boolean') record[column.name] = !!v
+        break
+      case 'int':
+      case 'integer':
+        if (v != null && typeof v !== 'number') record[column.name] = parseInt(v.toString(), 10)
+        break
+      case 'double precision':
+      case 'float':
+        if (v != null && typeof v !== 'number') record[column.name] = parseFloat(v.toString())
+        break
+      case 'character varying':
+      case 'nvarchar':
+      case 'text':
+        if (v != null && typeof v !== 'string') record[column.name] = v.toString()
+        break
+      default:
+        break
+    }
+  }
+}
+
 export function parquetFieldFromSchema(schema: Column, columnType?: Record<string, any>) {
   const type = columnType?.[schema.name] || schema.data_type
   const optional = schema.is_nullable !== false
