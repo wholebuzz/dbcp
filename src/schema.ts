@@ -106,21 +106,34 @@ export function normalizeToSchema(
         break
       case 'int':
       case 'integer':
-        if (v != null && typeof v !== 'number') record[column.name] = parseInt(v.toString(), 10)
+        if (v != null && typeof v !== 'number') {
+          record[column.name] = parseInt(v.toString(), 10)
+        }
         break
       case 'double precision':
       case 'float':
-        if (v != null && typeof v !== 'number') record[column.name] = parseFloat(v.toString())
+        if (v != null && typeof v !== 'number') {
+          record[column.name] = parseFloat(v.toString())
+        }
+        break
+      case 'datetime':
+      case 'datetime2':
+      case 'timestamp with time zone':
+        break
+      case 'json':
+      case 'jsonb':
         break
       case 'character varying':
       case 'nvarchar':
       case 'text':
-        if (v != null && typeof v !== 'string') record[column.name] = v.toString()
-        break
       default:
+        if (v != null && typeof v !== 'string') {
+          record[column.name] = v.toString()
+        }
         break
     }
   }
+  return record
 }
 
 export function parquetFieldFromSchema(schema: Column, columnType?: Record<string, any>) {

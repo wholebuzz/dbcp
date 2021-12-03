@@ -31,6 +31,10 @@ import { Column, guessSchemaFromFile } from './schema'
 
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
+function initParquet() {
+  PARQUET_LOGICAL_TYPES.TIMESTAMP_MILLIS.fromPrimitive = (x: any) => new Date(Number(BigInt(x)))
+}
+
 export interface DatabaseCopySourceFile {
   url: string
   sourceFormat?: DatabaseCopyFormat
@@ -58,7 +62,7 @@ export interface DatabaseCopyOptions {
   sourceConnection?: Record<string, any>
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
-  sourceFiles?: DatabaseCopySourceFile[]
+  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
   sourceHost?: string
   sourceKnex?: Knex
   sourcePassword?: string
@@ -87,6 +91,8 @@ export interface DatabaseCopyOptions {
   transformBytesStream?: () => Duplex
   where?: Array<string | any[]>
 }
+
+export type DatabaseCopyFormats = Record<string, DatabaseCopyFormat | null>
 
 export function getSourceConnection(args: DatabaseCopyOptions) {
   return {
@@ -135,13 +141,22 @@ export function getOrderByFunction(args: DatabaseCopyOptions) {
   }
 }
 
-export function getSourceFormat(args: DatabaseCopyOptions) {
+export function getSourceFormats(args: DatabaseCopyOptions) {
+  const ret: DatabaseCopyFormats = {}
+  for (const [key, sourceFile] of Object.entries(args.sourceFiles ?? {})) {
+    ret[key] = guessFormatFromFilename(sourceFile.url) || DatabaseCopyFormat.json
+    if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
+  }
+  return ret
+}
+
+export function getSourceFormat(args: DatabaseCopyOptions, sourceFormats: DatabaseCopyFormats) {
   if (args.sourceFormat) return args.sourceFormat
-  if (!args.sourceFiles || !args.sourceFiles.length) return DatabaseCopyFormat.json
-  const formats = args.sourceFiles.map((sourceFile) => guessFormatFromFilename(sourceFile.url))
+  const formats = Object.values(sourceFormats)
+  if (!formats.length) return DatabaseCopyFormat.json
   return formats[0] && formats.every((format) => format === formats[0])
     ? formats[0]
-    : DatabaseCopyFormat.json
+    : undefined
 }
 
 export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: DatabaseCopyFormat) {
@@ -155,36 +170,38 @@ export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: Databa
 
 export async function openSources(
   args: DatabaseCopyOptions,
-  format?: DatabaseCopyFormat
+  sourceFiles: [string, DatabaseCopySourceFile][],
+  sourceFormats: DatabaseCopyFormats,
+  sourceFormat?: DatabaseCopyFormat,
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
-    args.sourceFiles?.length === 1 &&
-    args.sourceFiles[0].url.endsWith('/') &&
-    !args.sourceFiles[0].url.startsWith('http') &&
+    sourceFiles.length === 1 &&
+    sourceFiles[0][1].url.endsWith('/') &&
+    !sourceFiles[0][1].url.startsWith('http') &&
     !args.sourceStream
       ? new Readable()
       : undefined
   const inputs: ReadableStreamTree[] | Record<string, ReadableStreamTree[]> = args.sourceStream
     ? [args.sourceStream]
-    : args.sourceFiles?.length === 1 && args.sourceFiles[0].url === '-'
+    : sourceFiles.length === 1 && sourceFiles[0][1].url === '-'
     ? [StreamTree.readable(process.stdin)]
     : directoryStream
     ? [StreamTree.readable(directoryStream)]
     : await openReadableFileSet(
         args.fileSystem!,
-        args.sourceFiles!.map((sourceFile) => ({
-          format,
+        sourceFiles.map(([sourceFileName, sourceFile]) => ({
+          format: sourceFormat || sourceFormats[sourceFileName] || undefined,
           url: sourceFile.url,
           options: {
-            query: args.query,
-            shards: args.sourceShards,
+            query: sourceFile.query || args.query,
+            shards: sourceFile.sourceShards || args.sourceShards,
           },
         }))
       )
   // If the source is a directory, read the directory.
   if (directoryStream) {
     directoryStream.push(
-      JSON.stringify(await args.fileSystem!.readDirectory(args.sourceFiles![0].url), null, 2)
+      JSON.stringify(await args.fileSystem!.readDirectory(sourceFiles[0][1].url), null, 2)
     )
     directoryStream.push(null)
   }
@@ -208,7 +225,9 @@ export async function openTargets(args: DatabaseCopyOptions, format?: DatabaseCo
 }
 
 export async function dbcp(args: DatabaseCopyOptions) {
-  const sourceFormat = getSourceFormat(args)
+  const sourceFiles = Object.entries(args.sourceFiles ?? {})
+  const sourceFormats = getSourceFormats(args)
+  const sourceFormat = getSourceFormat(args, sourceFormats)
   const targetFormat = getTargetFormat(args, sourceFormat)
   const sourceConnection = getSourceConnection(args)
   const targetConnection = getTargetConnection(args)
@@ -261,6 +280,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )}`
     )
   }
+
+  if (sourceFormat === DatabaseCopyFormat.parquet) initParquet()
   const shouldInspectSchema =
     (formatHasSchema(targetFormat) || args.copySchema === DatabaseCopySchema.schemaOnly) &&
     args.targetFile &&
@@ -323,10 +344,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     await sourceKnex.destroy()
   } else {
     // Else the copy source is a file.
-    if (sourceFormat === DatabaseCopyFormat.parquet) {
-      PARQUET_LOGICAL_TYPES.TIMESTAMP_MILLIS.fromPrimitive = (x: any) => new Date(Number(BigInt(x)))
-    }
-    const inputs = await openSources(args, sourceFormat)
+    const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat)
     if (args.targetStream || args.targetFile) {
       // If the copy is file->file: no transform.
       const outputs = await openTargets(args, targetFormat)
@@ -334,11 +352,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
         ? args.schema ||
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
-            : args.sourceFiles?.length === 1
-            ? Object.values(await guessSchemaFromFile(args.fileSystem!, args.sourceFiles[0].url))
+            : sourceFiles?.length === 1
+            ? Object.values(await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url))
             : undefined)
         : undefined
-      await updatePropertiesAsync(inputs, async (inputGroup) => {
+      await updatePropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
         await updatePropertiesAsync(inputArray, async (input) => {
           if (
@@ -347,7 +365,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
             args.sourceShards ||
             args.targetShards
           ) {
-            input = await pipeInputFormatTransform(input, sourceFormat)
+            input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
             if (args.transformJson) input = pipeFilter(input, args.transformJson)
             if (args.transformJsonStream) input = input.pipe(args.transformJsonStream())
           }
@@ -380,12 +398,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      await updatePropertiesAsync(inputs, async (inputGroup) => {
+      await updatePropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
         await updatePropertiesAsync(inputArray, async (input) => {
           if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
           if (args.transformBytesStream) input = input.pipe(args.transformBytesStream())
-          input = await pipeInputFormatTransform(input, sourceFormat)
+          input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
           if (args.transformJson) input = pipeFilter(input, args.transformJson)
           if (args.transformJsonStream) input = input.pipe(args.transformJsonStream())
           return input
@@ -412,12 +430,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
 
 export async function updatePropertiesAsync<X>(
   x: X[] | Record<string, X>,
-  f: (x: X) => Promise<X>,
+  f: (x: X, key: string | number) => Promise<X>,
   options?: { concurrency?: number }
 ) {
   if (Array.isArray(x)) {
     const newValues = await pSettle(
-      x.map((v) => f(v)),
+      x.map((v, i) => f(v, i)),
       { concurrency: options?.concurrency || 1 }
     )
     newValues.forEach((v, i) => (x[i] = v.isFulfilled ? v.value : (null as any)))
@@ -425,9 +443,9 @@ export async function updatePropertiesAsync<X>(
     const entries = Object.entries(x)
     const newValues = await pSettle(
       entries.map(
-        ([_, v]) =>
+        ([k, v]) =>
           () =>
-            f(v)
+            f(v, k)
       )
     )
     newValues.forEach((v, i) => (x[entries[i][0]] = v.isFulfilled ? v.value : (null as any)))
