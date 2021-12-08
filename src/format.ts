@@ -14,17 +14,17 @@ import { pipeKnexInsertTextTransform } from './knex'
 import { parquetFieldFromSchema } from './schema'
 
 export enum DatabaseCopySourceType {
+  es = 'es',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
-  smb = 'smb',
 }
 
 export enum DatabaseCopyTargetType {
+  es = 'es',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
-  smb = 'smb',
 }
 
 export enum DatabaseCopyFormat {

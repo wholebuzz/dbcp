@@ -1,3 +1,4 @@
+import { Client } from '@elastic/elasticsearch'
 import { LocalFileSystem } from '@wholebuzz/fs/lib/local'
 import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
 import { shardedFilenames } from '@wholebuzz/fs/lib/util'
@@ -27,6 +28,29 @@ const testSchemaUrl = './test/schema.sql'
 const testNDJsonUrl = './test/test.jsonl.gz'
 const testNDJsonHash = 'abb7fe0435d553c375c28e52aee28bdb'
 const testJsonHash = '30dbd4095c6308b560e449d1fdbf4a82'
+
+const esConnection = {
+  node: process.env.ES_ENDPOINT ?? '',
+  auth: {
+    username: process.env.ES_USER ?? '',
+    password: process.env.ES_PASS ?? '',
+  },
+}
+/*
+const esSource = {
+  sourceType: DatabaseCopySourceType.es,
+  sourceName: esConnection.node,
+  sourceUser: esConnection.auth.username,
+  sourcePassword: esConnection.auth.password,
+  sourceTable: testSchemaTableName,
+}*/
+const esTarget = {
+  targetType: DatabaseCopyTargetType.es,
+  targetName: esConnection.node,
+  targetUser: esConnection.auth.username,
+  targetPassword: esConnection.auth.password,
+  targetTable: testSchemaTableName,
+}
 
 const mssqlConnection = {
   database: process.env.MSSQL_DB_NAME ?? '',
@@ -288,6 +312,35 @@ it('Should restore to and dump compound data', async () => {
       targetFile: targetJsonUrl,
     })
   )
+})
+
+it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
+  // Reset data
+  const client = new Client(esConnection)
+  try {
+    await client.indices.delete({ index: testSchemaTableName })
+  } catch (_err) {
+    /* */
+  }
+  await client.indices.create({ index: testSchemaTableName })
+
+  // Copy from testNDJsonUrl to Elastic Search
+  await dbcp({
+    fileSystem,
+    ...esTarget,
+    sourceFiles: [{ url: testNDJsonUrl }],
+  })
+  expect((await client.count({ index: testSchemaTableName })).body.count).toBe(10000)
+  await client.close()
+
+  // Dump and verify Elastic Search
+  /* await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...esSource,
+      targetFile: targetNDJsonUrl,
+    })
+  ) */
 })
 
 it('Should restore to and dump from Postgres to ND-JSON', async () => {

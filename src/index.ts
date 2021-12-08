@@ -1,3 +1,4 @@
+import { Client } from '@elastic/elasticsearch'
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { readJSON } from '@wholebuzz/fs/lib/json'
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
@@ -9,6 +10,7 @@ import pSettle from 'p-settle'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
+import { streamToElasticSearch } from './elasticsearch'
 import {
   DatabaseCopyFormat,
   DatabaseCopySchema,
@@ -154,9 +156,7 @@ export function getSourceFormat(args: DatabaseCopyOptions, sourceFormats: Databa
   if (args.sourceFormat) return args.sourceFormat
   const formats = Object.values(sourceFormats)
   if (!formats.length) return DatabaseCopyFormat.json
-  return formats[0] && formats.every((format) => format === formats[0])
-    ? formats[0]
-    : undefined
+  return formats[0] && formats.every((format) => format === formats[0]) ? formats[0] : undefined
 }
 
 export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: DatabaseCopyFormat) {
@@ -170,9 +170,9 @@ export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: Databa
 
 export async function openSources(
   args: DatabaseCopyOptions,
-  sourceFiles: [string, DatabaseCopySourceFile][],
+  sourceFiles: Array<[string, DatabaseCopySourceFile]>,
   sourceFormats: DatabaseCopyFormats,
-  sourceFormat?: DatabaseCopyFormat,
+  sourceFormat?: DatabaseCopyFormat
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
     sourceFiles.length === 1 &&
@@ -230,7 +230,6 @@ export async function dbcp(args: DatabaseCopyOptions) {
   const sourceFormat = getSourceFormat(args, sourceFormats)
   const targetFormat = getTargetFormat(args, sourceFormat)
   const sourceConnection = getSourceConnection(args)
-  const targetConnection = getTargetConnection(args)
   const orderByFunction = (args.orderBy?.length ?? 0) > 0 ? getOrderByFunction(args) : undefined
 
   if (
@@ -262,8 +261,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.targetKnex &&
     (!args.targetFile || !args.fileSystem) &&
     (!args.targetType ||
-      !targetConnection.database ||
-      !targetConnection.user ||
+      !args.targetName ||
+      !args.targetUser ||
       (!args.targetTable && !args.compoundInsert))
   ) {
     throw new Error(
@@ -271,8 +270,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
         {
           targetType: args.targetType,
           targetFile: args.targetFile,
-          targetDatabase: targetConnection.database,
-          targetUser: targetConnection.user,
+          targetDatabase: args.targetName,
+          targetUser: args.targetUser,
           targetTable: args.targetTable,
         },
         null,
@@ -328,18 +327,10 @@ export async function dbcp(args: DatabaseCopyOptions) {
     } else {
       // If the copy is database->database: no transform.
       const input = queryDatabase(sourceKnex, args.sourceTable!, args)
-      const targetKnex =
-        args.targetKnex ??
-        knex({
-          client: args.targetType,
-          connection: targetConnection,
-          pool: knexPoolConfig,
-        })
-      await dumpToDatabase(input, targetKnex, args.targetTable!, {
+      await dumpToDatabase(input, args, args.targetTable!, {
         batchSize: args.batchSize,
         compoundInsert: args.compoundInsert,
       })
-      await targetKnex.destroy()
     }
     await sourceKnex.destroy()
   } else {
@@ -410,20 +401,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
         })
         return Array.isArray(inputGroup) ? inputGroup : inputArray[0]
       })
-      const targetKnex =
-        args.targetKnex ??
-        knex({
-          client: args.targetType,
-          connection: targetConnection,
-          pool: knexPoolConfig,
-        })
       await dumpToDatabase(
         mergeStreams(inputs, { compare: orderByFunction, group: args.group }),
-        targetKnex,
+        args,
         sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
         { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
       )
-      await targetKnex.destroy()
     }
   }
 }
@@ -537,6 +520,37 @@ export async function dumpToFile(
 }
 
 async function dumpToDatabase(
+  input: ReadableStreamTree,
+  args: DatabaseCopyOptions,
+  table: string,
+  options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
+) {
+  if (args.targetType === 'es') {
+    const client = new Client({
+      node: args.targetName ?? '',
+      auth: {
+        username: args.targetUser ?? '',
+        password: args.targetPassword ?? '',
+      },
+    })
+    const output = streamToElasticSearch(client, { index: args.targetTable ?? '' })
+    await pumpWritable(output, undefined, input.finish())
+    await client.close()
+  } else {
+    const targetKnex =
+      args.targetKnex ??
+      knex({
+        client: args.targetType,
+        connection: getTargetConnection(args),
+        pool: knexPoolConfig,
+      })
+    const ret = await dumpToKnex(input, targetKnex, table, options)
+    await targetKnex.destroy()
+    return ret
+  }
+}
+
+async function dumpToKnex(
   input: ReadableStreamTree,
   db: Knex,
   table: string,

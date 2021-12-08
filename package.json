@@ -46,6 +46,7 @@
   "dependencies": {
     "@azure/identity": "^2.0.0",
     "@azure/storage-blob": "^12.8.0",
+    "@elastic/elasticsearch": "^7.15.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
     "@wholebuzz/fs": "^1.0.7",
@@ -63,8 +64,8 @@
     "mssql": "^7.2.1",
     "mysql": "^2.18.1",
     "ora": "^5.4.0",
-    "parquetjs": "npm:@entitycs/parquetjs-micro",
     "p-settle": "^4.1.1",
+    "parquetjs": "npm:@entitycs/parquetjs-micro",
     "pg": "^8.2.0",
     "pg-query-stream": "^3.1.1",
     "progress-stream": "^2.0.0",
