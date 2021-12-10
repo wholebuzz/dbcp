@@ -2,7 +2,7 @@
 
 Dump from/to MySQL, PostgreSQL, SQLServer, or ElasticSearch directly to/from Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, another database, or local file. Supported formats include JSON, ND-JSON, SQL, Parquet, and TFRecord (with optional gzip compression).
 
-## Usage
+## CLI
 
 Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format and compression is inferred from the filename.
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
