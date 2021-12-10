@@ -1,10 +1,40 @@
 # dbcp [![image](https://img.shields.io/npm/v/dbcp)](https://www.npmjs.com/package/dbcp) [![test](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml/badge.svg)](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml) ![Coverage](https://wholebuzz.storage.googleapis.com/dbcp/coverage.svg)
 
-Dump MySQL, PostgreSQL, SQLServer, and ElasticSearch database tables directly to Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Azure, another database, or local file.
+Dump from/to MySQL, PostgreSQL, SQLServer, or ElasticSearch directly to/from Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, another database, or local file. Supported formats include JSON, ND-JSON, SQL, Parquet, and TFRecord (with optional gzip compression).
 
-Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format (JSON, ND-JSON, Parquet, TFRecord) and compression (gzip, none) is inferred from the filename. The SQL file format is experimentally supported.
+## Usage
 
+Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format and compression is inferred from the filename.
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
+
+## API
+
+- The `transformJson`/`transformJsonStream` API can be used for streaming transforms of "Big Data".
+- The CLI uses `transformBytes`/`transformBytesStream` to render progress updates.
+
+## Features 
+
+- `dbcp` supports sharding. It can split or join groups of files.
+- `dbcp` can convert files from one format to another.
+- `dbcp` supports compound inserts, which can insert groups of associated rows from multiple tables.
+- `dbcp` can translate SQL dialects, e.g. dump a Postgres table to .sql file with SQLServer CREATE and INSERT syntax.
+
+## Setup
+
+### Global install
+
+```
+$ npm install -g dbcp
+$ dbcp --help
+```
+
+### Local setup
+
+```
+$ npm init
+$ npm install dbcp
+$ ./node_modules/.bin/dbcp --help
+```
 
 ## Tested
 
@@ -29,22 +59,116 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
   ✓ Should dump from SQL Server to Parquet file
 ```
 
-## Example
+## API Interface
 
-### Global install
+```typescript
+export async function dbcp(args: DatabaseCopyOptions)
+
+export interface DatabaseCopyOptions {
+  batchSize?: number
+  columnType?: Record<string, string>
+  compoundInsert?: boolean
+  contentType?: string
+  copySchema?: DatabaseCopySchema
+  fileSystem?: FileSystem
+  group?: boolean
+  limit?: number
+  orderBy?: string[]
+  query?: string
+  shardBy?: string
+  schema?: Column[]
+  schemaFile?: string
+  sourceConnection?: Record<string, any>
+  sourceFormat?: DatabaseCopyFormat
+  sourceName?: string
+  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
+  sourceHost?: string
+  sourceKnex?: Knex
+  sourcePassword?: string
+  sourceShards?: number
+  sourceStream?: ReadableStreamTree
+  sourceTable?: string
+  sourceType?: DatabaseCopySourceType
+  sourcePort?: number
+  sourceUser?: string
+  targetConnection?: Record<string, any>
+  targetFormat?: DatabaseCopyFormat
+  targetName?: string
+  targetFile?: string
+  targetHost?: string
+  targetKnex?: Knex
+  targetPassword?: string
+  targetShards?: number
+  targetStream?: WritableStreamTree[]
+  targetTable?: string
+  targetType?: DatabaseCopyTargetType
+  targetPort?: number
+  targetUser?: string
+  transformJson?: (x: unknown) => unknown
+  transformJsonStream?: () => Duplex
+  transformBytes?: (x: string) => string
+  transformBytesStream?: () => Duplex
+  where?: Array<string | any[]>
+}
+```
+
+## CLI Options
 
 ```
-$ npm install -g dbcp
 $ dbcp --help
+Options:
+  --help            Show help                                          [boolean]
+  --version         Show version number                                [boolean]
+  --compoundInsert  Compound insert mode can insert associated rows from
+                    multiple tables.                                   [boolean]
+  --contentType     Content type                                        [string]
+  --dataOnly        Dump only the data, not the schema (data definitions).
+                                                                       [boolean]
+  --dbname          Database                                            [string]
+  --format    [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
+  --group           Group inputs with equinvalent orderBy              [boolean]
+  --host            Database host                                       [string]
+  --limit           Database query LIMIT                                [number]
+  --orderBy         Database query ORDER BY                              [array]
+  --password        Database password                                   [string]
+  --port            Database port                                       [string]
+  --query           Query                                               [string]
+  --schemaFile      Use schema file if required, instead of schema inspection.
+                                                                        [string]
+  --schemaOnly      Dump only the object definitions (schema), not data.
+                                                                       [boolean]
+  --shardBy         Shard (or split) the data based on key              [string]
+  --shards          The number of shards to split or join the data      [number]
+  --sourceFile      Source file                                          [array]
+  --sourceFormat
+              [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
+  --sourceHost      Source host                                         [string]
+  --sourceName      Source database                                     [string]
+  --sourcePassword  Source database password                            [string]
+  --sourcePort      Source database port                                [string]
+  --sourceShards    Source shards                                       [number]
+  --sourceTable     Source database table                               [string]
+  --sourceType      Source database type
+                        [string] [choices: "es", "mssql", "mysql", "postgresql"]
+  --sourceUser      Source database user                                [string]
+  --table           Database table                                      [string]
+  --targetFile      Target file                                         [string]
+  --targetFormat
+              [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
+  --targetHost      Target host                                         [string]
+  --targetName      Target database                                     [string]
+  --targetPassword  Target database password                            [string]
+  --targetPort      Target database port                                [string]
+  --targetShards    Target shards                                       [number]
+  --targetTable     Target database table                               [string]
+  --targetType      Target database type
+                        [string] [choices: "es", "mssql", "mysql", "postgresql"]
+  --targetUser      Target database user                                [string]
+  --user            Database user                                       [string]
+  --where           Database query WHERE                                 [array]
 ```
 
-### Local setup
-
-```
-$ npm init
-$ npm install dbcp
-$ ./node_modules/.bin/dbcp --help
-```
+## Examples
 
 ### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
 
@@ -120,60 +244,4 @@ $ dbcp \
   --contentType "image/png" \
   --sourceFile "./foo.png" \
   --targetFile "http://my.api/upload"
-```
-
-## Options
-
-```
-$ dbcp --help
-Options:
-  --help            Show help                                          [boolean]
-  --version         Show version number                                [boolean]
-  --compoundInsert  Compound insert mode can insert associated rows from
-                    multiple tables.                                   [boolean]
-  --contentType     Content type                                        [string]
-  --dataOnly        Dump only the data, not the schema (data definitions).
-                                                                       [boolean]
-  --dbname          Database                                            [string]
-  --format    [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
-  --group           Group inputs with equinvalent orderBy              [boolean]
-  --host            Database host                                       [string]
-  --limit           Database query LIMIT                                [number]
-  --orderBy         Database query ORDER BY                              [array]
-  --password        Database password                                   [string]
-  --port            Database port                                       [string]
-  --query           Query                                               [string]
-  --schemaFile      Use schema file if required, instead of schema inspection.
-                                                                        [string]
-  --schemaOnly      Dump only the object definitions (schema), not data.
-                                                                       [boolean]
-  --shardBy         Shard (or split) the data based on key              [string]
-  --shards          The number of shards to split or join the data      [number]
-  --sourceFile      Source file                                          [array]
-  --sourceFormat
-              [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
-  --sourceHost      Source host                                         [string]
-  --sourceName      Source database                                     [string]
-  --sourcePassword  Source database password                            [string]
-  --sourcePort      Source database port                                [string]
-  --sourceShards    Source shards                                       [number]
-  --sourceTable     Source database table                               [string]
-  --sourceType      Source database type
-                        [string] [choices: "es", "mssql", "mysql", "postgresql"]
-  --sourceUser      Source database user                                [string]
-  --table           Database table                                      [string]
-  --targetFile      Target file                                         [string]
-  --targetFormat
-              [choices: "json", "jsonl", "ndjson", "parquet", "tfrecord", "sql"]
-  --targetHost      Target host                                         [string]
-  --targetName      Target database                                     [string]
-  --targetPassword  Target database password                            [string]
-  --targetPort      Target database port                                [string]
-  --targetShards    Target shards                                       [number]
-  --targetTable     Target database table                               [string]
-  --targetType      Target database type
-                        [string] [choices: "es", "mssql", "mysql", "postgresql"]
-  --targetUser      Target database user                                [string]
-  --user            Database user                                       [string]
-  --where           Database query WHERE                                 [array]
 ```
