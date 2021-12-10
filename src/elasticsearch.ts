@@ -10,6 +10,7 @@ export async function streamFromElasticSearch(
   options: {
     index: string
     batchSize?: number
+    orderBy?: string[]
   }
 ): Promise<ReadableStreamTree> {
   const keepAlive = '1m'
@@ -20,6 +21,15 @@ export async function streamFromElasticSearch(
     done: false,
     outstanding: false,
     searchAfter: null,
+  }
+  const orderBy: Record<string, string> = {}
+  if (options.orderBy && options.orderBy.length > 0) {
+    options.orderBy.forEach((x) => {
+      const word = x.split(' ')
+      orderBy[word[0]] = word.length > 0 ? word[1] : 'asc'
+    })
+  } else {
+    orderBy['_shard_doc'] = 'desc'
   }
   const stream = new Readable({
     objectMode: true,
@@ -36,14 +46,14 @@ export async function streamFromElasticSearch(
               id: pointInTimeId,
               keep_alive: keepAlive,
             },
-            sort: [{ _shard_doc: 'desc' }],
+            sort: [orderBy],
             ...(state.searchAfter !== null && { search_after: [state.searchAfter] }),
           },
         })
         .then((response) => {
           const { hits } = response.body.hits
           if (hits) {
-            for (const hit of hits) stream.push(hit)
+            for (const hit of hits) stream.push(hit._source)
           }
           if ((hits?.length ?? 0) < batchSize) {
             state.done = true
@@ -62,7 +72,7 @@ export async function streamFromElasticSearch(
           state.outstanding = false
         })
         .catch((error) => {
-          throw error
+          stream.destroy(error)
         })
     },
   })

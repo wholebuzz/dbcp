@@ -37,8 +37,8 @@ export enum DatabaseCopyFormat {
 }
 
 export enum DatabaseCopySchema {
-  dataOnly,
-  schemaOnly,
+  dataOnly = 'dataOnly',
+  schemaOnly = 'schemaOnly',
 }
 
 export function guessFormatFromFilename(filename?: string) {

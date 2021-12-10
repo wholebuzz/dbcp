@@ -36,14 +36,13 @@ const esConnection = {
     password: process.env.ES_PASS ?? '',
   },
 }
-/*
 const esSource = {
   sourceType: DatabaseCopySourceType.es,
   sourceName: esConnection.node,
   sourceUser: esConnection.auth.username,
   sourcePassword: esConnection.auth.password,
   sourceTable: testSchemaTableName,
-}*/
+}
 const esTarget = {
   targetType: DatabaseCopyTargetType.es,
   targetName: esConnection.node,
@@ -334,13 +333,14 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
   await client.close()
 
   // Dump and verify Elastic Search
-  /* await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
       ...esSource,
       targetFile: targetNDJsonUrl,
+      orderBy: ['id ASC'],
     })
-  ) */
+  )
 })
 
 it('Should restore to and dump from Postgres to ND-JSON', async () => {

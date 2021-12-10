@@ -10,7 +10,7 @@ import pSettle from 'p-settle'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
-import { streamToElasticSearch } from './elasticsearch'
+import { streamFromElasticSearch, streamToElasticSearch } from './elasticsearch'
 import {
   DatabaseCopyFormat,
   DatabaseCopySchema,
@@ -288,51 +288,48 @@ export async function dbcp(args: DatabaseCopyOptions) {
 
   // If the copy source is a database.
   if (!args.sourceStream && !args.sourceFiles) {
-    const sourceKnex =
-      args.sourceKnex ??
-      knex({
-        client: args.sourceType,
-        connection: sourceConnection,
-        pool: knexPoolConfig,
-      } as any)
-    const formattingKnex =
-      shouldInspectSchema && args.targetType
-        ? knex({ client: args.targetType, log: knexLogConfig })
-        : sourceKnex
-    const schema = shouldInspectSchema
-      ? args.schema ||
-        (args.schemaFile
-          ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
-          : await knexInspectTableSchema(sourceKnex, args.sourceTable ?? ''))
-      : undefined
     if (args.targetFile) {
+      const formattingKnex =
+        shouldInspectSchema || targetFormat === DatabaseCopyFormat.sql
+          ? args.targetType
+            ? knex({ client: args.targetType, log: knexLogConfig })
+            : args.sourceKnex ?? knex({ client: args.sourceType, log: knexLogConfig })
+          : undefined
       // If the copy is database->file: JSON-formatting transform.
-      const outputs = await openTargets(args, targetFormat)
-      await dumpToFile(
-        args.copySchema !== DatabaseCopySchema.schemaOnly
-          ? queryDatabase(sourceKnex, args.sourceTable!, args)
-          : undefined,
-        outputs,
-        {
+      const input =
+        args.copySchema !== DatabaseCopySchema.schemaOnly ? await queryDatabase(args) : undefined
+      try {
+        const outputs = await openTargets(args, targetFormat)
+        await dumpToFile(input?.input, outputs, {
           columnType: args.columnType,
           copySchema: args.copySchema,
           format: targetFormat,
           formattingKnex,
           shardFunction: getShardFunction(args),
-          schema,
+          schema: shouldInspectSchema ? await databaseInspectSchema(args) : undefined,
           sourceTable: args.sourceTable,
           targetShards: args.targetShards,
-        }
-      )
+        })
+      } catch (error) {
+        throw error
+      } finally {
+        if (input) await input.destroy()
+        if (formattingKnex) await formattingKnex.destroy()
+      }
     } else {
       // If the copy is database->database: no transform.
-      const input = queryDatabase(sourceKnex, args.sourceTable!, args)
-      await dumpToDatabase(input, args, args.targetTable!, {
-        batchSize: args.batchSize,
-        compoundInsert: args.compoundInsert,
-      })
+      const input = await queryDatabase(args)
+      try {
+        await dumpToDatabase(input.input, args, args.targetTable!, {
+          batchSize: args.batchSize,
+          compoundInsert: args.compoundInsert,
+        })
+      } catch (error) {
+        throw error
+      } finally {
+        await input.destroy()
+      }
     }
-    await sourceKnex.destroy()
   } else {
     // Else the copy source is a file.
     const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat)
@@ -533,9 +530,14 @@ async function dumpToDatabase(
         password: args.targetPassword ?? '',
       },
     })
-    const output = streamToElasticSearch(client, { index: args.targetTable ?? '' })
-    await pumpWritable(output, undefined, input.finish())
-    await client.close()
+    try {
+      const output = streamToElasticSearch(client, { index: args.targetTable ?? '' })
+      await pumpWritable(output, undefined, input.finish())
+    } catch (error) {
+      throw error
+    } finally {
+      await client.close()
+    }
   } else {
     const targetKnex =
       args.targetKnex ??
@@ -544,9 +546,13 @@ async function dumpToDatabase(
         connection: getTargetConnection(args),
         pool: knexPoolConfig,
       })
-    const ret = await dumpToKnex(input, targetKnex, table, options)
-    await targetKnex.destroy()
-    return ret
+    try {
+      return await dumpToKnex(input, targetKnex, table, options)
+    } catch (error) {
+      throw error
+    } finally {
+      await targetKnex.destroy()
+    }
   }
 }
 
@@ -568,7 +574,34 @@ async function dumpToKnex(
   })
 }
 
-function queryDatabase(
+async function queryDatabase(args: DatabaseCopyOptions) {
+  if (args.sourceType === 'es') {
+    const client = new Client({
+      node: args.sourceName ?? '',
+      auth: {
+        username: args.sourceUser ?? '',
+        password: args.sourcePassword ?? '',
+      },
+    })
+    const input = await streamFromElasticSearch(client, {
+      index: args.sourceTable!,
+      orderBy: args.orderBy,
+    })
+    return { input, destroy: () => client.close() }
+  } else {
+    const sourceKnex =
+      args.sourceKnex ??
+      knex({
+        client: args.sourceType,
+        connection: getSourceConnection(args),
+        pool: knexPoolConfig,
+      } as any)
+    const input = queryKnex(sourceKnex, args.sourceTable!, args)
+    return { input, destroy: () => sourceKnex.destroy() }
+  }
+}
+
+function queryKnex(
   db: Knex,
   table: string,
   options: {
@@ -599,6 +632,25 @@ function queryDatabase(
   if (options.transformJson) input = pipeFilter(input, options.transformJson)
   if (options.transformJsonStream) input = input.pipe(options.transformJsonStream())
   return input
+}
+
+export async function databaseInspectSchema(args: DatabaseCopyOptions) {
+  if (args.schema) return args.schema
+  if (args.schemaFile) return (await readJSON(args.fileSystem!, args.schemaFile)) as Column[]
+  const sourceKnex =
+    args.sourceKnex ??
+    knex({
+      client: args.sourceType,
+      connection: getSourceConnection(args),
+      pool: knexPoolConfig,
+    } as any)
+  try {
+    return await knexInspectTableSchema(sourceKnex, args.sourceTable ?? '')
+  } catch (error) {
+    throw error
+  } finally {
+    await sourceKnex.destroy()
+  }
 }
 
 export const knexLogConfig = {
