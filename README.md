@@ -170,6 +170,14 @@ Options:
 
 ## Examples
 
+- [Dump PostgreSQL table to Google Cloud Storage gzipped JSON file](#dump-postgresql-table-to-google-cloud-storage-gzipped-json-file)
+- [Dump MySQL table to Amazon Web Services S3 gzipped JSON-Lines file](#dump-mysql-table-to-amazon-web-services-s3-gzipped-json-lines-file)
+- [Dump SQLServer table to gzipped JSON file](#dump-sqlserver-table-to-gzipped-json-file)
+- [Copy a file from AWS to GCP](#copy-a-file-from-aws-to-gcp)
+- [Convert file from ND-JSON to JSON](#convert-file-from-nd-json-to-json)
+- [Download a file](#download-a-file)
+- [Post a file to HTTP endpoint](#post-a-file-to-http-endpoint)
+
 ### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
 
 ```
