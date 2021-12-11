@@ -426,7 +426,9 @@ it('Should not hang on error', async () => {
       targetFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
     })
-  ).rejects.toEqual(Error('password authentication failed for user "postgres"'))
+  ).rejects.toMatchObject({
+    message: `password authentication failed for user "${postgresSource.sourceUser}"`,
+  })
   await expect(
     dbcp({
       fileSystem,
@@ -434,7 +436,9 @@ it('Should not hang on error', async () => {
       targetFile: 'gs://not-existent-bucket-wont-work/fail.jsonl.gz',
       orderBy: ['id ASC'],
     })
-  ).rejects.toEqual(Error('The specified bucket does not exist.'))
+  ).rejects.toMatchObject({
+    message: 'The specified bucket does not exist.',
+  })
 })
 
 it('Should copy from Postgres to Mysql', async () => {
