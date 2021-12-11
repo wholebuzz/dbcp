@@ -1,5 +1,8 @@
 import { Client } from '@elastic/elasticsearch'
+import { AnyFileSystem } from '@wholebuzz/fs/lib/fs'
+import { GoogleCloudFileSystem } from '@wholebuzz/fs/lib/gcp'
 import { LocalFileSystem } from '@wholebuzz/fs/lib/local'
+import { S3FileSystem } from '@wholebuzz/fs/lib/s3'
 import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
 import { shardedFilenames } from '@wholebuzz/fs/lib/util'
 import { exec } from 'child_process'
@@ -14,7 +17,11 @@ import { dbcp, knexPoolConfig } from './index'
 
 const zlib = require('zlib')
 
-const fileSystem = new LocalFileSystem()
+const fileSystem = new AnyFileSystem([
+  { urlPrefix: 'gs://', fs: new GoogleCloudFileSystem() },
+  { urlPrefix: 's3://', fs: new S3FileSystem() },
+  { urlPrefix: '', fs: new LocalFileSystem() },
+])
 const hashOptions = { algorithm: 'md5' }
 const rmrf = promisify(rimraf)
 const targetJsonUrl = '/tmp/target.json.gz'
@@ -408,6 +415,26 @@ it('Should restore to and dump from Postgres to SQL', async () => {
       orderBy: ['id ASC'],
     })
   )
+})
+
+it('Should not hang on error', async () => {
+  await expect(
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      sourcePassword: 'BadPasswordWontWork',
+      targetFile: targetNDJsonUrl,
+      orderBy: ['id ASC'],
+    })
+  ).rejects.toEqual(Error('password authentication failed for user "postgres"'))
+  await expect(
+    dbcp({
+      fileSystem,
+      ...postgresSource,
+      targetFile: 'gs://not-existent-bucket-wont-work/fail.jsonl.gz',
+      orderBy: ['id ASC'],
+    })
+  ).rejects.toEqual(Error('The specified bucket does not exist.'))
 })
 
 it('Should copy from Postgres to Mysql', async () => {
