@@ -29,7 +29,7 @@ export async function streamFromElasticSearch(
       orderBy[word[0]] = word.length > 0 ? word[1] : 'asc'
     })
   } else {
-    orderBy['_shard_doc'] = 'desc'
+    orderBy._shard_doc = 'desc'
   }
   const stream = new Readable({
     objectMode: true,

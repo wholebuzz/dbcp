@@ -1,3 +1,4 @@
+import { pipeCSVFormatter, pipeCSVParser } from '@wholebuzz/fs/lib/csv'
 import {
   pipeJSONFormatter,
   pipeJSONLinesFormatter,
@@ -28,6 +29,7 @@ export enum DatabaseCopyTargetType {
 }
 
 export enum DatabaseCopyFormat {
+  csv = 'csv',
   json = 'json',
   jsonl = 'jsonl',
   ndjson = 'ndjson',
@@ -44,6 +46,7 @@ export enum DatabaseCopySchema {
 export function guessFormatFromFilename(filename?: string) {
   if (!filename) return null
   if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
+  if (filename.endsWith('.csv')) return DatabaseCopyFormat.csv
   if (filename.endsWith('.json')) return DatabaseCopyFormat.json
   if (filename.endsWith('.jsonl') || filename.endsWith('.ndjson')) return DatabaseCopyFormat.jsonl
   if (filename.endsWith('.parquet')) return DatabaseCopyFormat.parquet
@@ -54,6 +57,8 @@ export function guessFormatFromFilename(filename?: string) {
 
 export function pipeInputFormatTransform(input: ReadableStreamTree, format: DatabaseCopyFormat) {
   switch (format) {
+    case DatabaseCopyFormat.csv:
+      return pipeCSVParser(input, { columns: true })
     case DatabaseCopyFormat.ndjson:
     case DatabaseCopyFormat.jsonl:
       return pipeJSONLinesParser(input)
@@ -81,6 +86,8 @@ export function pipeFromOutputFormatTransform(
   }
 ) {
   switch (format) {
+    case DatabaseCopyFormat.csv:
+      return pipeCSVFormatter(output, { header: true })
     case DatabaseCopyFormat.ndjson:
     case DatabaseCopyFormat.jsonl:
       return pipeJSONLinesFormatter(output)

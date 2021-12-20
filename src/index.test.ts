@@ -465,7 +465,7 @@ it('Should copy from Postgres to Mysql', async () => {
         fileSystem,
         ...mysqlTarget,
         ...postgresSource,
-        transformJson: (x: any) => {
+        transformObject: (x: any) => {
           x.props = JSON.stringify(x.props)
           x.tags = JSON.stringify(x.tags)
           return x
@@ -481,7 +481,7 @@ it('Should copy from Postgres to Mysql', async () => {
       ...mysqlSource,
       orderBy: ['id ASC'],
       targetFile: targetNDJsonUrl,
-      transformJson: (x: any) => {
+      transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
         return x
@@ -518,7 +518,7 @@ it('Should copy from Postgres to SQL Server', async () => {
         fileSystem,
         ...mssqlTarget,
         ...postgresSource,
-        transformJson: (x: any) => {
+        transformObject: (x: any) => {
           x.props = JSON.stringify(x.props)
           x.tags = JSON.stringify(x.tags)
           return x
@@ -534,7 +534,7 @@ it('Should copy from Postgres to SQL Server', async () => {
       ...mssqlSource,
       orderBy: ['id ASC'],
       targetFile: targetNDJsonUrl,
-      transformJson: (x: any) => {
+      transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
         return x
@@ -563,7 +563,7 @@ it('Should dump from MySQL to Parquet file', async () => {
       ...mysqlSource,
       targetFile: targetParquetUrl,
       orderBy: ['id ASC'],
-      transformJson: (x: any) => {
+      transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
         return x
@@ -581,7 +581,7 @@ it('Should dump from SQL Server to Parquet file', async () => {
       targetFile: targetParquetUrl,
       orderBy: ['id ASC'],
       columnType: { props: 'json', tags: 'json' },
-      transformJson: (x: any) => {
+      transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
         return x
@@ -605,7 +605,7 @@ async function expectCreateFileWithConvertHash(
       sourceFiles: [{ url: targetUrl }],
       targetFile: convertToUrl,
       fileSystem,
-      transformJson: (x: any) =>
+      transformObject: (x: any) =>
         convertToTransform({
           id: x.id,
           date: x.date,
