@@ -179,7 +179,8 @@ export async function openSources(
   args: DatabaseCopyOptions,
   sourceFiles: Array<[string, DatabaseCopySourceFile]>,
   sourceFormats: DatabaseCopyFormats,
-  sourceFormat?: DatabaseCopyFormat
+  sourceFormat?: DatabaseCopyFormat,
+  targetFormat?: DatabaseCopyFormat
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
     sourceFiles.length === 1 &&
@@ -191,7 +192,10 @@ export async function openSources(
   const sourceSpec: Record<string, ReadableFileSpec> = {}
   sourceFiles.forEach(([sourceFileName, sourceFile]) => {
     sourceSpec[sourceFileName] = {
-      format: sourceFormat || sourceFormats[sourceFileName] || undefined,
+      format:
+        sourceFormat === targetFormat && sourceFormat === DatabaseCopyFormat.parquet
+          ? undefined
+          : sourceFormat || sourceFormats[sourceFileName] || undefined,
       url: sourceFile.url,
       options: {
         query: sourceFile.query || args.query,
@@ -341,7 +345,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     }
   } else {
     // Else the copy source is a file.
-    const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat)
+    const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat, targetFormat)
     if (args.targetStream || args.targetFile) {
       // If the copy is file->file: no transform.
       const outputs = await openTargets(args, targetFormat)
@@ -362,9 +366,14 @@ export async function dbcp(args: DatabaseCopyOptions) {
             args.sourceShards ||
             args.targetShards
           ) {
+            const inputFile = findProperty(args.sourceFiles, inputGroupKey)
             input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
-            // if (inputGroup.transformInputObject) input = pipeFilter(input, args.transformInputObject)
-            // if (args.transformInputObjectStream) input = input.pipe(args.transformInputObjectStream())
+            if (inputFile?.transformInputObject) {
+              input = pipeFilter(input, inputFile.transformInputObject)
+            }
+            if (inputFile?.transformInputObjectStream) {
+              input = input.pipe(inputFile.transformInputObjectStream())
+            }
           }
           return input
         })
@@ -425,6 +434,15 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )
     }
   }
+}
+
+export function findProperty<X>(
+  x: X[] | Record<string, X> | undefined,
+  key: string | number
+): X | undefined {
+  if (!x) return undefined
+  const needle = key.toString()
+  return Object.entries(x).find(([k, _]) => k === needle)?.[1]
 }
 
 export async function updatePropertiesAsync<X>(
@@ -527,10 +545,12 @@ export async function dumpToFile(
           options.sourceTable,
           options.schema ? { schema: options.schema, columnType: options.columnType } : undefined
         )
-        if (options.transformObjectStream)
+        if (options.transformObjectStream) {
           outputs[i] = outputs[i].pipeFrom(options.transformObjectStream())
-        if (options.transformObject)
+        }
+        if (options.transformObject) {
           outputs[i] = pipeFromFilter(outputs[i], options.transformObject)
+        }
       }
     }
     return pumpWritable(
