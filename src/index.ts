@@ -39,13 +39,15 @@ function initParquet() {
 
 export interface DatabaseCopySourceFile {
   url: string
-  sourceFormat?: DatabaseCopyFormat
-  sourceShards?: number
-  sourceShardFilter?: (index: number) => boolean
   columnType?: Record<string, string>
   query?: string
   schema?: Column[]
   schemaFile?: string
+  sourceFormat?: DatabaseCopyFormat
+  sourceShards?: number
+  sourceShardFilter?: (index: number) => boolean
+  transformInputObject?: (x: unknown) => unknown
+  transformInputObjectStream?: () => Duplex
 }
 
 export interface DatabaseCopyOptions {
@@ -361,8 +363,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
             args.targetShards
           ) {
             input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
-            if (args.transformObject) input = pipeFilter(input, args.transformObject)
-            if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
+            // if (inputGroup.transformInputObject) input = pipeFilter(input, args.transformInputObject)
+            // if (args.transformInputObjectStream) input = input.pipe(args.transformInputObjectStream())
           }
           return input
         })
@@ -393,6 +395,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
           schema,
           sourceTable: args.sourceTable,
           targetShards: args.targetShards,
+          transformObject: args.transformObject,
+          transformObjectStream: args.transformObjectStream,
         }
       )
     } else {
@@ -487,6 +491,8 @@ export async function dumpToFile(
     shardFunction?: (x: Record<string, any>, modulus: number) => number
     sourceTable?: string
     targetShards?: number
+    transformObject?: (x: unknown) => unknown
+    transformObjectStream?: () => Duplex
   }
 ) {
   if (options.copySchema === DatabaseCopySchema.schemaOnly) {
@@ -521,6 +527,10 @@ export async function dumpToFile(
           options.sourceTable,
           options.schema ? { schema: options.schema, columnType: options.columnType } : undefined
         )
+        if (options.transformObjectStream)
+          outputs[i] = outputs[i].pipeFrom(options.transformObjectStream())
+        if (options.transformObject)
+          outputs[i] = pipeFromFilter(outputs[i], options.transformObject)
       }
     }
     return pumpWritable(
