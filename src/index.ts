@@ -5,9 +5,10 @@ import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardWritables } from '@wholebuzz/fs/lib/stream'
 import { openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
+import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import pSettle from 'p-settle'
-import { Duplex, Readable } from 'stream'
+import { Duplex, Readable, Writable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
 import { streamFromElasticSearch, streamToElasticSearch } from './elasticsearch'
@@ -56,6 +57,7 @@ export interface DatabaseCopyOptions {
   compoundInsert?: boolean
   contentType?: string
   copySchema?: DatabaseCopySchema
+  externalSortBy?: string[]
   fileSystem?: FileSystem
   group?: boolean
   groupLabels?: boolean
@@ -145,6 +147,10 @@ export function getOrderByFunction(args: DatabaseCopyOptions) {
     }
     return 0
   }
+}
+
+export function getExternalSortFunction(args: DatabaseCopyOptions): Array<(x: any) => any> {
+  return args.externalSortBy!.map((sortBy) => (x: any) => x[sortBy])
 }
 
 export function getSourceFormats(args: DatabaseCopyOptions) {
@@ -237,6 +243,15 @@ export async function openTargets(args: DatabaseCopyOptions, format?: DatabaseCo
   return outputs
 }
 
+export const openNullWritable = () =>
+  StreamTree.writable(
+    new Writable({
+      write(_chunk, _encoding, done) {
+        done()
+      },
+    })
+  )
+
 export async function dbcp(args: DatabaseCopyOptions) {
   const sourceFiles = Object.entries(args.sourceFiles ?? {})
   const sourceFormats = getSourceFormats(args)
@@ -244,6 +259,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
   const targetFormat = getTargetFormat(args, sourceFormat)
   const sourceConnection = getSourceConnection(args)
   const orderByFunction = (args.orderBy?.length ?? 0) > 0 ? getOrderByFunction(args) : undefined
+  const externalSortFunction =
+    (args.externalSortBy?.length ?? 0) > 0 ? getExternalSortFunction(args) : undefined
 
   if (
     !args.sourceStream &&
@@ -316,6 +333,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         await dumpToFile(input?.input, outputs, {
           columnType: args.columnType,
           copySchema: args.copySchema,
+          externalSortFunction,
           format: targetFormat,
           formattingKnex,
           shardFunction: getShardFunction(args),
@@ -389,6 +407,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         {
           columnType: args.columnType,
           copySchema: args.copySchema,
+          externalSortFunction,
           format:
             sourceFormat !== targetFormat ||
             sourceFiles.length > 1 ||
@@ -503,6 +522,7 @@ export async function dumpToFile(
   options: {
     columnType?: Record<string, string>
     copySchema?: DatabaseCopySchema
+    externalSortFunction?: Array<(x: any) => any>
     format?: DatabaseCopyFormat
     formattingKnex?: Knex
     schema?: Column[]
@@ -553,11 +573,19 @@ export async function dumpToFile(
         }
       }
     }
-    return pumpWritable(
-      shardWritables(outputs, options.targetShards, options.shardFunction),
-      undefined,
-      input!.finish()
-    )
+    const writable = shardWritables(outputs, options.targetShards, options.shardFunction)
+    if (!options?.externalSortFunction) {
+      await pumpWritable(writable, undefined, input!.finish())
+    } else {
+      await esort({
+        input: input!.finish(),
+        output: writable.finish(),
+        tempDir: __dirname,
+        deserializer: JSON.parse,
+        serializer: JSON.stringify,
+        maxHeap: 100,
+      }).asc(options.externalSortFunction)
+    }
   }
 }
 

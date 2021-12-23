@@ -43,6 +43,10 @@ async function main() {
       description: 'Database',
       type: 'string',
     },
+    externalSortBy: {
+      description: 'Sort data by property(s) with external-sorting',
+      type: 'array',
+    },
     format: {
       choices: formats,
     },
