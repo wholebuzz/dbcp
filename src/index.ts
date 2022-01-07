@@ -93,6 +93,7 @@ export interface DatabaseCopyOptions {
   targetType?: DatabaseCopyTargetType
   targetPort?: number
   targetUser?: string
+  tempDirectory?: string
   transformObject?: (x: unknown) => unknown
   transformObjectStream?: () => Duplex
   transformBytes?: (x: string) => string
@@ -340,6 +341,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           schema: shouldInspectSchema ? await databaseInspectSchema(args) : undefined,
           sourceTable: args.sourceTable,
           targetShards: args.targetShards,
+          tempDirectory: args.tempDirectory,
         })
       } catch (error) {
         throw error
@@ -423,6 +425,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           schema,
           sourceTable: args.sourceTable,
           targetShards: args.targetShards,
+          tempDirectory: args.tempDirectory,
           transformObject: args.transformObject,
           transformObjectStream: args.transformObjectStream,
         }
@@ -529,6 +532,7 @@ export async function dumpToFile(
     shardFunction?: (x: Record<string, any>, modulus: number) => number
     sourceTable?: string
     targetShards?: number
+    tempDirectory?: string
     transformObject?: (x: unknown) => unknown
     transformObjectStream?: () => Duplex
   }
@@ -580,7 +584,7 @@ export async function dumpToFile(
       await esort({
         input: input!.finish(),
         output: writable.finish(),
-        tempDir: __dirname,
+        tempDir: options.tempDirectory || __dirname,
         deserializer: JSON.parse,
         serializer: JSON.stringify,
         maxHeap: 100,
