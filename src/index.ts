@@ -57,6 +57,7 @@ export interface DatabaseCopyOptions {
   compoundInsert?: boolean
   contentType?: string
   copySchema?: DatabaseCopySchema
+  engineOptions?: any
   externalSortBy?: string[]
   fileSystem?: FileSystem
   group?: boolean
@@ -68,6 +69,7 @@ export interface DatabaseCopyOptions {
   schema?: Column[]
   schemaFile?: string
   sourceConnection?: Record<string, any>
+  sourceElasticSearch?: Client
   sourceFormat?: DatabaseCopyFormat
   sourceName?: string
   sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
@@ -81,6 +83,7 @@ export interface DatabaseCopyOptions {
   sourcePort?: number
   sourceUser?: string
   targetConnection?: Record<string, any>
+  targetElasticSearch?: Client
   targetFormat?: DatabaseCopyFormat
   targetName?: string
   targetFile?: string
@@ -266,6 +269,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (
     !args.sourceStream &&
     !args.sourceKnex &&
+    !args.sourceElasticSearch &&
     (!sourceFiles.length || !args.fileSystem) &&
     (!args.sourceType ||
       !sourceConnection.database ||
@@ -290,6 +294,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   if (
     !args.targetStream &&
     !args.targetKnex &&
+    !args.targetElasticSearch &&
     (!args.targetFile || !args.fileSystem) &&
     (!args.targetType ||
       !args.targetName ||
@@ -600,15 +605,20 @@ async function dumpToDatabase(
   options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
 ) {
   if (args.targetType === 'es') {
-    const client = new Client({
-      node: args.targetName ?? '',
-      auth: {
-        username: args.targetUser ?? '',
-        password: args.targetPassword ?? '',
-      },
-    })
+    const client =
+      args.targetElasticSearch ??
+      new Client({
+        node: args.targetName ?? '',
+        auth: {
+          username: args.targetUser ?? '',
+          password: args.targetPassword ?? '',
+        },
+      })
     try {
-      const output = streamToElasticSearch(client, { index: args.targetTable ?? '' })
+      const output = streamToElasticSearch(client, {
+        index: args.targetTable ?? '',
+        bulkOptions: args.engineOptions,
+      })
       await pumpWritable(output, undefined, input.finish())
     } catch (error) {
       throw error
@@ -653,13 +663,15 @@ async function dumpToKnex(
 
 async function queryDatabase(args: DatabaseCopyOptions) {
   if (args.sourceType === 'es') {
-    const client = new Client({
-      node: args.sourceName ?? '',
-      auth: {
-        username: args.sourceUser ?? '',
-        password: args.sourcePassword ?? '',
-      },
-    })
+    const client =
+      args.sourceElasticSearch ??
+      new Client({
+        node: args.sourceName ?? '',
+        auth: {
+          username: args.sourceUser ?? '',
+          password: args.sourcePassword ?? '',
+        },
+      })
     const input = await streamFromElasticSearch(client, {
       index: args.sourceTable!,
       orderBy: args.orderBy,

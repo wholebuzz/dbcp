@@ -84,6 +84,7 @@ export function streamToElasticSearch(
   options: {
     index: string
     batchSize?: number
+    bulkOptions?: any
   }
 ): WritableStreamTree {
   const stream = StreamTree.writable(
@@ -102,6 +103,7 @@ export function streamToElasticSearch(
             onDrop(doc) {
               console.log('ElastiSearch droppped', doc)
             },
+            ...options.bulkOptions,
           })
           .then((_result) => {
             // console.log('ElasticSearch result', _result)
