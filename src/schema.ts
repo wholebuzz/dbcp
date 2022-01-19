@@ -162,3 +162,11 @@ export function parquetFieldFromSchema(schema: Column, columnType?: Record<strin
       return { type: 'UTF8', optional, compression: 'GZIP' }
   }
 }
+
+export function formatDDLCreateTableSchema(
+  tableName: string,
+  _columnsInfo: Column[],
+  _columnType?: Record<string, string>
+) {
+  return `CREATE TABLE ${tableName}`
+}

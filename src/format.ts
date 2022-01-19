@@ -15,6 +15,7 @@ import { pipeKnexInsertTextTransform } from './knex'
 import { parquetFieldFromSchema } from './schema'
 
 export enum DatabaseCopySourceType {
+  athena = 'athena',
   es = 'es',
   mssql = 'mssql',
   mysql = 'mysql',
@@ -22,6 +23,7 @@ export enum DatabaseCopySourceType {
 }
 
 export enum DatabaseCopyTargetType {
+  athena = 'athena',
   es = 'es',
   mssql = 'mssql',
   mysql = 'mysql',

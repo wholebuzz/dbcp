@@ -30,7 +30,7 @@ import {
   streamToKnex,
   streamToKnexRaw,
 } from './knex'
-import { Column, guessSchemaFromFile } from './schema'
+import { Column, formatDDLCreateTableSchema, guessSchemaFromFile } from './schema'
 
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
@@ -161,7 +161,7 @@ export function getSourceFormats(args: DatabaseCopyOptions) {
   const ret: DatabaseCopyFormats = {}
   for (const [key, sourceFile] of Object.entries(args.sourceFiles ?? {})) {
     ret[key] =
-      sourceFile.query || args.query
+      (sourceFile.query || args.query) && sourceFile.url !== 's3://athena.csv'
         ? DatabaseCopyFormat.jsonl
         : guessFormatFromFilename(sourceFile.url) || DatabaseCopyFormat.json
     if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
@@ -345,6 +345,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           shardFunction: getShardFunction(args),
           schema: shouldInspectSchema ? await databaseInspectSchema(args) : undefined,
           sourceTable: args.sourceTable,
+          targetType: args.targetType || (args.sourceKnex ? args.sourceType : undefined),
           targetShards: args.targetShards,
           tempDirectory: args.tempDirectory,
         })
@@ -429,6 +430,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           shardFunction: getShardFunction(args),
           schema,
           sourceTable: args.sourceTable,
+          targetType: args.targetType,
           targetShards: args.targetShards,
           tempDirectory: args.tempDirectory,
           transformObject: args.transformObject,
@@ -505,18 +507,21 @@ async function writeSchema(
     formattingKnex?: Knex
     schema?: Column[]
     table?: string
+    type?: string
   }
 ) {
   const readable = new Readable()
   if (options.schema) {
     readable.push(
       options.format === DatabaseCopyFormat.sql
-        ? knexFormatCreateTableSchema(
-            options.formattingKnex!,
-            options.table ?? '',
-            options.schema,
-            options.columnType
-          )
+        ? options.type === DatabaseCopySourceType.athena
+          ? formatDDLCreateTableSchema(options.table ?? '', options.schema, options.columnType)
+          : knexFormatCreateTableSchema(
+              options.formattingKnex!,
+              options.table ?? '',
+              options.schema,
+              options.columnType
+            )
         : JSON.stringify(options.schema)
     )
   }
@@ -536,6 +541,7 @@ export async function dumpToFile(
     schema?: Column[]
     shardFunction?: (x: Record<string, any>, modulus: number) => number
     sourceTable?: string
+    targetType?: string
     targetShards?: number
     tempDirectory?: string
     transformObject?: (x: unknown) => unknown
@@ -550,6 +556,7 @@ export async function dumpToFile(
         formattingKnex: options.formattingKnex,
         schema: options.schema,
         table: options.sourceTable,
+        type: options.targetType,
       })
     }
   } else {
