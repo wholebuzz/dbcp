@@ -677,6 +677,7 @@ async function dbcpHashFile(path: string) {
   const target = { value: '' }
   await dbcp({
     sourceFiles: [{ url: path }],
+    // sourceStream: await fileSystem.openReadableFile(path),
     targetStream: [writableToString(target).pipeFrom(hasha.stream(hashOptions))],
     fileSystem,
   })
