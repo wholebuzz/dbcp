@@ -85,6 +85,8 @@ export function streamToElasticSearch(
     index: string
     batchSize?: number
     bulkOptions?: any
+    extra?: Record<string, any>
+    extraOutput?: boolean
   }
 ): WritableStreamTree {
   const stream = StreamTree.writable(
@@ -105,8 +107,11 @@ export function streamToElasticSearch(
             },
             ...options.bulkOptions,
           })
-          .then((_result) => {
-            // console.log('ElasticSearch result', _result)
+          .then((result) => {
+            if (options.extra && options.extraOutput) {
+              if (!options.extra.results) options.extra.results = []
+              options.extra.results.push(result)
+            }
             callback()
           })
           .catch((err: ResponseError) => {

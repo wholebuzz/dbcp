@@ -331,13 +331,18 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
   await client.indices.create({ index: testSchemaTableName })
 
   // Copy from testNDJsonUrl to Elastic Search
+  const extra: Record<string, any> = {}
   await dbcp({
+    extra,
+    extraOutput: true,
     fileSystem,
     ...esTarget,
     sourceFiles: [{ url: testNDJsonUrl }],
   })
   expect((await client.count({ index: testSchemaTableName })).body.count).toBe(10000)
   await client.close()
+  expect(extra['results']?.length).toBeGreaterThan(0)
+  expect(extra['results'].reduce((total: number, x: any) => (total += x.successful), 0)).toBe(10000)
 
   // Dump and verify Elastic Search
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>

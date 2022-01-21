@@ -59,6 +59,8 @@ export interface DatabaseCopyOptions {
   copySchema?: DatabaseCopySchema
   engineOptions?: any
   externalSortBy?: string[]
+  extra?: Record<string, any>
+  extraOutput?: boolean
   fileSystem?: FileSystem
   group?: boolean
   groupLabels?: boolean
@@ -625,6 +627,8 @@ async function dumpToDatabase(
       const output = streamToElasticSearch(client, {
         index: args.targetTable ?? '',
         bulkOptions: args.engineOptions,
+        extra: args.extra,
+        extraOutput: args.extraOutput,
       })
       await pumpWritable(output, undefined, input.finish())
     } catch (error) {
