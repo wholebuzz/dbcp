@@ -15,7 +15,7 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 
 ## API
 
-- The `transformJson`/`transformJsonStream` API can be used for streaming transforms of "Big Data".
+- The `transformJson`/`transformJsonStream` API can be used for streaming transforms of Big Data.
 - The CLI uses `transformBytes`/`transformBytesStream` to render progress updates.
 
 ## Features 
