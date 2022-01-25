@@ -341,8 +341,8 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
   })
   expect((await client.count({ index: testSchemaTableName })).body.count).toBe(10000)
   await client.close()
-  expect(extra['results']?.length).toBeGreaterThan(0)
-  expect(extra['results'].reduce((total: number, x: any) => (total += x.successful), 0)).toBe(10000)
+  expect(extra.results?.length).toBeGreaterThan(0)
+  expect(extra.results.reduce((total: number, x: any) => (total += x.successful), 0)).toBe(10000)
 
   // Dump and verify Elastic Search
   await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>

@@ -26,7 +26,7 @@ process.on('uncaughtException', (err) => console.error('unhandled exception', er
 
 async function main() {
   const formats = Object.values(DatabaseCopyFormat)
-  const args = yargs.strict().options({
+  const args = yargs.strict().command('* [sourceFile] [targetFile]', '').options({
     compoundInsert: {
       description: 'Compound insert mode can insert associated rows from multiple tables.',
       type: 'boolean',
