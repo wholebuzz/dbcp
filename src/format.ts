@@ -17,17 +17,21 @@ import { parquetFieldFromSchema } from './schema'
 export enum DatabaseCopySourceType {
   athena = 'athena',
   es = 'es',
+  level = 'level',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
+  sqlite = 'sqlite',
 }
 
 export enum DatabaseCopyTargetType {
   athena = 'athena',
   es = 'es',
+  level = 'level',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
+  sqlite = 'sqlite',
 }
 
 export enum DatabaseCopyFormat {
@@ -35,6 +39,7 @@ export enum DatabaseCopyFormat {
   json = 'json',
   jsonl = 'jsonl',
   ndjson = 'ndjson',
+  object = 'object',
   parquet = 'parquet',
   tfrecord = 'tfrecord',
   sql = 'sql',
@@ -68,6 +73,8 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
       return pipeJSONParser(input, true)
     case DatabaseCopyFormat.tfrecord:
       return pipeTfRecordParser(input)
+    case DatabaseCopyFormat.object:
+      return input
     case DatabaseCopyFormat.parquet:
       return input
     case DatabaseCopyFormat.sql:
@@ -95,6 +102,8 @@ export function pipeFromOutputFormatTransform(
       return pipeJSONLinesFormatter(output)
     case DatabaseCopyFormat.json:
       return pipeJSONFormatter(output, true)
+    case DatabaseCopyFormat.object:
+      return output
     case DatabaseCopyFormat.parquet:
       const parquetSchema = new ParquetSchema(
         (options?.schema ?? []).reduce((fields: Record<string, any>, column) => {
@@ -126,7 +135,27 @@ export function formatContentType(format?: DatabaseCopyFormat) {
   }
 }
 
-export function formatHasSchema(format: DatabaseCopyFormat) {
+export function sourceHasDatabaseFile(format?: DatabaseCopySourceType) {
+  switch (format) {
+    case DatabaseCopySourceType.level:
+    case DatabaseCopySourceType.sqlite:
+      return true
+    default:
+      return false
+  }
+}
+
+export function targetHasDatabaseFile(format?: DatabaseCopyTargetType) {
+  switch (format) {
+    case DatabaseCopyTargetType.level:
+    case DatabaseCopyTargetType.sqlite:
+      return true
+    default:
+      return false
+  }
+}
+
+export function formatHasSchema(format?: DatabaseCopyFormat) {
   switch (format) {
     case DatabaseCopyFormat.parquet:
     case DatabaseCopyFormat.sql:

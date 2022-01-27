@@ -29,6 +29,7 @@ const targetShardedJsonUrl = '/tmp/target-SSS-of-NNN.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
 const targetParquetUrl = '/tmp/target.parquet'
 const targetTfRecordUrl = '/tmp/target.tfrecord'
+const targetLevelUrl = '/tmp/target.level'
 const targetSQLUrl = '/tmp/target.sql.gz'
 const testSchemaTableName = 'dbcptest'
 const testSchemaUrl = './test/schema.sql'
@@ -251,6 +252,26 @@ it('Should convert to TFRecord from ND-JSON and back', async () => {
       x.tags = JSON.parse(x.tags)
       return x
     }
+  )
+})
+
+it.skip('Should load to level from ND-JSON and back', async () => {
+  await expectCreateFileWithHash(targetLevelUrl, undefined, () =>
+    dbcp({
+      fileSystem,
+      sourceFiles: [{ url: testNDJsonUrl }],
+      targetFile: targetLevelUrl,
+      targetType: DatabaseCopyTargetType.level,
+    })
+  )
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      sourceType: DatabaseCopySourceType.level,
+      sourceFiles: [{ url: targetLevelUrl }],
+      targetFile: targetNDJsonUrl,
+      externalSortBy: ['id'],
+      fileSystem,
+    })
   )
 })
 
