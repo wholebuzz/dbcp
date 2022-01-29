@@ -255,7 +255,7 @@ it('Should convert to TFRecord from ND-JSON and back', async () => {
   )
 })
 
-it.skip('Should load to level from ND-JSON and back', async () => {
+it('Should load to level from ND-JSON and dump to JSON after external sort', async () => {
   await expectCreateFileWithHash(targetLevelUrl, undefined, () =>
     dbcp({
       fileSystem,
@@ -264,11 +264,11 @@ it.skip('Should load to level from ND-JSON and back', async () => {
       targetType: DatabaseCopyTargetType.level,
     })
   )
-  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+  await expectCreateFileWithHash(targetJsonUrl, testJsonHash, () =>
     dbcp({
       sourceType: DatabaseCopySourceType.level,
       sourceFiles: [{ url: targetLevelUrl }],
-      targetFile: targetNDJsonUrl,
+      targetFile: targetJsonUrl,
       externalSortBy: ['id'],
       fileSystem,
     })

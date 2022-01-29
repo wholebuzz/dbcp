@@ -1,6 +1,6 @@
 import { Client } from '@elastic/elasticsearch'
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
-import { newJSONLinesFormatter, readJSON } from '@wholebuzz/fs/lib/json'
+import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/fs/lib/json'
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import {
@@ -586,6 +586,12 @@ export async function dumpToFile(
       })
     }
   } else {
+    const simpleExternalSort =
+      options?.externalSortFunction &&
+      options.format === DatabaseCopyFormat.jsonl &&
+      !options.transformObjectStream &&
+      !options.transformObject &&
+      outputs.length === 1
     if (options.schema && options.format === DatabaseCopyFormat.sql) {
       for (const output of outputs) {
         output.node.stream.write(
@@ -598,7 +604,7 @@ export async function dumpToFile(
         )
       }
     }
-    if (options.format !== undefined) {
+    if (options.format !== undefined && !simpleExternalSort) {
       for (let i = 0; i < outputs.length; i++) {
         outputs[i] = await pipeFromOutputFormatTransform(
           outputs[i],
@@ -615,10 +621,11 @@ export async function dumpToFile(
         }
       }
     }
-    const writable = shardWritables(outputs, options.targetShards, options.shardFunction)
+    let writable = shardWritables(outputs, options.targetShards, options.shardFunction)
     if (!options?.externalSortFunction) {
       await pumpWritable(writable, undefined, input!.finish())
     } else {
+      if (!simpleExternalSort) writable = writable.pipeFrom(newJSONLinesParser())
       const inputStream = input!.pipe(newJSONLinesFormatter()).finish()
       const esortArgs = {
         input: inputStream,

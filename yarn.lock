@@ -1156,16 +1156,16 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@wholebuzz/fs@^1.0.16":
-  version "1.0.16"
-  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-1.0.16.tgz#7ca2797577bbeb70ffee3db5fdf1c57948571a3b"
-  integrity sha512-/6QCDKYJrczFoIRee3SGAVWQbEfKR3AXnsCo+iYR12PkOGu28LQo8+p1evKnRXWIfZrkditcd8bxLzxrKkIx7w==
+"@wholebuzz/fs@^1.0.17":
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-1.0.17.tgz#a8ed05b08379a8913b36a75feff2fbd98087af1e"
+  integrity sha512-rz9LbFakfyI9k9wjOcgR2qz91jyxgMfa/v2jWCeg+HSLW7pPeQfrg6kVPy3tv9I2OpqiMqX0bYmTi9PeqACkJA==
   dependencies:
     JSONStream "^1.3.5"
     ndjson "^2.0.0"
     sha.js "^2.4.11"
     stream-json "^1.7.3"
-    tree-stream "^1.0.14"
+    tree-stream "^1.0.15"
     uuid "^8.1.0"
     yargs "^17.1.1"
     zlib "^1.0.5"
@@ -2529,10 +2529,10 @@ extend@^3.0.2:
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
   integrity sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==
 
-external-sorting@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/external-sorting/-/external-sorting-1.2.1.tgz#ec4f6b66b24e1ffa6562b854c795cba6c3707a2e"
-  integrity sha512-W9BTnAiXJ623dGacKLXPcCA962QK6mckm/wdA4Dks2lT7dbehWnveCY5SXQnRGyoND7k5ool5htljgrY4xMgJg==
+external-sorting@^1.3.1:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/external-sorting/-/external-sorting-1.3.1.tgz#caec567906bd8d936cc94165c7daf657cd4e3163"
+  integrity sha512-eqI/TxUu4U5RW90ml7bRyvk/0Qh/Lf3JecZQKeLmC0eVRzPQ2UG3ZR7k66EDO1UnTJat0D8bn129K+gnZYMJuw==
   dependencies:
     fast-sort "^2.0.1"
 
@@ -6172,10 +6172,10 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=
 
-tree-stream@^1.0.14:
-  version "1.0.14"
-  resolved "https://registry.yarnpkg.com/tree-stream/-/tree-stream-1.0.14.tgz#3e0125585372e191182b35090e492b067a094997"
-  integrity sha512-/mAvgxkAVHVbgt1OrTA5wupbyoIk9pJxMImdZvU+HcnRo51dLJ9U1v3c4zLRpuoMh6up7XzbgwF1GtNrqDxqmw==
+tree-stream@^1.0.15:
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/tree-stream/-/tree-stream-1.0.15.tgz#83c813b9fc9f6adfb50a80ab3200c112d1c54acc"
+  integrity sha512-zF7M+Hm7NMEWNafbDW7Vhm+lzYhHRxjp0T1CPizk9FvRTEGJAquzTtg9qhXF42aEfa8QI8OK+/BDV3e8Y/qF2w==
   dependencies:
     cloneable-readable "^2.0.1"
     end-of-stream "^1.1.0"
