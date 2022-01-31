@@ -75,15 +75,32 @@ $ ./node_modules/.bin/dbcp --help
 ### Read object stream from any source and format
 
 ```typescript
-  import { dbcp, openNullWritable } from './index'
-  
+  import { dbcp, openNullWritable } from 'dbcp'
+  import { Transform } from 'stream'
+
+  // Supply transformObject and a do-nothing Writable for targetStream.
   await dbcp({
     fileSystem,
-    sourceFiles: [ { url: '/tmp/bar.csv.gz' } ],
-    // If we supplied a new Transform() to targetStream we'd receive Buffer objects
+    sourceFiles: [ { url: '/tmp/foobar.csv.gz' } ],
     targetStream: [ openNullWritable() ],
-    // Instead supply transformObject and a do-nothing Writable.
     transformObject: (x) => { console.log('test', x) },
+  })
+
+  // Or alternatively supply targetStream with targetFormat = object
+  await dbcp({
+    fileSystem,
+    sourceFiles: [ { url: '/tmp/foobar.csv.gz' } ],
+    // Without targetFormat = object, transform() would receive Buffer
+    targetFormat: DatabaseCopyFormat.object,
+    targetStream: [
+      StreamTree.writable(new Transform({
+        objectMode: true,
+        transform(data, _, cb) {
+          console.log('test', data)
+          cb()
+        },
+      }))
+    ],
   })
 ```
 

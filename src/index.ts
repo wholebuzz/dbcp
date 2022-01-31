@@ -410,7 +410,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
             sourceFiles.length > 1 ||
             args.sourceShards ||
             args.targetShards ||
-            args.externalSortBy
+            args.externalSortBy ||
+            args.transformObject ||
+            args.transformObjectStream
           ) {
             const inputFile = findObjectProperty(args.sourceFiles, inputGroupKey)
             input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
@@ -604,15 +606,17 @@ export async function dumpToFile(
         )
       }
     }
-    if (options.format !== undefined && !simpleExternalSort) {
+    if (!simpleExternalSort) {
       for (let i = 0; i < outputs.length; i++) {
-        outputs[i] = await pipeFromOutputFormatTransform(
-          outputs[i],
-          options.format,
-          options.formattingKnex,
-          options.sourceTable,
-          options.schema ? { schema: options.schema, columnType: options.columnType } : undefined
-        )
+        if (options.format !== undefined) {
+          outputs[i] = await pipeFromOutputFormatTransform(
+            outputs[i],
+            options.format,
+            options.formattingKnex,
+            options.sourceTable,
+            options.schema ? { schema: options.schema, columnType: options.columnType } : undefined
+          )
+        }
         if (options.transformObjectStream) {
           outputs[i] = outputs[i].pipeFrom(options.transformObjectStream())
         }
