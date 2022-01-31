@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "description": "Dump Mysql, Postgres, SQLServer, and ElasticSearch databases directly to AWS S3, Google Cloud Storage, or Azure.",
   "keywords": [
     "database",
