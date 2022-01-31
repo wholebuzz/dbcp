@@ -267,7 +267,7 @@ async function main() {
       args.targetTable || process.env.TARGET_DB_TABLE || args.table || process.env.DB_TABLE,
     targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,
     targetUser: args.targetUser || process.env.TARGET_DB_USER || args.user || process.env.DB_USER,
-    transformBytesStream: args.targetType !== 'stdout' ? newBytesTransform : undefined,
+    transformBytesStream: args.targetFile !== '-' ? newBytesTransform : undefined,
   }
 
   try {
@@ -280,7 +280,7 @@ async function main() {
 
   const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
   const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
-  if (args.targetType !== 'stdout') {
+  if (args.targetFile !== '-') {
     spinner.succeed(`Wrote ${totalBytes} bytes to "${targetName}" from "${sourceName}"`)
   }
 }

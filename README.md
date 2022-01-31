@@ -109,6 +109,7 @@ $ ./node_modules/.bin/dbcp --help
 - [Dump PostgreSQL table to Google Cloud Storage gzipped JSON file](#dump-postgresql-table-to-google-cloud-storage-gzipped-json-file)
 - [Dump MySQL table to Amazon Web Services S3 gzipped JSON-Lines file](#dump-mysql-table-to-amazon-web-services-s3-gzipped-json-lines-file)
 - [Dump SQLServer table to gzipped JSON file](#dump-sqlserver-table-to-gzipped-json-file)
+- [Output a file or database to stdout](#output-a-file-or-database-to-stdout)
 - [Copy a file from AWS to GCP](#copy-a-file-from-aws-to-gcp)
 - [Convert file from ND-JSON to JSON](#convert-file-from-nd-json-to-json)
 - [Download a file](#download-a-file)
@@ -312,35 +313,32 @@ $ dbcp \
   --targetFile file.json.gz
 ```
 
+### Output a file or database to stdout
+
+```
+$ dbcp gs://bucket/archive.csv.gz --targetFile=- | jq . | less
+```
+
 ### Copy a file from AWS to GCP
 
 ```
-$ dbcp \
-  --sourceFile s3://bucket/object.json.gz \
-  --targetFile gs://bucket/file.json.gz
+$ dbcp s3://bucket/object.json.gz gs://bucket/file.json.gz
 ```
 
 ### Convert file from ND-JSON to JSON
 
 ```
-$ dbcp \
-  --sourceFile foobar.jsonl \
-  --targetFile bazbat.json
+$ dbcp foobar.jsonl bazbat.json
 ```
 
 ### Download a file
 
 ```
-$ dbcp \
-  --sourceFile "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" \
-  --targetFile foo.png
+$ dbcp "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" foo.png
 ```
 
 ### Post a file to HTTP endpoint
 
 ```
-$ dbcp \
-  --contentType "image/png" \
-  --sourceFile "./foo.png" \
-  --targetFile "http://my.api/upload"
+$ dbcp "./foo.png" "http://my.api/upload" --contentType "image/png"
 ```
