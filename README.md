@@ -106,9 +106,10 @@ $ ./node_modules/.bin/dbcp --help
 
 ### CLI
 
-- [Dump PostgreSQL table to Google Cloud Storage gzipped JSON file](#dump-postgresql-table-to-google-cloud-storage-gzipped-json-file)
-- [Dump MySQL table to Amazon Web Services S3 gzipped JSON-Lines file](#dump-mysql-table-to-amazon-web-services-s3-gzipped-json-lines-file)
-- [Dump SQLServer table to gzipped JSON file](#dump-sqlserver-table-to-gzipped-json-file)
+- [Copy PostgreSQL table to Google Cloud Storage gzipped JSON file](#copy-postgresql-table-to-google-cloud-storage-gzipped-json-file)
+- [Copy MySQL table to Amazon Web Services S3 gzipped JSON-Lines file](#copy-mysql-table-to-amazon-web-services-s3-gzipped-json-lines-file)
+- [Copy Amazon Web Services S3 gzipped JSON-Lines to MySQL table](#copy-amazon-web-services-s3-gzipped-json-lines-to-mysql-table)
+- [Copy SQLServer table to stdout](#copy-sqlserver-table-to-stdout)
 - [Output a file or database to stdout](#output-a-file-or-database-to-stdout)
 - [Copy a file from AWS to GCP](#copy-a-file-from-aws-to-gcp)
 - [Convert file from ND-JSON to JSON](#convert-file-from-nd-json-to-json)
@@ -270,7 +271,7 @@ Options:
 
 ## CLI Examples
 
-### Dump PostgreSQL table to Google Cloud Storage gzipped JSON file
+### Copy PostgreSQL table to Google Cloud Storage gzipped JSON file
 
 ```
 $ dbcp \
@@ -284,7 +285,7 @@ $ dbcp \
   --targetFile gs://bucket/file.json.gz
 ```
 
-### Dump MySQL table to Amazon Web Services S3 gzipped JSON-Lines file
+### Copy MySQL table to Amazon Web Services S3 gzipped JSON-Lines file
 
 ```
 $ dbcp \
@@ -299,7 +300,21 @@ $ dbcp \
   --targetFile s3://bucket/object.jsonl.gz
 ```
 
-### Dump SQLServer table to gzipped JSON file
+### Copy Amazon Web Services S3 gzipped JSON-Lines to MySQL table
+
+```
+$ dbcp \
+  --targetType mysql \
+  --host localhost \
+  --dbname mydb \
+  --port 8083 \
+  --user root \
+  --password wp \
+  --table foobar \
+  --sourceFile s3://bucket/object.jsonl.gz
+```
+
+### Copy SQLServer table to stdout
 
 ```
 $ dbcp \
@@ -310,13 +325,13 @@ $ dbcp \
   --user SA \
   --password "MyP@ssw0rd#" \
   --table foobar \
-  --targetFile file.json.gz
+  --targetFile=-
 ```
 
-### Output a file or database to stdout
+### Output a file to stdout
 
 ```
-$ dbcp gs://bucket/archive.csv.gz --targetFile=- | jq . | less
+$ dbcp gs://bucket/archive.csv.gz | jq . | less
 ```
 
 ### Copy a file from AWS to GCP

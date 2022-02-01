@@ -191,6 +191,8 @@ async function main() {
   if (process.argv.length < 3) {
     yargs.showHelp()
     process.exit(1)
+  } else if (process.argv.length === 3) {
+    args.targetFile = '-'
   }
 
   const sourcePort =
