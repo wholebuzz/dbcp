@@ -62,6 +62,22 @@ export function guessFormatFromFilename(filename?: string) {
   return null
 }
 
+export function guessSourceTypeFromFilename(filename?: string) {
+  if (!filename) return null
+  if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
+  if (filename.endsWith('.level')) return DatabaseCopySourceType.level
+  if (filename.endsWith('.sqlite')) return DatabaseCopySourceType.sqlite
+  return null
+}
+
+export function guessTargetTypeFromFilename(filename?: string) {
+  if (!filename) return null
+  if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
+  if (filename.endsWith('.level')) return DatabaseCopyTargetType.level
+  if (filename.endsWith('.sqlite')) return DatabaseCopyTargetType.sqlite
+  return null
+}
+
 export function pipeInputFormatTransform(input: ReadableStreamTree, format: DatabaseCopyFormat) {
   switch (format) {
     case DatabaseCopyFormat.csv:
@@ -121,7 +137,7 @@ export function pipeFromOutputFormatTransform(
   }
 }
 
-export function formatContentType(format?: DatabaseCopyFormat) {
+export function formatContentType(format?: DatabaseCopyFormat | null) {
   switch (format) {
     case DatabaseCopyFormat.ndjson:
     case DatabaseCopyFormat.jsonl:
@@ -135,7 +151,7 @@ export function formatContentType(format?: DatabaseCopyFormat) {
   }
 }
 
-export function sourceHasDatabaseFile(format?: DatabaseCopySourceType) {
+export function sourceHasDatabaseFile(format?: DatabaseCopySourceType | null) {
   switch (format) {
     case DatabaseCopySourceType.level:
     case DatabaseCopySourceType.sqlite:
@@ -145,7 +161,7 @@ export function sourceHasDatabaseFile(format?: DatabaseCopySourceType) {
   }
 }
 
-export function targetHasDatabaseFile(format?: DatabaseCopyTargetType) {
+export function targetHasDatabaseFile(format?: DatabaseCopyTargetType | null) {
   switch (format) {
     case DatabaseCopyTargetType.level:
     case DatabaseCopyTargetType.sqlite:

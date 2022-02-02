@@ -29,6 +29,8 @@ import {
   formatContentType,
   formatHasSchema,
   guessFormatFromFilename,
+  guessSourceTypeFromFilename,
+  guessTargetTypeFromFilename,
   pipeFromOutputFormatTransform,
   pipeInputFormatTransform,
   sourceHasDatabaseFile,
@@ -123,31 +125,49 @@ export interface DatabaseCopyOptions {
 export type DatabaseCopyFormats = Record<string, DatabaseCopyFormat | null>
 
 export function getSourceConnection(args: DatabaseCopyOptions) {
-  return {
-    database: args.sourceName,
-    user: args.sourceUser,
-    password: args.sourcePassword,
-    host: args.sourceHost,
-    port: args.sourcePort,
-    timezone: 'UTC',
-    options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
-    charset: args.sourceType === 'mysql' ? 'utf8mb4' : undefined,
-    ...args.sourceConnection,
-  }
+  const sourceFilesEntries = Object.entries(args.sourceFiles ?? {})
+  const sourceFilesType =
+    sourceFilesEntries.length === 1
+      ? guessSourceTypeFromFilename(sourceFilesEntries[0][1].url)
+      : undefined
+  return sourceHasDatabaseFile(sourceFilesType)
+    ? {
+        database: undefined,
+        filename: sourceFilesEntries[0][1].url,
+        timezone: 'UTC',
+        user: undefined,
+      }
+    : {
+        database: args.sourceName,
+        user: args.sourceUser,
+        password: args.sourcePassword,
+        host: args.sourceHost,
+        port: args.sourcePort,
+        timezone: 'UTC',
+        options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
+        charset: args.sourceType === 'mysql' ? 'utf8mb4' : undefined,
+        ...args.sourceConnection,
+      }
 }
 
 export function getTargetConnection(args: DatabaseCopyOptions) {
-  return {
-    database: args.targetName,
-    user: args.targetUser,
-    password: args.targetPassword,
-    host: args.targetHost,
-    port: args.targetPort,
-    timezone: 'UTC',
-    options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
-    charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
-    ...args.targetConnection,
-  }
+  const targetFileType = guessTargetTypeFromFilename(args.targetFile)
+  return targetHasDatabaseFile(targetFileType)
+    ? {
+        timezone: 'UTC',
+        filename: args.targetFile,
+      }
+    : {
+        database: args.targetName,
+        user: args.targetUser,
+        password: args.targetPassword,
+        host: args.targetHost,
+        port: args.targetPort,
+        timezone: 'UTC',
+        options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
+        charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
+        ...args.targetConnection,
+      }
 }
 
 export function getShardFunction(args: DatabaseCopyOptions) {
@@ -278,6 +298,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   const sourceFormats = getSourceFormats(args)
   const sourceFormat = getSourceFormat(args, sourceFormats)
   const targetFormat = getTargetFormat(args, sourceFormat)
+  const targetType = args.targetType ?? guessTargetTypeFromFilename(args.targetFile) ?? undefined
   const sourceConnection = getSourceConnection(args)
   const orderByFunction = (args.orderBy?.length ?? 0) > 0 ? getOrderByFunction(args) : undefined
   const externalSortFunction =
@@ -290,8 +311,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.sourceLevel &&
     (!sourceFiles.length || !args.fileSystem) &&
     (!args.sourceType ||
-      !sourceConnection.database ||
-      !sourceConnection.user ||
+      (!sourceConnection.filename && (!sourceConnection.database || !sourceConnection.user)) ||
       (!args.sourceTable && !args.query))
   ) {
     throw new Error(
@@ -315,7 +335,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.targetElasticSearch &&
     !args.targetLevel &&
     (!args.targetFile || !args.fileSystem) &&
-    (!args.targetType ||
+    (!targetType ||
       !args.targetName ||
       !args.targetUser ||
       (!args.targetTable && !args.compoundInsert))
@@ -323,7 +343,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     throw new Error(
       `Missing target parameters ${JSON.stringify(
         {
-          targetType: args.targetType,
+          targetType: targetType,
           targetFile: args.targetFile,
           targetDatabase: args.targetName,
           targetUser: args.targetUser,
@@ -343,11 +363,11 @@ export async function dbcp(args: DatabaseCopyOptions) {
 
   // If the copy source is a database.
   if (!args.sourceStream && (!args.sourceFiles || sourceHasDatabaseFile(args.sourceType))) {
-    if (args.targetFile && !targetHasDatabaseFile(args.targetType)) {
+    if (args.targetFile && !targetHasDatabaseFile(targetType)) {
       const formattingKnex =
         shouldInspectSchema || targetFormat === DatabaseCopyFormat.sql
-          ? args.targetType
-            ? knex({ client: args.targetType, log: knexLogConfig })
+          ? targetType
+            ? knex({ client: targetType, log: knexLogConfig })
             : args.sourceKnex ?? knex({ client: args.sourceType, log: knexLogConfig })
           : undefined
       // If the copy is database->file: JSON-formatting transform.
@@ -364,7 +384,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           shardFunction: getShardFunction(args),
           schema: shouldInspectSchema ? await databaseInspectSchema(args) : undefined,
           sourceTable: args.sourceTable,
-          targetType: args.targetType || (args.sourceKnex ? args.sourceType : undefined),
+          targetType: targetType || (args.sourceKnex ? args.sourceType : undefined),
           targetShards: args.targetShards,
           tempDirectory: args.tempDirectory,
         })
@@ -378,7 +398,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       // If the copy is database->database: no transform.
       const input = await queryDatabase(args)
       try {
-        await dumpToDatabase(input.input, args, args.targetTable!, {
+        await dumpToDatabase(input.input, { ...args, targetType }, args.targetTable!, {
           batchSize: args.batchSize,
           compoundInsert: args.compoundInsert,
         })
@@ -391,7 +411,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
   } else {
     // Else the copy source is a file.
     const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat, targetFormat)
-    if (args.targetStream || (args.targetFile && !targetHasDatabaseFile(args.targetType))) {
+    if (args.targetStream || (args.targetFile && !targetHasDatabaseFile(targetType))) {
       // If the copy is file->file: no transform.
       const outputs = await openTargets(args, targetFormat)
       const schema = shouldInspectSchema
@@ -446,13 +466,13 @@ export async function dbcp(args: DatabaseCopyOptions) {
               ? targetFormat
               : undefined,
           formattingKnex:
-            shouldInspectSchema && args.targetType
-              ? knex({ client: args.targetType, log: knexLogConfig })
+            shouldInspectSchema && targetType
+              ? knex({ client: targetType, log: knexLogConfig })
               : undefined,
           shardFunction: getShardFunction(args),
           schema,
           sourceTable: args.sourceTable,
-          targetType: args.targetType,
+          targetType: targetType,
           targetShards: args.targetShards,
           tempDirectory: args.tempDirectory,
           transformObject: args.transformObject,
@@ -479,7 +499,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           group: args.group,
           labelSource: args.groupLabels,
         }),
-        args,
+        { ...args, targetType },
         sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
         { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
       )
@@ -709,6 +729,7 @@ async function dumpToDatabase(
         client: args.targetType,
         connection: getTargetConnection(args),
         pool: knexPoolConfig,
+        useNullAsDefault: args.targetType === DatabaseCopyTargetType.sqlite,
       })
     try {
       return await dumpToKnex(input, targetKnex, table, options)

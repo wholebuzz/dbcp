@@ -4,7 +4,7 @@
 $ dbcp foo.parquet foo.jsonl
 ```
 
-Copy from or to MySQL, PostgreSQL, SQLServer, SQLite, LevelDB, and ElasticSearch directly to/from files on Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, SMB, HTTP, or another database.
+Copy from or to MySQL, PostgreSQL, SQLServer, LevelDB, and ElasticSearch directly to/from files on Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, SMB, HTTP, or another database.
 
 Automatically converts between supported formats JSON, ND-JSON, CSV, SQL, Parquet, and TFRecord (with optional gzip compression).
 

@@ -314,7 +314,7 @@ it('Should restore to and dump compound data', async () => {
     sourceFiles: [{ url: './test/compound.sql' }],
   })
 
-  // Copy from testNDJsonUrl to PostgreSQL
+  // Copy from targetJsonUrl to PostgreSQL
   await expectFillDatabaseTable(
     'postgresql',
     postgresConnection,
