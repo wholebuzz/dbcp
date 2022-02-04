@@ -147,6 +147,7 @@ PASS src/index.test.ts (85.9 s)
   ✓ Should load to level from ND-JSON and dump to JSON after external sort
   ✓ Should restore to and dump compound data
   ✓ Should restore to and dump from Elastic Search to ND-JSON
+  ✓ Should restore to and dump from MongoDB to ND-JSON
   ✓ Should restore to and dump from Postgres to ND-JSON
   ✓ Should restore to and dump from Postgres to SQL
   ✓ Should not hang on error

@@ -727,7 +727,7 @@ async function dumpToDatabase(
       if (sublevel) await sublevel.close()
       if (db) await db.close()
     }
-  } else if (DatabaseCopyTargetType.mongodb) {
+  } else if (args.targetType === DatabaseCopyTargetType.mongodb) {
     const client: mongoDB.MongoClient =
       args.targetMongodb ?? new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(args))
     if (!args.targetMongodb) await client.connect()

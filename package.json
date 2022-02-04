@@ -35,7 +35,7 @@
     "clean": "tsc -b . --clean",
     "start": "node dist/cli.js",
     "docs": "typedoc --disableOutputCheck && rm -rf docs/README.md && ./scripts/updateReadmeApiReference.sh",
-    "test": "jest --runInBand --ci --passWithNoTests",
+    "test": "jest --runInBand --ci --passWithNoTests --detectOpenHandles --forceExit",
     "test:coverage": "jest --runInBand --ci --passWithNoTests --coverage --no-cache",
     "badge:coverage": "istanbul-cobertura-badger -v -b coverage",
     "lint": "tslint -c tslint.json --project .",
