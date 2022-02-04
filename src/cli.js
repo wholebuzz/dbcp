@@ -189,6 +189,10 @@ async function main() {
         description: 'Database query WHERE',
         type: 'array',
       },
+      whereDate: {
+        description: 'Database query WHERE, final argument parsed as Javascript date',
+        type: 'array',
+      },
     }).argv
 
   if (process.argv.length < 3) {
@@ -273,6 +277,11 @@ async function main() {
     targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,
     targetUser: args.targetUser || args.user || process.env.TARGET_DB_USER || process.env.DB_USER,
     transformBytesStream: args.targetFile !== '-' ? newBytesTransform : undefined,
+  }
+
+  if (args.whereDate && args.whereDate.length === 3) {
+    if (!options.where) options.where = []
+    options.where.push([args.whereDate[0], args.whereDate[1], new Date(args.whereDate[2])])
   }
 
   try {
