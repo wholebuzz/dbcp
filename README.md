@@ -1,7 +1,10 @@
 # dbcp [![image](https://img.shields.io/npm/v/dbcp)](https://www.npmjs.com/package/dbcp) [![test](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml/badge.svg)](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml) ![Coverage](https://wholebuzz.storage.googleapis.com/dbcp/coverage.svg)
 
 ```
-$ dbcp foo.parquet foo.jsonl
+$ dbcp --help
+cli.js [sourceFile] [targetFile]
+$ dbcp data.parquet data.jsonl.gz
+$ dbcp data.jsonl.gz s3://bucket/data.csv.gz
 ```
 
 Copy from or to MySQL, PostgreSQL, SQLServer, LevelDB, MongoDB, and ElasticSearch directly to/from files on Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, SMB, HTTP, or another database.
@@ -27,7 +30,9 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 
 ## Credits
 
-- Built with [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs) using the [tree-stream](https://www.npmjs.com/package/tree-stream) primitives `ReadableStreamTree` and `WritableStreamTree`
+- Database powered by [knex](https://www.npmjs.com/package/knex) and [knex-schema-inspector](https://www.npmjs.com/package/knex-schema-inspector)
+- File system and file format support provided by [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs)
+- Connected with [tree-stream](https://www.npmjs.com/package/tree-stream) primitives `ReadableStreamTree` and `WritableStreamTree`
 
 ## Modules
 
