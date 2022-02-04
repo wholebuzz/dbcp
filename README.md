@@ -4,7 +4,7 @@
 $ dbcp foo.parquet foo.jsonl
 ```
 
-Copy from or to MySQL, PostgreSQL, SQLServer, LevelDB, and ElasticSearch directly to/from files on Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, SMB, HTTP, or another database.
+Copy from or to MySQL, PostgreSQL, SQLServer, LevelDB, MongoDB, and ElasticSearch directly to/from files on Amazon Web Services (AWS) S3, Google Cloud Storage (GCS), Microsoft Azure, SMB, HTTP, or another database.
 
 Automatically converts between supported formats JSON, ND-JSON, CSV, SQL, Parquet, and TFRecord (with optional gzip compression).
 
@@ -28,6 +28,16 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 ## Credits
 
 - Built with [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs) using the [tree-stream](https://www.npmjs.com/package/tree-stream) primitives `ReadableStreamTree` and `WritableStreamTree`
+
+## Modules
+
+- [cli](docs/modules/cli.md)
+- [compound](docs/modules/compound.md)
+- [elasticsearch](docs/modules/elasticsearch.md)
+- [format](docs/modules/format.md)
+- [index](docs/modules/index.md)
+- [knex](docs/modules/knex.md)
+- [schema](docs/modules/schema.md)
 
 ## Setup
 
@@ -109,6 +119,7 @@ $ ./node_modules/.bin/dbcp --help
 - [Copy PostgreSQL table to Google Cloud Storage gzipped JSON file](#copy-postgresql-table-to-google-cloud-storage-gzipped-json-file)
 - [Copy MySQL table to Amazon Web Services S3 gzipped JSON-Lines file](#copy-mysql-table-to-amazon-web-services-s3-gzipped-json-lines-file)
 - [Copy Amazon Web Services S3 gzipped JSON-Lines to MySQL table](#copy-amazon-web-services-s3-gzipped-json-lines-to-mysql-table)
+- [Copy MongoDB table to four gzipped JSON-Lines shards](#copy-mongodb-table-to-four-gzipped-json-lines-shards)
 - [Copy SQLServer table to stdout](#copy-sqlserver-table-to-stdout)
 - [Output a file or database to stdout](#output-a-file-or-database-to-stdout)
 - [Copy a file from AWS to GCP](#copy-a-file-from-aws-to-gcp)
@@ -326,6 +337,28 @@ $ dbcp \
   --password "MyP@ssw0rd#" \
   --table foobar \
   --targetFile=-
+```
+
+### Copy MongoDB table to four gzipped JSON-Lines shards
+
+```
+$ dbcp \
+  --sourceType mongodb \
+  --host localhost \
+  --port 27017 \
+  --user root \
+  --password example \
+  --dbname test_db \
+  --table dbcptest \
+  --targetFile output-SSSS-of-NNNN.jsonl.gz \
+  --targetShards 4 \
+  --shardBy id
+
+$ ls output*
+-rw-r--r--    1 user    staff    782701 Feb  4 10:59 output-0001-of-0004.jsonl.gz
+-rw-r--r--    1 user    staff    771980 Feb  4 10:59 output-0003-of-0004.jsonl.gz
+-rw-r--r--    1 user    staff    794959 Feb  4 10:59 output-0000-of-0004.jsonl.gz
+-rw-r--r--    1 user    staff    788720 Feb  4 10:59 output-0002-of-0004.jsonl.gz
 ```
 
 ### Output a file to stdout

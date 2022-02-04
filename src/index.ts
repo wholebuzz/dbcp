@@ -15,8 +15,9 @@ import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import level from 'level'
 import { LevelUp } from 'levelup'
+import * as mongoDB from 'mongodb'
 import pSettle from 'p-settle'
-import { Duplex, Readable, Writable } from 'stream'
+import { Duplex, Readable } from 'stream'
 import sub from 'subleveldown'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
@@ -45,6 +46,7 @@ import {
 } from './knex'
 import { Column, formatDDLCreateTableSchema, guessSchemaFromFile } from './schema'
 
+const batch2 = require('batch2')
 const levelIteratorStream = require('level-iterator-stream')
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
@@ -90,6 +92,7 @@ export interface DatabaseCopyOptions {
   sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
   sourceHost?: string
   sourceLevel?: level.LevelDB | LevelUp
+  sourceMongodb?: mongoDB.MongoClient
   sourceName?: string
   sourceKnex?: Knex
   sourcePassword?: string
@@ -106,6 +109,7 @@ export interface DatabaseCopyOptions {
   targetHost?: string
   targetKnex?: Knex
   targetLevel?: level.LevelDB | LevelUp
+  targetMongodb?: mongoDB.MongoClient
   targetName?: string
   targetPassword?: string
   targetShards?: number
@@ -168,6 +172,14 @@ export function getTargetConnection(args: DatabaseCopyOptions) {
         charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
         ...args.targetConnection,
       }
+}
+
+export function getSourceConnectionString(args: DatabaseCopyOptions) {
+  return `${args.sourceUser}:${args.sourcePassword}@${args.sourceHost}:${args.sourcePort}`
+}
+
+export function getTargetConnectionString(args: DatabaseCopyOptions) {
+  return `${args.targetUser}:${args.targetPassword}@${args.targetHost}:${args.targetPort}`
 }
 
 export function getShardFunction(args: DatabaseCopyOptions) {
@@ -284,15 +296,6 @@ export async function openTargets(args: DatabaseCopyOptions, format?: DatabaseCo
   return outputs
 }
 
-export const openNullWritable = () =>
-  StreamTree.writable(
-    new Writable({
-      write(_chunk, _encoding, done) {
-        done()
-      },
-    })
-  )
-
 export async function dbcp(args: DatabaseCopyOptions) {
   const sourceFiles = Object.entries(args.sourceFiles ?? {})
   const sourceFormats = getSourceFormats(args)
@@ -309,6 +312,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.sourceKnex &&
     !args.sourceElasticSearch &&
     !args.sourceLevel &&
+    !args.sourceMongodb &&
     (!sourceFiles.length || !args.fileSystem) &&
     (!args.sourceType ||
       (!sourceConnection.filename && (!sourceConnection.database || !sourceConnection.user)) ||
@@ -334,6 +338,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     !args.targetKnex &&
     !args.targetElasticSearch &&
     !args.targetLevel &&
+    !args.targetMongodb &&
     (!args.targetFile || !args.fileSystem) &&
     (!targetType ||
       !args.targetName ||
@@ -343,7 +348,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
     throw new Error(
       `Missing target parameters ${JSON.stringify(
         {
-          targetType: targetType,
+          targetType,
           targetFile: args.targetFile,
           targetDatabase: args.targetName,
           targetUser: args.targetUser,
@@ -472,7 +477,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           shardFunction: getShardFunction(args),
           schema,
           sourceTable: args.sourceTable,
-          targetType: targetType,
+          targetType,
           targetShards: args.targetShards,
           tempDirectory: args.tempDirectory,
           transformObject: args.transformObject,
@@ -722,6 +727,24 @@ async function dumpToDatabase(
       if (sublevel) await sublevel.close()
       if (db) await db.close()
     }
+  } else if (DatabaseCopyTargetType.mongodb) {
+    const client: mongoDB.MongoClient =
+      args.targetMongodb ?? new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(args))
+    if (!args.targetMongodb) await client.connect()
+    try {
+      const db: mongoDB.Db = client.db(args.targetName)
+      const collection: mongoDB.Collection = db.collection(args.targetTable ?? '')
+      const stream = StreamTree.writable(
+        streamAsyncFilter(async (data: any) => {
+          await collection.insertMany(data)
+        })
+      ).pipeFrom(batch2.obj({ size: options?.batchSize ?? 4000 }))
+      await pumpWritable(stream, undefined, input.finish())
+    } catch (error) {
+      throw error
+    } finally {
+      if (!args.targetMongodb) await client.close()
+    }
   } else {
     const targetKnex =
       args.targetKnex ??
@@ -796,6 +819,23 @@ async function queryDatabase(args: DatabaseCopyOptions) {
       destroy: async () => {
         if (sublevel) await sublevel.close()
         if (db) await db.close()
+      },
+    }
+  } else if (args.sourceType === DatabaseCopySourceType.mongodb) {
+    const client: mongoDB.MongoClient =
+      args.sourceMongodb ?? new mongoDB.MongoClient('mongodb://' + getSourceConnectionString(args))
+    if (!args.sourceMongodb) await client.connect()
+    const db: mongoDB.Db = client.db(args.sourceName)
+    const collection: mongoDB.Collection = db.collection(args.sourceTable ?? '')
+    let input = StreamTree.readable(
+      collection.find(args.query ? JSON.parse(args.query) : undefined).stream()
+    )
+    if (args.transformObject) input = pipeFilter(input, args.transformObject)
+    if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
+    return {
+      input,
+      destroy: async () => {
+        if (!args.sourceMongodb) await client.close()
       },
     }
   } else {

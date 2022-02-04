@@ -16,6 +16,19 @@ jobs:
           --health-interval 30s
           --health-timeout 10s
           --health-retries 3
+      mongodb:
+        image: mongo:latest
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: example
+          MONGO_INITDB_DATABASE: test_db
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
       mssql:
         image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
         env:
@@ -72,6 +85,11 @@ jobs:
         ES_ENDPOINT: http://localhost:9200/
         ES_USER: elastic
         ES_PASS: foobar
+        MONGODB_DB_USER: root
+        MONGODB_DB_PASS: example
+        MONGODB_DB_NAME: test_db
+        MONGODB_DB_PORT: 27017
+        MONGODB_DB_HOST: 127.0.0.1
         MSSQL_DB_USER: SA
         MSSQL_DB_PASS: Secure-Password.1234
         MSSQL_DB_NAME: master

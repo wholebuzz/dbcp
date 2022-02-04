@@ -10,10 +10,11 @@ import { selectCount } from 'db-json-column/lib/knex'
 import fs from 'fs'
 import hasha from 'hasha'
 import { knex } from 'knex'
+import * as mongoDB from 'mongodb'
 import rimraf from 'rimraf'
 import { promisify } from 'util'
 import { DatabaseCopySchema, DatabaseCopySourceType, DatabaseCopyTargetType } from './format'
-import { dbcp, knexPoolConfig } from './index'
+import { dbcp, getTargetConnectionString, knexPoolConfig } from './index'
 
 const zlib = require('zlib')
 
@@ -56,6 +57,25 @@ const esTarget = {
   targetName: esConnection.node,
   targetUser: esConnection.auth.username,
   targetPassword: esConnection.auth.password,
+  targetTable: testSchemaTableName,
+}
+
+const mongodbSource = {
+  sourceType: DatabaseCopySourceType.mongodb,
+  sourceHost: process.env.MONGODB_DB_HOST,
+  sourcePort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
+  sourceName: process.env.MONGODB_DB_NAME,
+  sourceUser: process.env.MONGODB_DB_USER,
+  sourcePassword: process.env.MONGODB_DB_PASS,
+  sourceTable: testSchemaTableName,
+}
+const mongodbTarget = {
+  targetType: DatabaseCopyTargetType.mongodb,
+  targetHost: process.env.MONGODB_DB_HOST,
+  targetPort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
+  targetName: process.env.MONGODB_DB_NAME,
+  targetUser: process.env.MONGODB_DB_USER,
+  targetPassword: process.env.MONGODB_DB_PASS,
   targetTable: testSchemaTableName,
 }
 
@@ -372,6 +392,34 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
       ...esSource,
       targetFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
+    })
+  )
+})
+
+it('Should restore to and dump from MongoDB to ND-JSON', async () => {
+  const client = new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(mongodbTarget))
+  await client.connect()
+  const db: mongoDB.Db = client.db(mongodbTarget.targetName)
+  await db.dropCollection(mongodbTarget.targetTable ?? '')
+  await client.close()
+
+  // Copy from testNDJsonUrl to MongoDB
+  await dbcp({
+    fileSystem,
+    ...mongodbTarget,
+    sourceFiles: [{ url: testNDJsonUrl }],
+  })
+
+  // Dump and verify MongoDB
+  await expectCreateFileWithHash(targetNDJsonUrl, testNDJsonHash, () =>
+    dbcp({
+      fileSystem,
+      ...mongodbSource,
+      targetFile: targetNDJsonUrl,
+      transformObject: (x: any) => {
+        delete x._id
+        return x
+      },
     })
   )
 })
