@@ -400,7 +400,11 @@ it('Should restore to and dump from MongoDB to ND-JSON', async () => {
   const client = new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(mongodbTarget))
   await client.connect()
   const db: mongoDB.Db = client.db(mongodbTarget.targetName)
-  await db.dropCollection(mongodbTarget.targetTable ?? '')
+  try {
+    await db.dropCollection(mongodbTarget.targetTable ?? '')
+  } catch (_err) {
+    /* */
+  }
   await client.close()
 
   // Copy from testNDJsonUrl to MongoDB
