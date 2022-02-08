@@ -579,7 +579,7 @@ async function writeSchema(
     )
   }
   readable.push(null)
-  await pumpWritable(output, undefined, readable)
+  await pumpWritable(output, undefined, StreamTree.readable(readable))
 }
 
 export async function dumpToFile(
@@ -652,7 +652,7 @@ export async function dumpToFile(
     }
     let writable = shardWritables(outputs, options.targetShards, options.shardFunction)
     if (!options?.externalSortFunction) {
-      await pumpWritable(writable, undefined, input!.finish())
+      await pumpWritable(writable, undefined, input)
     } else {
       if (!simpleExternalSort) writable = writable.pipeFrom(newJSONLinesParser())
       const inputStream = input!.pipe(newJSONLinesFormatter()).finish()
@@ -692,7 +692,7 @@ async function dumpToDatabase(
         extra: args.extra,
         extraOutput: args.extraOutput,
       })
-      await pumpWritable(output, undefined, input.finish())
+      await pumpWritable(output, undefined, input)
     } catch (error) {
       throw error
     } finally {
@@ -719,7 +719,7 @@ async function dumpToDatabase(
           })
         ),
         undefined,
-        input.finish()
+        input
       )
     } catch (error) {
       throw error
@@ -739,7 +739,7 @@ async function dumpToDatabase(
           await collection.insertMany(data)
         })
       ).pipeFrom(batch2.obj({ size: options?.batchSize ?? 4000 }))
-      await pumpWritable(stream, undefined, input.finish())
+      await pumpWritable(stream, undefined, input)
     } catch (error) {
       throw error
     } finally {
@@ -777,7 +777,7 @@ async function dumpToKnex(
       : table
       ? streamToKnex({ transaction }, { table, ...options })
       : streamToKnexRaw({ transaction })
-    await pumpWritable(output, undefined, input.finish())
+    await pumpWritable(output, undefined, input)
     return transaction.commit().catch(transaction.rollback)
   })
 }

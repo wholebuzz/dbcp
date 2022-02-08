@@ -288,7 +288,7 @@ async function main() {
     await dbcp(options)
   } catch (err) {
     // tslint:disable-next-line:no-console
-    console.log(err.message)
+    console.log('dbcp error:', err.message)
     process.exit(-1)
   }
 
