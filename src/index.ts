@@ -16,11 +16,9 @@ import { Knex, knex } from 'knex'
 import level from 'level'
 import { LevelUp } from 'levelup'
 import * as mongoDB from 'mongodb'
-import pSettle from 'p-settle'
 import { Duplex, Readable } from 'stream'
 import sub from 'subleveldown'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
-import { streamToKnexCompoundInsert } from './compound'
 import { streamFromElasticSearch, streamToElasticSearch } from './elasticsearch'
 import {
   DatabaseCopyFormat,
@@ -38,13 +36,15 @@ import {
   targetHasDatabaseFile,
 } from './format'
 import {
+  dumpToKnex,
   knexFormatCreateTableSchema,
   knexInspectTableSchema,
-  streamFromKnex,
-  streamToKnex,
-  streamToKnexRaw,
+  knexLogConfig,
+  knexPoolConfig,
+  queryKnex,
 } from './knex'
 import { Column, formatDDLCreateTableSchema, guessSchemaFromFile } from './schema'
+import { findObjectProperty, updateObjectPropertiesAsync } from './util'
 
 const batch2 = require('batch2')
 const levelIteratorStream = require('level-iterator-stream')
@@ -55,7 +55,7 @@ function initParquet() {
 }
 
 export interface DatabaseCopySourceFile {
-  url: string
+  url?: string
   columnType?: Record<string, string>
   query?: string
   schema?: Column[]
@@ -63,6 +63,7 @@ export interface DatabaseCopySourceFile {
   sourceFormat?: DatabaseCopyFormat
   sourceShards?: number
   sourceShardFilter?: (index: number) => boolean
+  sourceStream?: ReadableStreamTree[]
   transformInputObject?: (x: unknown) => unknown
   transformInputObjectStream?: () => Duplex
 }
@@ -127,6 +128,10 @@ export interface DatabaseCopyOptions {
 }
 
 export type DatabaseCopyFormats = Record<string, DatabaseCopyFormat | null>
+
+export function guessFormatFromSource(source: DatabaseCopySourceFile) {
+  return source.sourceStream ? DatabaseCopyFormat.object : guessFormatFromFilename(source.url)
+}
 
 export function getSourceConnection(args: DatabaseCopyOptions) {
   const sourceFilesEntries = Object.entries(args.sourceFiles ?? {})
@@ -212,7 +217,7 @@ export function getSourceFormats(args: DatabaseCopyOptions) {
     ret[key] =
       (sourceFile.query || args.query) && sourceFile.url !== 's3://athena.csv'
         ? DatabaseCopyFormat.jsonl
-        : guessFormatFromFilename(sourceFile.url) || DatabaseCopyFormat.json
+        : guessFormatFromSource(sourceFile) || DatabaseCopyFormat.json
     if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
   }
   return ret
@@ -243,8 +248,8 @@ export async function openSources(
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
     sourceFiles.length === 1 &&
-    sourceFiles[0][1].url.endsWith('/') &&
-    !sourceFiles[0][1].url.startsWith('http') &&
+    sourceFiles[0][1].url?.endsWith('/') &&
+    !sourceFiles[0][1].url?.startsWith('http') &&
     !args.sourceStream
       ? new Readable()
       : undefined
@@ -256,6 +261,7 @@ export async function openSources(
           ? undefined
           : sourceFormat || sourceFormats[sourceFileName] || undefined,
       url: sourceFile.url,
+      stream: sourceFile.sourceStream,
       options: {
         query: sourceFile.query || args.query,
         shards: sourceFile.sourceShards || args.sourceShards,
@@ -273,7 +279,7 @@ export async function openSources(
   // If the source is a directory, read the directory.
   if (directoryStream) {
     directoryStream.push(
-      JSON.stringify(await args.fileSystem!.readDirectory(sourceFiles[0][1].url), null, 2)
+      JSON.stringify(await args.fileSystem!.readDirectory(sourceFiles[0][1].url!), null, 2)
     )
     directoryStream.push(null)
   }
@@ -424,12 +430,12 @@ export async function dbcp(args: DatabaseCopyOptions) {
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
             : sourceFiles.length === 1
-            ? Object.values(await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url))
+            ? Object.values(await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url!))
             : undefined)
         : undefined
-      await updatePropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
+      await updateObjectPropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
-        await updatePropertiesAsync(inputArray, async (input) => {
+        await updateObjectPropertiesAsync(inputArray, async (input) => {
           if (
             sourceFormat !== targetFormat ||
             sourceFiles.length > 1 ||
@@ -486,9 +492,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )
     } else {
       // If the copy is file->database: JSON-parsing transform.
-      await updatePropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
+      await updateObjectPropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
-        await updatePropertiesAsync(inputArray, async (input) => {
+        await updateObjectPropertiesAsync(inputArray, async (input) => {
           if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
           if (args.transformBytesStream) input = input.pipe(args.transformBytesStream())
           input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
@@ -510,46 +516,6 @@ export async function dbcp(args: DatabaseCopyOptions) {
       )
     }
   }
-}
-
-export function findObjectProperty<X>(
-  x: X[] | Record<string, X> | undefined,
-  key: string | number
-): X | undefined {
-  if (!x) return undefined
-  const needle = key.toString()
-  return Object.entries(x).find(([k, _]) => k === needle)?.[1]
-}
-
-export async function updatePropertiesAsync<X>(
-  x: X[] | Record<string, X>,
-  f: (x: X, key: string | number) => Promise<X>,
-  options?: { concurrency?: number }
-) {
-  if (Array.isArray(x)) {
-    const newValues = await pSettle(
-      x.map((v, i) => f(v, i)),
-      { concurrency: options?.concurrency || 1 }
-    )
-    newValues.forEach((v, i) => (x[i] = v.isFulfilled ? v.value : (null as any)))
-    for (const v of newValues) {
-      if (v.isRejected) throw new Error(`updatePropertiesAsync: ${v.reason}`)
-    }
-  } else {
-    const entries = Object.entries(x)
-    const newValues = await pSettle(
-      entries.map(
-        ([k, v]) =>
-          () =>
-            f(v, k)
-      )
-    )
-    newValues.forEach((v, i) => (x[entries[i][0]] = v.isFulfilled ? v.value : (null as any)))
-    for (const v of newValues) {
-      if (v.isRejected) throw new Error(`updatePropertiesAsync: ${v.reason}`)
-    }
-  }
-  return x
 }
 
 async function writeSchema(
@@ -764,24 +730,6 @@ async function dumpToDatabase(
   }
 }
 
-async function dumpToKnex(
-  input: ReadableStreamTree,
-  db: Knex,
-  table: string,
-  options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
-) {
-  if (!table && !options?.compoundInsert) input.node.stream.setEncoding('utf8')
-  await db.transaction(async (transaction) => {
-    const output = options?.compoundInsert
-      ? streamToKnexCompoundInsert({ transaction }, { ...options })
-      : table
-      ? streamToKnex({ transaction }, { table, ...options })
-      : streamToKnexRaw({ transaction })
-    await pumpWritable(output, undefined, input)
-    return transaction.commit().catch(transaction.rollback)
-  })
-}
-
 async function queryDatabase(args: DatabaseCopyOptions) {
   if (args.sourceType === DatabaseCopySourceType.es) {
     const client =
@@ -806,7 +754,7 @@ async function queryDatabase(args: DatabaseCopyOptions) {
       ...args.extra,
     }
     const db: level.LevelDB | undefined = !args.sourceLevel
-      ? level(Object.entries(args.sourceFiles!)[0][1].url, levelOptions)
+      ? level(Object.entries(args.sourceFiles!)[0][1].url!, levelOptions)
       : undefined
     const sublevel = db && args.sourceTable ? sub(db, args.sourceTable, levelOptions) : undefined
     const sourceLevel = args.sourceLevel ?? sublevel ?? db
@@ -853,37 +801,6 @@ async function queryDatabase(args: DatabaseCopyOptions) {
   }
 }
 
-function queryKnex(
-  db: Knex,
-  table: string,
-  options: {
-    limit?: number
-    orderBy?: string[]
-    query?: string
-    transformObject?: (x: unknown) => unknown
-    transformObjectStream?: () => Duplex
-    where?: Array<string | any[]>
-  }
-) {
-  let input
-  if (options.query) {
-    input = StreamTree.readable(db.raw(options.query).stream())
-  } else {
-    let query = db(table)
-    for (const where of options.where ?? []) {
-      query = Array.isArray(where)
-        ? query.where(where[0], where[1], where[2])
-        : query.where(db.raw(where))
-    }
-    for (const orderBy of options.orderBy ?? []) {
-      query = query.orderByRaw(orderBy)
-    }
-    if (options.limit) query.limit(options.limit)
-    input = streamFromKnex(query)
-  }
-  return input
-}
-
 export async function databaseInspectSchema(args: DatabaseCopyOptions) {
   if (args.schema) return args.schema
   if (args.schemaFile) return (await readJSON(args.fileSystem!, args.schemaFile)) as Column[]
@@ -901,30 +818,4 @@ export async function databaseInspectSchema(args: DatabaseCopyOptions) {
   } finally {
     await sourceKnex.destroy()
   }
-}
-
-export const knexLogConfig = {
-  warn(_message: any) {
-    /* */
-  },
-  error(_message: any) {
-    /* */
-  },
-  deprecate(_message: any) {
-    /* */
-  },
-  debug(_message: any) {
-    /* */
-  },
-}
-
-export const knexPoolConfig = {
-  // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
-  // https://github.com/GoogleCloudPlatform/nodejs-docs-samples/blob/master/cloud-sql/postgres/knex/server.js
-  acquireTimeoutMillis: 60000,
-  createRetryIntervalMillis: 200,
-  createTimeoutMillis: 30000,
-  idleTimeoutMillis: 600000,
-  min: 1,
-  max: 1,
 }

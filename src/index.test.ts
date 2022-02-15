@@ -14,7 +14,8 @@ import * as mongoDB from 'mongodb'
 import rimraf from 'rimraf'
 import { promisify } from 'util'
 import { DatabaseCopySchema, DatabaseCopySourceType, DatabaseCopyTargetType } from './format'
-import { dbcp, getTargetConnectionString, knexPoolConfig } from './index'
+import { dbcp, getTargetConnectionString } from './index'
+import { knexPoolConfig } from './knex'
 
 const zlib = require('zlib')
 

@@ -12,10 +12,60 @@ import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
 import { Knex } from 'knex'
 import schemaInspector from 'knex-schema-inspector'
 import { Column } from 'knex-schema-inspector/dist/types/column'
-import { Transform } from 'stream'
-import StreamTree, { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
+import { Duplex, Transform } from 'stream'
+import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
+import { streamToKnexCompoundInsert } from './compound'
 
 export const batch2 = require('batch2')
+
+export async function dumpToKnex(
+  input: ReadableStreamTree,
+  db: Knex,
+  table: string,
+  options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
+) {
+  if (!table && !options?.compoundInsert) input.node.stream.setEncoding('utf8')
+  await db.transaction(async (transaction) => {
+    const output = options?.compoundInsert
+      ? streamToKnexCompoundInsert({ transaction }, { ...options })
+      : table
+      ? streamToKnex({ transaction }, { table, ...options })
+      : streamToKnexRaw({ transaction })
+    await pumpWritable(output, undefined, input)
+    return transaction.commit().catch(transaction.rollback)
+  })
+}
+
+export function queryKnex(
+  db: Knex,
+  table: string,
+  options: {
+    limit?: number
+    orderBy?: string[]
+    query?: string
+    transformObject?: (x: unknown) => unknown
+    transformObjectStream?: () => Duplex
+    where?: Array<string | any[]>
+  }
+) {
+  let input
+  if (options.query) {
+    input = StreamTree.readable(db.raw(options.query).stream())
+  } else {
+    let query = db(table)
+    for (const where of options.where ?? []) {
+      query = Array.isArray(where)
+        ? query.where(where[0], where[1], where[2])
+        : query.where(db.raw(where))
+    }
+    for (const orderBy of options.orderBy ?? []) {
+      query = query.orderByRaw(orderBy)
+    }
+    if (options.limit) query.limit(options.limit)
+    input = streamFromKnex(query)
+  }
+  return input
+}
 
 export function streamFromKnex(query: Knex.QueryBuilder): ReadableStreamTree {
   return StreamTree.readable(query.stream())
@@ -193,4 +243,30 @@ export function newDBGateQuerySplitterStream(type?: any) {
     default:
       return new SplitQueryStream(defaultSplitterOptions)
   }
+}
+
+export const knexLogConfig = {
+  warn(_message: any) {
+    /* */
+  },
+  error(_message: any) {
+    /* */
+  },
+  deprecate(_message: any) {
+    /* */
+  },
+  debug(_message: any) {
+    /* */
+  },
+}
+
+export const knexPoolConfig = {
+  // https://github.com/Vincit/tarn.js/blob/master/src/Pool.ts
+  // https://github.com/GoogleCloudPlatform/nodejs-docs-samples/blob/master/cloud-sql/postgres/knex/server.js
+  acquireTimeoutMillis: 60000,
+  createRetryIntervalMillis: 200,
+  createTimeoutMillis: 30000,
+  idleTimeoutMillis: 600000,
+  min: 1,
+  max: 1,
 }
