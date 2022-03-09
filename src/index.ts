@@ -313,7 +313,15 @@ export async function dbcp(args: DatabaseCopyOptions) {
   const orderByFunction = (args.orderBy?.length ?? 0) > 0 ? getOrderByFunction(args) : undefined
   const externalSortFunction =
     (args.externalSortBy?.length ?? 0) > 0 ? getExternalSortFunction(args) : undefined
-
+  const isNotBytes2Bytes =
+    sourceFormat !== targetFormat ||
+    sourceFiles.length > 1 ||
+    sourceFiles.some((x) => x[1].sourceShards) ||
+    args.sourceShards ||
+    args.targetShards ||
+    args.externalSortBy ||
+    args.transformObject ||
+    args.transformObjectStream
   if (
     !args.sourceStream &&
     !args.sourceKnex &&
@@ -437,15 +445,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       await updateObjectPropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
         await updateObjectPropertiesAsync(inputArray, async (input) => {
-          if (
-            sourceFormat !== targetFormat ||
-            sourceFiles.length > 1 ||
-            args.sourceShards ||
-            args.targetShards ||
-            args.externalSortBy ||
-            args.transformObject ||
-            args.transformObjectStream
-          ) {
+          if (isNotBytes2Bytes) {
             const inputFile = findObjectProperty(args.sourceFiles, inputGroupKey)
             input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
             if (inputFile?.transformInputObject) {
@@ -470,13 +470,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           columnType: args.columnType,
           copySchema: args.copySchema,
           externalSortFunction,
-          format:
-            sourceFormat !== targetFormat ||
-            sourceFiles.length > 1 ||
-            args.sourceShards ||
-            args.targetShards
-              ? targetFormat
-              : undefined,
+          format: isNotBytes2Bytes ? targetFormat : undefined,
           formattingKnex:
             shouldInspectSchema && targetType
               ? knex({ client: targetType, log: knexLogConfig })

@@ -280,7 +280,7 @@ async function main() {
   }
 
   if (args.whereDate && args.whereDate.length === 3) {
-    if (!options.where) options.where = []
+    if (!options.where) { options.where = [] }
     options.where.push([args.whereDate[0], args.whereDate[1], new Date(args.whereDate[2])])
   }
 
