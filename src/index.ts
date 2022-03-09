@@ -6,6 +6,7 @@ import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import {
   pipeFilter,
   pipeFromFilter,
+  shardReadable,
   shardWritables,
   streamAsyncFilter,
   streamFilter,
@@ -119,7 +120,7 @@ export interface DatabaseCopyOptions {
   targetType?: DatabaseCopyTargetType
   targetPort?: number
   targetUser?: string
-  tempDirectory?: string
+  tempDirectories?: string[]
   transformObject?: (x: unknown) => unknown
   transformObjectStream?: () => Duplex
   transformBytes?: (x: string) => string
@@ -397,7 +398,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           sourceTable: args.sourceTable,
           targetType: targetType || (args.sourceKnex ? args.sourceType : undefined),
           targetShards: args.targetShards,
-          tempDirectory: args.tempDirectory,
+          tempDirectories: args.tempDirectories,
         })
       } catch (error) {
         throw error
@@ -485,7 +486,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           sourceTable: args.sourceTable,
           targetType,
           targetShards: args.targetShards,
-          tempDirectory: args.tempDirectory,
+          tempDirectories: args.tempDirectories,
           transformObject: args.transformObject,
           transformObjectStream: args.transformObjectStream,
         }
@@ -562,7 +563,7 @@ export async function dumpToFile(
     sourceTable?: string
     targetType?: string
     targetShards?: number
-    tempDirectory?: string
+    tempDirectories?: string[]
     transformObject?: (x: unknown) => unknown
     transformObjectStream?: () => Duplex
   }
@@ -616,21 +617,26 @@ export async function dumpToFile(
         }
       }
     }
-    let writable = shardWritables(outputs, options.targetShards, options.shardFunction)
     if (!options?.externalSortFunction) {
+      const writable = shardWritables(outputs, options.targetShards, options.shardFunction)
       await pumpWritable(writable, undefined, input)
     } else {
-      if (!simpleExternalSort) writable = writable.pipeFrom(newJSONLinesParser())
-      const inputStream = input!.pipe(newJSONLinesFormatter()).finish()
-      const esortArgs = {
-        input: inputStream,
-        output: writable.finish(),
-        tempDir: options.tempDirectory || __dirname,
-        deserializer: JSON.parse,
-        serializer: JSON.stringify,
-        maxHeap: 100,
+      const inputs = shardReadable(input!, options.targetShards, options.shardFunction)
+      const esorts = []
+      for (let i = 0; i < outputs.length; i++) {
+        let writable = outputs[i]
+        if (!simpleExternalSort) writable = writable.pipeFrom(newJSONLinesParser())
+        const esortArgs = {
+          input: inputs[i].pipe(newJSONLinesFormatter()).finish(),
+          output: writable.finish(),
+          tempDir: options.tempDirectories?.[i] || __dirname,
+          deserializer: JSON.parse,
+          serializer: JSON.stringify,
+          maxHeap: 100,
+        }
+        esorts.push(esort(esortArgs).asc(options.externalSortFunction))
       }
-      await esort(esortArgs).asc(options.externalSortFunction)
+      await Promise.all(esorts)
     }
   }
 }

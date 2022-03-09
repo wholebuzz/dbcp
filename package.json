@@ -1,6 +1,6 @@
 {
   "name": "dbcp",
-  "version": "1.2.29",
+  "version": "1.3.0",
   "description": "Dump Mysql, Postgres, SQLServer, and ElasticSearch databases directly to AWS S3, Google Cloud Storage, or Azure.",
   "keywords": [
     "database",
@@ -54,7 +54,7 @@
     "@elastic/elasticsearch": "^7.15.0",
     "@google-cloud/storage": "^5.8.1",
     "@marsaud/smb2": "^0.18.0",
-    "@wholebuzz/fs": "^1.1.3",
+    "@wholebuzz/fs": "^1.2.0",
     "athena-express": "^7.1.3",
     "aws-sdk": "^2.975.0",
     "axios": "^0.20.0",
