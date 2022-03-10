@@ -57,15 +57,17 @@ function initParquet() {
 
 export interface DatabaseCopySourceFile {
   url?: string
-  columnType?: Record<string, string>
   query?: string
+  columnType?: Record<string, string>
+  extra?: Record<string, any>
+  extraOutput?: boolean
   schema?: Column[]
   schemaFile?: string
   sourceFormat?: DatabaseCopyFormat
   sourceShards?: number
   sourceShardFilter?: (index: number) => boolean
   sourceStream?: ReadableStreamTree[]
-  transformInputObject?: (x: unknown) => unknown
+  transformInputObject?: (x: unknown) => unknown | Promise<unknown>
   transformInputObjectStream?: () => Duplex
 }
 
@@ -121,7 +123,7 @@ export interface DatabaseCopyOptions {
   targetPort?: number
   targetUser?: string
   tempDirectories?: string[]
-  transformObject?: (x: unknown) => unknown
+  transformObject?: (x: unknown) => unknown | Promise<unknown>
   transformObjectStream?: () => Duplex
   transformBytes?: (x: string) => string
   transformBytesStream?: () => Duplex
@@ -265,6 +267,8 @@ export async function openSources(
       stream: sourceFile.sourceStream,
       options: {
         query: sourceFile.query || args.query,
+        extra: sourceFile.extra || args.extra,
+        extraOutput: sourceFile.extraOutput || args.extraOutput,
         shards: sourceFile.sourceShards || args.sourceShards,
         shardFilter: sourceFile.sourceShardFilter,
       },
