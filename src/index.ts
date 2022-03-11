@@ -651,7 +651,7 @@ async function dumpToDatabase(
   table: string,
   options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
 ) {
-  if (args.targetType === DatabaseCopyTargetType.es) {
+  if (args.targetType === DatabaseCopyTargetType.elasticsearch) {
     const client =
       args.targetElasticSearch ??
       new Client({
@@ -741,7 +741,7 @@ async function dumpToDatabase(
 }
 
 async function queryDatabase(args: DatabaseCopyOptions) {
-  if (args.sourceType === DatabaseCopySourceType.es) {
+  if (args.sourceType === DatabaseCopySourceType.elasticsearch) {
     const client =
       args.sourceElasticSearch ??
       new Client({
