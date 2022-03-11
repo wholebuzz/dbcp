@@ -51,14 +51,14 @@ const esConnection = {
   },
 }
 const esSource = {
-  sourceType: DatabaseCopySourceType.es,
+  sourceType: DatabaseCopySourceType.elasticsearch,
   sourceName: esConnection.node,
   sourceUser: esConnection.auth.username,
   sourcePassword: esConnection.auth.password,
   sourceTable: testSchemaTableName,
 }
 const esTarget = {
-  targetType: DatabaseCopyTargetType.es,
+  targetType: DatabaseCopyTargetType.elasticsearch,
   targetName: esConnection.node,
   targetUser: esConnection.auth.username,
   targetPassword: esConnection.auth.password,

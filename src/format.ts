@@ -16,23 +16,29 @@ import { parquetFieldFromSchema } from './schema'
 
 export enum DatabaseCopySourceType {
   athena = 'athena',
-  es = 'es',
+  elasticsearch = 'elasticsearch',
+  file = 'file',
+  http = 'http',
   level = 'level',
   mongodb = 'mongodb',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
+  redis = 'redis',
   sqlite = 'sqlite',
 }
 
 export enum DatabaseCopyTargetType {
   athena = 'athena',
-  es = 'es',
+  elasticsearch = 'elasticsearch',
+  file = 'file',
+  http = 'http',
   level = 'level',
   mongodb = 'mongodb',
   mssql = 'mssql',
   mysql = 'mysql',
   postgresql = 'postgresql',
+  redis = 'redis',
   sqlite = 'sqlite',
 }
 

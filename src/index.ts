@@ -71,7 +71,45 @@ export interface DatabaseCopySourceFile {
   transformInputObjectStream?: () => Duplex
 }
 
-export interface DatabaseCopyOptions {
+export interface DatabaseCopySource {
+  sourceConnection?: Record<string, any>
+  sourceElasticSearch?: Client
+  sourceFormat?: DatabaseCopyFormat
+  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
+  sourceHost?: string
+  sourceLevel?: level.LevelDB | LevelUp
+  sourceMongodb?: mongoDB.MongoClient
+  sourceName?: string
+  sourceKnex?: Knex
+  sourcePassword?: string
+  sourceShards?: number
+  sourceStream?: ReadableStreamTree
+  sourceTable?: string
+  sourceType?: DatabaseCopySourceType
+  sourcePort?: number
+  sourceUser?: string
+}
+
+export interface DatabaseCopyTarget {
+  targetConnection?: Record<string, any>
+  targetElasticSearch?: Client
+  targetFormat?: DatabaseCopyFormat
+  targetFile?: string
+  targetHost?: string
+  targetKnex?: Knex
+  targetLevel?: level.LevelDB | LevelUp
+  targetMongodb?: mongoDB.MongoClient
+  targetName?: string
+  targetPassword?: string
+  targetShards?: number
+  targetStream?: WritableStreamTree[]
+  targetTable?: string
+  targetType?: DatabaseCopyTargetType
+  targetPort?: number
+  targetUser?: string
+}
+
+export interface DatabaseCopyOptions extends DatabaseCopySource, DatabaseCopyTarget {
   batchSize?: number
   columnType?: Record<string, string>
   compoundInsert?: boolean
@@ -90,38 +128,6 @@ export interface DatabaseCopyOptions {
   shardBy?: string
   schema?: Column[]
   schemaFile?: string
-  sourceConnection?: Record<string, any>
-  sourceElasticSearch?: Client
-  sourceFormat?: DatabaseCopyFormat
-  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
-  sourceHost?: string
-  sourceLevel?: level.LevelDB | LevelUp
-  sourceMongodb?: mongoDB.MongoClient
-  sourceName?: string
-  sourceKnex?: Knex
-  sourcePassword?: string
-  sourceShards?: number
-  sourceStream?: ReadableStreamTree
-  sourceTable?: string
-  sourceType?: DatabaseCopySourceType
-  sourcePort?: number
-  sourceUser?: string
-  targetConnection?: Record<string, any>
-  targetElasticSearch?: Client
-  targetFormat?: DatabaseCopyFormat
-  targetFile?: string
-  targetHost?: string
-  targetKnex?: Knex
-  targetLevel?: level.LevelDB | LevelUp
-  targetMongodb?: mongoDB.MongoClient
-  targetName?: string
-  targetPassword?: string
-  targetShards?: number
-  targetStream?: WritableStreamTree[]
-  targetTable?: string
-  targetType?: DatabaseCopyTargetType
-  targetPort?: number
-  targetUser?: string
   tempDirectories?: string[]
   transformObject?: (x: unknown) => unknown | Promise<unknown>
   transformObjectStream?: () => Duplex
