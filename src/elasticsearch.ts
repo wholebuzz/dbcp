@@ -5,6 +5,52 @@ import StreamTree, { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 
 export const batch2 = require('batch2')
 
+export async function openElasticSearchSource(args: {
+  sourceElasticSearch?: Client
+  sourceName?: string
+  sourceUser?: string
+  sourcePassword?: string
+}) {
+  return openElasticSearch({
+    elasticSearch: args.sourceElasticSearch,
+    name: args.sourceName,
+    user: args.sourceUser,
+    password: args.sourcePassword,
+  })
+}
+
+export async function openElasticSearchTarget(args: {
+  targetElasticSearch?: Client
+  targetName?: string
+  targetUser?: string
+  targetPassword?: string
+}) {
+  return openElasticSearch({
+    elasticSearch: args.targetElasticSearch,
+    name: args.targetName,
+    user: args.targetUser,
+    password: args.targetPassword,
+  })
+}
+
+export async function openElasticSearch(args: {
+  elasticSearch?: Client
+  name?: string
+  user?: string
+  password?: string
+}) {
+  return (
+    args.elasticSearch ??
+    new Client({
+      node: args.name ?? '',
+      auth: {
+        username: args.user ?? '',
+        password: args.password ?? '',
+      },
+    })
+  )
+}
+
 export async function streamFromElasticSearch(
   client: Client,
   options: {

@@ -3,14 +3,7 @@ import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/fs/lib/json'
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
-import {
-  pipeFilter,
-  pipeFromFilter,
-  shardReadable,
-  shardWritables,
-  streamAsyncFilter,
-  streamFilter,
-} from '@wholebuzz/fs/lib/stream'
+import { pipeFilter, pipeFromFilter, shardReadable, shardWritables } from '@wholebuzz/fs/lib/stream'
 import { openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
 import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
@@ -18,9 +11,13 @@ import level from 'level'
 import { LevelUp } from 'levelup'
 import * as mongoDB from 'mongodb'
 import { Duplex, Readable } from 'stream'
-import sub from 'subleveldown'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
-import { streamFromElasticSearch, streamToElasticSearch } from './elasticsearch'
+import {
+  openElasticSearchSource,
+  openElasticSearchTarget,
+  streamFromElasticSearch,
+  streamToElasticSearch,
+} from './elasticsearch'
 import {
   DatabaseCopyFormat,
   DatabaseCopySchema,
@@ -44,11 +41,11 @@ import {
   knexPoolConfig,
   queryKnex,
 } from './knex'
+import { openLevelDbSource, openLevelDbTarget, streamFromLevelDb, streamToLevelDb } from './leveldb'
+import { openMongoDbSource, openMongoDbTarget, streamFromMongoDb, streamToMongoDb } from './mongodb'
 import { Column, formatDDLCreateTableSchema, guessSchemaFromFile } from './schema'
 import { findObjectProperty, updateObjectPropertiesAsync } from './util'
 
-const batch2 = require('batch2')
-const levelIteratorStream = require('level-iterator-stream')
 const { PARQUET_LOGICAL_TYPES } = require('parquetjs/lib/types')
 
 function initParquet() {
@@ -188,11 +185,21 @@ export function getTargetConnection(args: DatabaseCopyOptions) {
       }
 }
 
-export function getSourceConnectionString(args: DatabaseCopyOptions) {
+export function getSourceConnectionString(args: {
+  sourceHost?: string
+  sourcePassword?: string
+  sourcePort?: string | number
+  sourceUser?: string
+}) {
   return `${args.sourceUser}:${args.sourcePassword}@${args.sourceHost}:${args.sourcePort}`
 }
 
-export function getTargetConnectionString(args: DatabaseCopyOptions) {
+export function getTargetConnectionString(args: {
+  targetHost?: string
+  targetPassword?: string
+  targetPort?: string | number
+  targetUser?: string
+}) {
   return `${args.targetUser}:${args.targetPassword}@${args.targetHost}:${args.targetPort}`
 }
 
@@ -652,15 +659,7 @@ async function dumpToDatabase(
   options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
 ) {
   if (args.targetType === DatabaseCopyTargetType.elasticsearch) {
-    const client =
-      args.targetElasticSearch ??
-      new Client({
-        node: args.targetName ?? '',
-        auth: {
-          username: args.targetUser ?? '',
-          password: args.targetPassword ?? '',
-        },
-      })
+    const client = await openElasticSearchTarget(args)
     try {
       const output = streamToElasticSearch(client, {
         index: args.targetTable ?? '',
@@ -675,51 +674,33 @@ async function dumpToDatabase(
       await client.close()
     }
   } else if (args.targetType === DatabaseCopyTargetType.level) {
-    const levelOptions = {
-      valueEncoding: 'json',
-      ...args.extra,
-    }
-    const db: level.LevelDB | undefined = !args.targetLevel
-      ? level(args.targetFile!, levelOptions)
-      : undefined
-    const sublevel = db && args.targetTable ? sub(db, args.targetTable, levelOptions) : undefined
-    const targetLevel = args.targetLevel ?? sublevel ?? db
+    const db = await openLevelDbTarget({
+      ...args,
+      targetTable: args.targetTable ? [args.targetTable] : undefined,
+    })
+    const targetLevel = Object.values(db.tables)[0] ?? db.db
     const getKey = (item: any) => item[args.orderBy?.[0] || 'id']
     try {
-      await pumpWritable(
-        StreamTree.writable(
-          streamAsyncFilter(async (item: any) => {
-            const key = getKey(item)
-            if (key) await targetLevel!.put(key, item)
-            return undefined
-          })
-        ),
-        undefined,
-        input
-      )
+      const output = streamToLevelDb(targetLevel, { getKey })
+      await pumpWritable(output, undefined, input)
     } catch (error) {
       throw error
     } finally {
-      if (sublevel) await sublevel.close()
-      if (db) await db.close()
+      await db.close()
     }
   } else if (args.targetType === DatabaseCopyTargetType.mongodb) {
-    const client: mongoDB.MongoClient =
-      args.targetMongodb ?? new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(args))
-    if (!args.targetMongodb) await client.connect()
+    const db = await openMongoDbTarget({
+      ...args,
+      targetTable: args.targetTable ? [args.targetTable] : undefined,
+    })
     try {
-      const db: mongoDB.Db = client.db(args.targetName)
-      const collection: mongoDB.Collection = db.collection(args.targetTable ?? '')
-      const stream = StreamTree.writable(
-        streamAsyncFilter(async (data: any) => {
-          await collection.insertMany(data)
-        })
-      ).pipeFrom(batch2.obj({ size: options?.batchSize ?? 4000 }))
+      const target = Object.values(db.tables)[0]
+      const stream = streamToMongoDb(target)
       await pumpWritable(stream, undefined, input)
     } catch (error) {
       throw error
     } finally {
-      if (!args.targetMongodb) await client.close()
+      await db.close()
     }
   } else {
     const targetKnex =
@@ -742,15 +723,7 @@ async function dumpToDatabase(
 
 async function queryDatabase(args: DatabaseCopyOptions) {
   if (args.sourceType === DatabaseCopySourceType.elasticsearch) {
-    const client =
-      args.sourceElasticSearch ??
-      new Client({
-        node: args.sourceName ?? '',
-        auth: {
-          username: args.sourceUser ?? '',
-          password: args.sourcePassword ?? '',
-        },
-      })
+    const client = await openElasticSearchSource(args)
     let input = await streamFromElasticSearch(client, {
       index: args.sourceTable!,
       orderBy: args.orderBy,
@@ -759,42 +732,30 @@ async function queryDatabase(args: DatabaseCopyOptions) {
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
     return { input, destroy: () => client.close() }
   } else if (args.sourceType === DatabaseCopySourceType.level) {
-    const levelOptions = {
-      valueEncoding: 'json',
-      ...args.extra,
-    }
-    const db: level.LevelDB | undefined = !args.sourceLevel
-      ? level(Object.entries(args.sourceFiles!)[0][1].url!, levelOptions)
-      : undefined
-    const sublevel = db && args.sourceTable ? sub(db, args.sourceTable, levelOptions) : undefined
-    const sourceLevel = args.sourceLevel ?? sublevel ?? db
-    const iterator = levelIteratorStream(sourceLevel!.iterator())
-    let input = StreamTree.readable(iterator).pipe(streamFilter((x) => x.value))
+    const db = await openLevelDbSource({
+      ...args,
+      sourceFile: Object.entries(args.sourceFiles!)[0][1].url!,
+      sourceTable: args.sourceTable ? [args.sourceTable] : undefined,
+    })
+    const sourceLevel = Object.values(db.tables)[0] ?? db.db
+    let input = streamFromLevelDb(sourceLevel)
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
     return {
       input,
-      destroy: async () => {
-        if (sublevel) await sublevel.close()
-        if (db) await db.close()
-      },
+      destroy: () => db.close(),
     }
   } else if (args.sourceType === DatabaseCopySourceType.mongodb) {
-    const client: mongoDB.MongoClient =
-      args.sourceMongodb ?? new mongoDB.MongoClient('mongodb://' + getSourceConnectionString(args))
-    if (!args.sourceMongodb) await client.connect()
-    const db: mongoDB.Db = client.db(args.sourceName)
-    const collection: mongoDB.Collection = db.collection(args.sourceTable ?? '')
-    let input = StreamTree.readable(
-      collection.find(args.query ? JSON.parse(args.query) : undefined).stream()
-    )
+    const db = await openMongoDbSource({
+      ...args,
+      sourceTable: args.sourceTable ? [args.sourceTable] : undefined,
+    })
+    let input = streamFromMongoDb(Object.values(db.tables)[0], args)
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
     return {
       input,
-      destroy: async () => {
-        if (!args.sourceMongodb) await client.close()
-      },
+      destroy: () => db.close(),
     }
   } else {
     const sourceKnex =
