@@ -18,7 +18,7 @@ export async function openMongoDbSource(args: {
     url: `mongodb://${getSourceConnectionString(args)}`,
     mongodb: args.sourceMongodb,
     name: args.sourceName,
-    table: args.sourceTable,
+    tables: args.sourceTable,
   })
 }
 
@@ -35,7 +35,7 @@ export async function openMongoDbTarget(args: {
     url: `mongodb://${getTargetConnectionString(args)}`,
     mongodb: args.targetMongodb,
     name: args.targetName,
-    table: args.targetTable,
+    tables: args.targetTable,
   })
 }
 
@@ -43,7 +43,7 @@ export async function openMongoDb(args: {
   url?: string
   name?: string
   mongodb?: mongoDB.MongoClient
-  table?: string[]
+  tables?: string[]
 }) {
   const tables: Record<string, mongoDB.Collection> = {}
   if (args.mongodb) {
@@ -58,7 +58,7 @@ export async function openMongoDb(args: {
   const client = new mongoDB.MongoClient(args.url!)
   await client.connect()
   const db: mongoDB.Db = client.db(args.name)
-  args.table?.map((table) => {
+  args.tables?.map((table) => {
     tables[table] = db.collection(table)
   })
   return {

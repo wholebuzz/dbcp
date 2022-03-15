@@ -16,7 +16,7 @@ export async function openLevelDbSource(args: {
   return openLevelDb({
     file: args.sourceFile,
     level: args.sourceLevel,
-    table: args.sourceTable,
+    tables: args.sourceTable,
     extra: args.extra,
   })
 }
@@ -31,7 +31,7 @@ export async function openLevelDbTarget(args: {
   return openLevelDb({
     file: args.targetFile,
     level: args.targetLevel,
-    table: args.targetTable,
+    tables: args.targetTable,
     extra: args.extra,
     removeExisting: args.removeExisting,
   })
@@ -40,7 +40,7 @@ export async function openLevelDbTarget(args: {
 export async function openLevelDb(args: {
   file?: string
   level?: level.LevelDB | LevelUp
-  table?: string[]
+  tables?: string[]
   extra?: Record<string, any>
   removeExisting?: boolean
 }) {
@@ -60,7 +60,7 @@ export async function openLevelDb(args: {
     ...args.extra,
   }
   const db: level.LevelDB = level(args.file!, levelOptions)
-  args.table?.map((table) => {
+  args.tables?.map((table) => {
     tables[table] = sub(db, table, levelOptions)
   })
   return {
