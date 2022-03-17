@@ -5,7 +5,7 @@ import { promisify } from 'util'
 export const rmrf = promisify(rimraf)
 
 export function findObjectProperty<X>(
-  x: X[] | Record<string, X> | undefined,
+  x: X[] | Record<string, X> | undefined | null,
   key: string | number
 ): X | undefined {
   if (!x) return undefined
@@ -13,11 +13,26 @@ export function findObjectProperty<X>(
   return Object.entries(x).find(([k, _]) => k === needle)?.[1]
 }
 
+export function updateObjectProperties<X>(
+  x: X[] | Record<string, X> | undefined | null,
+  f: (x: X, key: string | number) => X
+) {
+  if (!x) return undefined
+  if (Array.isArray(x)) {
+    return x.map(f)
+  } else {
+    const ret = { ...x }
+    for (const [k, v] of Object.entries(x)) ret[k] = f(v, k)
+    return ret
+  }
+}
+
 export async function updateObjectPropertiesAsync<X>(
-  x: X[] | Record<string, X>,
+  x: X[] | Record<string, X> | undefined | null,
   f: (x: X, key: string | number) => Promise<X>,
   options?: { concurrency?: number }
 ) {
+  if (!x) return undefined
   if (Array.isArray(x)) {
     const newValues = await pSettle(
       x.map((v, i) => f(v, i)),
