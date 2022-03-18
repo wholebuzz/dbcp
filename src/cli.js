@@ -77,6 +77,10 @@ async function main() {
         description: 'Database port',
         type: 'string',
       },
+      probeBytes: {
+        description: 'Probe bytes',
+        type: 'number',
+      },
       query: {
         description: 'Query',
         type: 'string',

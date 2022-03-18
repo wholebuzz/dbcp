@@ -122,6 +122,7 @@ export interface DatabaseCopyOptions extends DatabaseCopySource, DatabaseCopyTar
   groupLabels?: boolean
   limit?: number
   orderBy?: string[]
+  probeBytes?: number
   query?: string
   shardBy?: string
   schema?: Column[]
@@ -457,7 +458,9 @@ export async function dbcp(args: DatabaseCopyOptions) {
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
             : sourceFiles.length === 1
-            ? Object.values(await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url!))
+            ? Object.values(
+                await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url!, args.probeBytes)
+              )
             : undefined)
         : undefined
       await updateObjectPropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {

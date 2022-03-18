@@ -33,6 +33,7 @@ Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are
 - Database powered by [knex](https://www.npmjs.com/package/knex) and [knex-schema-inspector](https://www.npmjs.com/package/knex-schema-inspector)
 - File system and file formats provided by [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs)
 - Connected using the [tree-stream](https://www.npmjs.com/package/tree-stream) primitives `ReadableStreamTree` and `WritableStreamTree`
+- Used to implement [@wholebuzz/mapreduce](https://www.npmjs.com/package/@wholebuzz/mapreduce)
 
 ## Modules
 

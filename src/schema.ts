@@ -91,14 +91,15 @@ export function guessColumnType(column: Column, value: Record<string, any>) {
         valueType = 'boolean'
         break
       case 'number':
-        valueType = 'integer'
+        valueType = Number.isInteger(value) ? 'integer' : 'float'
         break
       case 'object':
         valueType = 'json'
         if (!column.sub_columns) column.sub_columns = {}
         for (const [subkey, subvalue] of Object.entries(value)) {
-          if (!column.sub_columns[subkey])
+          if (!column.sub_columns[subkey]) {
             column.sub_columns[subkey] = newSchemaColumn('', subkey, '')
+          }
           guessColumnType(column.sub_columns[subkey], subvalue)
         }
         break
@@ -106,7 +107,9 @@ export function guessColumnType(column: Column, value: Record<string, any>) {
         valueType = 'text'
         break
     }
-    column.data_type = valueType
+    if (!(column.data_type === 'float' && valueType === 'integer')) {
+      column.data_type = valueType
+    }
   }
 }
 
@@ -191,9 +194,9 @@ export function formatDDLCreateTableSchema(
     const type = columnType?.[columnInfo.name] ?? getDDLColumnType(columnInfo)
     if (ddl) ddl += ',\n'
     if (type === 'array' || type === 'struct') {
-      ddl += `  ${columnInfo.name} ${formatDDLType(columnInfo, '  ')}`
+      ddl += `  \`${columnInfo.name}\` ${formatDDLType(columnInfo, '  ')}`
     } else {
-      ddl += `  ${columnInfo.name} ${type}`
+      ddl += `  \`${columnInfo.name}\` ${type}`
     }
   }
   return `CREATE EXTERNAL TABLE IF NOT EXISTS ${tableName}(\n${ddl}\n)\n`
@@ -209,7 +212,7 @@ export function formatDDLType(columnInfo: Column | undefined, indent: string): s
     let ddl = ''
     for (const [key, value] of Object.entries(columnInfo.sub_columns ?? {})) {
       if (ddl) ddl += ',\n'
-      ddl += `${indent}  ${key}: ${formatDDLType(value, indent + '  ')}`
+      ddl += `${indent}  \`${key}\`: ${formatDDLType(value, indent + '  ')}`
     }
     return `struct<\n${ddl}\n${indent}>`
   } else {
@@ -223,7 +226,7 @@ export function getDDLColumnType(columnInfo: Column) {
       return 'boolean'
     case 'int':
     case 'integer':
-      return 'int'
+      return 'bigint'
     case 'double precision':
     case 'float':
       return 'float'
