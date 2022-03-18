@@ -32,6 +32,7 @@ import {
   pipeInputFormatTransform,
   sourceHasDatabaseFile,
   targetHasDatabaseFile,
+  targetIsSqlDatabase,
 } from './format'
 import {
   dumpToKnex,
@@ -489,7 +490,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           externalSortFunction,
           format: isNotBytes2Bytes ? targetFormat : undefined,
           formattingKnex:
-            shouldInspectSchema && targetType
+            shouldInspectSchema && targetIsSqlDatabase(targetType)
               ? knex({ client: targetType, log: knexLogConfig })
               : undefined,
           shardFunction: getShardFunction(args),

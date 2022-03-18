@@ -90,7 +90,8 @@ $ ./node_modules/.bin/dbcp --help
 ### Read object stream from any source and format
 
 ```typescript
-  import { dbcp, openNullWritable } from 'dbcp'
+  import { openNullWritable } from '@wholebuzz/fs/lib/stream'
+  import { dbcp } from 'dbcp'
   import { Transform } from 'stream'
 
   // Supply transformObject and a do-nothing Writable for targetStream.
@@ -131,6 +132,8 @@ $ ./node_modules/.bin/dbcp --help
 - [Convert file from ND-JSON to JSON](#convert-file-from-nd-json-to-json)
 - [Download a file](#download-a-file)
 - [Post a file to HTTP endpoint](#post-a-file-to-http-endpoint)
+- [Create Athena DDL from JSON sample](#create-athena-ddl-from-json-sample)
+- [Create Postgres CREATE TABLE from JSON sample](#create-postgres-create-table-from-json-sample)
 
 ## Tested
 
@@ -396,3 +399,16 @@ $ dbcp "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" foo.pn
 ```
 $ dbcp "./foo.png" "http://my.api/upload" --contentType "image/png"
 ```
+
+### Create Athena DDL from JSON sample:
+
+```
+$ dbcp --schemaOnly --sourceFile ./sample.jsonl.gz --targetType athena --targetFile ddl.sql
+```
+
+### Create Postgres CREATE TABLE from JSON sample:
+
+```
+$ dbcp --schemaOnly --sourceFile ./sample.jsonl.gz --targetType postgresql --targetFile ddl.sql
+```
+

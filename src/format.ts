@@ -179,6 +179,18 @@ export function targetHasDatabaseFile(format?: DatabaseCopyTargetType | null) {
   }
 }
 
+export function targetIsSqlDatabase(format?: DatabaseCopyTargetType | null) {
+  switch (format) {
+    case DatabaseCopyTargetType.mssql:
+    case DatabaseCopyTargetType.mysql:
+    case DatabaseCopyTargetType.postgresql:
+    case DatabaseCopyTargetType.sqlite:
+      return true
+    default:
+      return false
+  }
+}
+
 export function formatHasSchema(format?: DatabaseCopyFormat) {
   switch (format) {
     case DatabaseCopyFormat.parquet:
