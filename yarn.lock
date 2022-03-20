@@ -1169,10 +1169,10 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@wholebuzz/fs@^1.2.3":
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-1.2.3.tgz#bbdec3d0ca401f3aa912ec19a21822d1f42a70aa"
-  integrity sha512-Z0nVCOeAn+2mLvHlKvbl0yqBweEPlQJn8KdXAvWtkQ0QkwZws7DQWgpVXs5pHDw2Na4OezLafwa/p/r0Gj2Iyg==
+"@wholebuzz/fs@^1.2.4":
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/@wholebuzz/fs/-/fs-1.2.4.tgz#84df55f735e12b63def83e2771d18c4c346432d1"
+  integrity sha512-WhJhD9zRklQtEH4X2p8t8Rn+pDRbTKVzElEe2fuaxkXFgdvlHQPXinSR3em01thwUYpe9ReluPtoRFNSdfIRJw==
   dependencies:
     JSONStream "^1.3.5"
     ndjson "^2.0.0"
