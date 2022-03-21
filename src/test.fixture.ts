@@ -20,8 +20,8 @@ export async function expectCreateFileWithConvertHash(
   // Convert and verify
   await expectCreateFileWithHash(fileSystem, convertToUrl, convertToHash, () =>
     dbcp({
-      sourceFiles: [{ url: targetUrl }],
-      targetFile: convertToUrl,
+      inputFiles: [{ url: targetUrl }],
+      outputFile: convertToUrl,
       fileSystem,
       transformObject: (x: any) =>
         convertToTransform({
@@ -76,9 +76,9 @@ export async function hashFile(fileSystem: FileSystem, path: string) {
 export async function dbcpHashFile(fileSystem: FileSystem, path: string) {
   const target = { value: '' }
   await dbcp({
-    sourceFiles: [{ url: path }],
-    // sourceStream: await fileSystem.openReadableFile(path),
-    targetStream: [writableToString(target).pipeFrom(hasha.stream(hashOptions))],
+    inputFiles: [{ url: path }],
+    // inputStream: await fileSystem.openReadableFile(path),
+    outputStream: [writableToString(target).pipeFrom(hasha.stream(hashOptions))],
     fileSystem,
   })
   return target.value

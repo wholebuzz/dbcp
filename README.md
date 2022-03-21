@@ -2,7 +2,7 @@
 
 ```
 $ dbcp --help
-cli.js [sourceFile] [targetFile]
+cli.js [inputFile] [outputFile]
 $ dbcp data.parquet data.jsonl.gz
 $ dbcp data.jsonl.gz s3://bucket/data.csv.gz
 ```
@@ -13,7 +13,7 @@ Automatically converts between supported formats JSON, ND-JSON, CSV, SQL, Parque
 
 ## CLI
 
-Either `--sourceType` or `--sourceFile` and `--targetType` or `--targetFile` are required. Other options can be shortened, e.g `--user` instead of `--sourceUser`. Only a database-to-database copy requires both `--sourceUser` and `--targetUser`. The file format and compression is inferred from the filename.
+Either `--inputType` or `--inputFile` and `--outputType` or `--outputFile` are required. Other options can be shortened, e.g `--user` instead of `--inputUser`. Only a database-to-database copy requires both `--inputUser` and `--outputUser`. The file format and compression is inferred from the filename.
 `dbcp` pipes Readable Node.JS streams to Writable streams. No intermediate storage is required.
 
 ## API
@@ -82,9 +82,9 @@ $ ./node_modules/.bin/dbcp --help
   
   await dbcp({
     fileSystem,
-    targetFile: 's3://foo/bar.jsonl',
+    outputFile: 's3://foo/bar.jsonl',
     // e.g. from level (https://www.npmjs.com/package/level)) database
-    sourceStream: StreamTree.readable(levelIteratorStream(leveldb.iterator())),
+    inputStream: StreamTree.readable(levelIteratorStream(leveldb.iterator())),
   })
 ```
 
@@ -95,21 +95,21 @@ $ ./node_modules/.bin/dbcp --help
   import { dbcp } from 'dbcp'
   import { Transform } from 'stream'
 
-  // Supply transformObject and a do-nothing Writable for targetStream.
+  // Supply transformObject and a do-nothing Writable for outputStream.
   await dbcp({
     fileSystem,
-    sourceFiles: [ { url: '/tmp/foobar.csv.gz' } ],
-    targetStream: [ openNullWritable() ],
+    inputFiles: [ { url: '/tmp/foobar.csv.gz' } ],
+    outputStream: [ openNullWritable() ],
     transformObject: (x) => { console.log('test', x) },
   })
 
-  // Or alternatively supply targetStream with targetFormat = object
+  // Or alternatively supply outputStream with outputFormat = object
   await dbcp({
     fileSystem,
-    sourceFiles: [ { url: '/tmp/foobar.csv.gz' } ],
-    // Without targetFormat = object, transform() would receive Buffer
-    targetFormat: DatabaseCopyFormat.object,
-    targetStream: [
+    inputFiles: [ { url: '/tmp/foobar.csv.gz' } ],
+    // Without outputFormat = object, transform() would receive Buffer
+    outputFormat: DatabaseCopyFormat.object,
+    outputStream: [
       StreamTree.writable(new Transform({
         objectMode: true,
         transform(data, _, cb) {
@@ -182,42 +182,13 @@ export interface DatabaseCopyOptions {
   groupLabels?: boolean
   limit?: number
   orderBy?: string[]
+  probeBytes?: number
   query?: string
   shardBy?: string
   schema?: Column[]
   schemaFile?: string
-  sourceConnection?: Record<string, any>
-  sourceElasticSearch?: Client
-  sourceFormat?: DatabaseCopyFormat
-  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
-  sourceHost?: string
-  sourceLevel?: level.LevelDB | LevelUp
-  sourceName?: string
-  sourceKnex?: Knex
-  sourcePassword?: string
-  sourceShards?: number
-  sourceStream?: ReadableStreamTree
-  sourceTable?: string
-  sourceType?: DatabaseCopySourceType
-  sourcePort?: number
-  sourceUser?: string
-  targetConnection?: Record<string, any>
-  targetElasticSearch?: Client
-  targetFormat?: DatabaseCopyFormat
-  targetFile?: string
-  targetHost?: string
-  targetKnex?: Knex
-  targetLevel?: level.LevelDB | LevelUp
-  targetName?: string
-  targetPassword?: string
-  targetShards?: number
-  targetStream?: WritableStreamTree[]
-  targetTable?: string
-  targetType?: DatabaseCopyTargetType
-  targetPort?: number
-  targetUser?: string
-  tempDirectory?: string
-  transformObject?: (x: unknown) => unknown
+  tempDirectories?: string[]
+  transformObject?: (x: unknown) => unknown | Promise<unknown>
   transformObjectStream?: () => Duplex
   transformBytes?: (x: string) => string
   transformBytesStream?: () => Duplex
@@ -229,7 +200,7 @@ export interface DatabaseCopyOptions {
 
 ```
 $ dbcp --help
-cli.js [sourceFile] [targetFile]
+cli.js [inputFile] [outputFile]
 
 Options:
   --help            Show help                                          [boolean]
@@ -246,10 +217,39 @@ Options:
                                                                           "sql"]
   --group           Group inputs with equinvalent orderBy              [boolean]
   --host            Database host                                       [string]
+  --inputFile       Input file                                           [array]
+  --inputFormat
+    [choices: "csv", "json", "jsonl", "ndjson", "object", "parquet", "tfrecord",
+                                                                          "sql"]
+  --inputHost       Input host                                          [string]
+  --inputName       Input database                                      [string]
+  --inputPassword   Input database password                             [string]
+  --inputPort       Input database port                                 [string]
+  --inputShards     Input shards                                        [number]
+  --inputTable      Input database table                                [string]
+  --inputType       Input database type
+          [string] [choices: "athena", "elasticsearch", "file", "http", "level",
+                   "mongodb", "mssql", "mysql", "postgresql", "redis", "sqlite"]
+  --inputUser       Input database user                                 [string]
   --limit           Database query LIMIT                                [number]
   --orderBy         Database query ORDER BY                              [array]
+  --outputFile      Output file                                         [string]
+  --outputFormat
+    [choices: "csv", "json", "jsonl", "ndjson", "object", "parquet", "tfrecord",
+                                                                          "sql"]
+  --outputHost      Output host                                         [string]
+  --outputName      Output database                                     [string]
+  --outputPassword  Output database password                            [string]
+  --outputPort      Output database port                                [string]
+  --outputShards    Output shards                                       [number]
+  --outputTable     Output database table                               [string]
+  --outputType      Output database type
+          [string] [choices: "athena", "elasticsearch", "file", "http", "level",
+                   "mongodb", "mssql", "mysql", "postgresql", "redis", "sqlite"]
+  --outputUser      Output database user                                [string]
   --password        Database password                                   [string]
   --port            Database port                                       [string]
+  --probeBytes      Probe bytes                                         [number]
   --query           Query                                               [string]
   --schemaFile      Use schema file if required, instead of schema inspection.
                                                                         [string]
@@ -257,37 +257,11 @@ Options:
                                                                        [boolean]
   --shardBy         Shard (or split) the data based on key              [string]
   --shards          The number of shards to split or join the data      [number]
-  --sourceFile      Source file                                          [array]
-  --sourceFormat
-    [choices: "csv", "json", "jsonl", "ndjson", "object", "parquet", "tfrecord",
-                                                                          "sql"]
-  --sourceHost      Source host                                         [string]
-  --sourceName      Source database                                     [string]
-  --sourcePassword  Source database password                            [string]
-  --sourcePort      Source database port                                [string]
-  --sourceShards    Source shards                                       [number]
-  --sourceTable     Source database table                               [string]
-  --sourceType      Source database type
-     [string] [choices: "athena", "es", "level", "mssql", "mysql", "postgresql",
-                                                                       "sqlite"]
-  --sourceUser      Source database user                                [string]
   --table           Database table                                      [string]
-  --targetFile      Target file                                         [string]
-  --targetFormat
-    [choices: "csv", "json", "jsonl", "ndjson", "object", "parquet", "tfrecord",
-                                                                          "sql"]
-  --targetHost      Target host                                         [string]
-  --targetName      Target database                                     [string]
-  --targetPassword  Target database password                            [string]
-  --targetPort      Target database port                                [string]
-  --targetShards    Target shards                                       [number]
-  --targetTable     Target database table                               [string]
-  --targetType      Target database type
-     [string] [choices: "athena", "es", "level", "mssql", "mysql", "postgresql",
-                                                                       "sqlite"]
-  --targetUser      Target database user                                [string]
   --user            Database user                                       [string]
   --where           Database query WHERE                                 [array]
+  --whereDate       Database query WHERE, final argument parsed as Javascript
+                    date                                                 [array]
 ```
 
 ## CLI Examples
@@ -296,21 +270,21 @@ Options:
 
 ```
 $ dbcp \
-  --sourceType postgresql \
+  --inputType postgresql \
   --host localhost \
   --dbname postgres \
   --port 5433 \
   --user postgres \
   --password postgres \
   --table foobar \
-  --targetFile gs://bucket/file.json.gz
+  --outputFile gs://bucket/file.json.gz
 ```
 
 ### Copy MySQL table to Amazon Web Services S3 gzipped JSON-Lines file
 
 ```
 $ dbcp \
-  --sourceType mysql \
+  --inputType mysql \
   --host localhost \
   --dbname mydb \
   --port 8083 \
@@ -318,50 +292,50 @@ $ dbcp \
   --password wp \
   --table foobar \
   --format jsonl \
-  --targetFile s3://bucket/object.jsonl.gz
+  --outputFile s3://bucket/object.jsonl.gz
 ```
 
 ### Copy Amazon Web Services S3 gzipped JSON-Lines to MySQL table
 
 ```
 $ dbcp \
-  --targetType mysql \
+  --outputType mysql \
   --host localhost \
   --dbname mydb \
   --port 8083 \
   --user root \
   --password wp \
   --table foobar \
-  --sourceFile s3://bucket/object.jsonl.gz
+  --inputFile s3://bucket/object.jsonl.gz
 ```
 
 ### Copy SQLServer table to stdout
 
 ```
 $ dbcp \
-  --sourceType mssql \
+  --inputType mssql \
   --host localhost \
   --dbname mymsdb \
   --port 1433 \
   --user SA \
   --password "MyP@ssw0rd#" \
   --table foobar \
-  --targetFile=-
+  --outputFile=-
 ```
 
 ### Copy MongoDB table to four gzipped JSON-Lines shards
 
 ```
 $ dbcp \
-  --sourceType mongodb \
+  --inputType mongodb \
   --host localhost \
   --port 27017 \
   --user root \
   --password example \
   --dbname test_db \
   --table dbcptest \
-  --targetFile output-SSSS-of-NNNN.jsonl.gz \
-  --targetShards 4 \
+  --outputFile output-SSSS-of-NNNN.jsonl.gz \
+  --outputShards 4 \
   --shardBy id
 
 $ ls output*
@@ -404,12 +378,32 @@ $ dbcp "./foo.png" "http://my.api/upload" --contentType "image/png"
 ### Create Athena DDL from JSON sample:
 
 ```
-$ dbcp --schemaOnly --sourceFile ./sample.jsonl.gz --targetType athena --targetFile ddl.sql
+$ dbcp --schemaOnly --inputFile ./sample.jsonl.gz --outputType athena --outputFile ddl.sql
 ```
 
 ### Create Postgres CREATE TABLE from JSON sample:
 
 ```
-$ dbcp --schemaOnly --sourceFile ./sample.jsonl.gz --targetType postgresql --targetFile ddl.sql
+$ dbcp --schemaOnly --inputFile ./sample.jsonl.gz --outputType postgresql --outputFile ddl.sql
 ```
 
+
+[dbcp](docs/README.md) / Exports
+
+# dbcp
+
+## Table of contents
+
+### Modules
+
+- [cli](docs/modules/cli.md)
+- [compound](docs/modules/compound.md)
+- [elasticsearch](docs/modules/elasticsearch.md)
+- [format](docs/modules/format.md)
+- [index](docs/modules/index.md)
+- [knex](docs/modules/knex.md)
+- [leveldb](docs/modules/leveldb.md)
+- [mongodb](docs/modules/mongodb.md)
+- [schema](docs/modules/schema.md)
+- [test.fixture](docs/modules/test_fixture.md)
+- [util](docs/modules/util.md)

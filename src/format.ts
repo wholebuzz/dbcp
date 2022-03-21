@@ -14,7 +14,7 @@ import { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { pipeKnexInsertTextTransform } from './knex'
 import { parquetFieldFromSchema } from './schema'
 
-export enum DatabaseCopySourceType {
+export enum DatabaseCopyInputType {
   athena = 'athena',
   elasticsearch = 'elasticsearch',
   file = 'file',
@@ -28,7 +28,7 @@ export enum DatabaseCopySourceType {
   sqlite = 'sqlite',
 }
 
-export enum DatabaseCopyTargetType {
+export enum DatabaseCopyOutputType {
   athena = 'athena',
   elasticsearch = 'elasticsearch',
   file = 'file',
@@ -70,19 +70,19 @@ export function guessFormatFromFilename(filename?: string) {
   return null
 }
 
-export function guessSourceTypeFromFilename(filename?: string) {
+export function guessInputTypeFromFilename(filename?: string) {
   if (!filename) return null
   if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
-  if (filename.endsWith('.level')) return DatabaseCopySourceType.level
-  if (filename.endsWith('.sqlite')) return DatabaseCopySourceType.sqlite
+  if (filename.endsWith('.level')) return DatabaseCopyInputType.level
+  if (filename.endsWith('.sqlite')) return DatabaseCopyInputType.sqlite
   return null
 }
 
-export function guessTargetTypeFromFilename(filename?: string) {
+export function guessOutputTypeFromFilename(filename?: string) {
   if (!filename) return null
   if (filename.endsWith('.gz')) filename = filename.substring(0, filename.length - 3)
-  if (filename.endsWith('.level')) return DatabaseCopyTargetType.level
-  if (filename.endsWith('.sqlite')) return DatabaseCopyTargetType.sqlite
+  if (filename.endsWith('.level')) return DatabaseCopyOutputType.level
+  if (filename.endsWith('.sqlite')) return DatabaseCopyOutputType.sqlite
   return null
 }
 
@@ -159,32 +159,44 @@ export function formatContentType(format?: DatabaseCopyFormat | null) {
   }
 }
 
-export function sourceHasDatabaseFile(format?: DatabaseCopySourceType | null) {
+export function inputHasDatabaseFile(format?: DatabaseCopyInputType | null) {
   switch (format) {
-    case DatabaseCopySourceType.level:
-    case DatabaseCopySourceType.sqlite:
+    case DatabaseCopyInputType.level:
+    case DatabaseCopyInputType.sqlite:
       return true
     default:
       return false
   }
 }
 
-export function targetHasDatabaseFile(format?: DatabaseCopyTargetType | null) {
+export function outputHasDatabaseFile(format?: DatabaseCopyOutputType | null) {
   switch (format) {
-    case DatabaseCopyTargetType.level:
-    case DatabaseCopyTargetType.sqlite:
+    case DatabaseCopyOutputType.level:
+    case DatabaseCopyOutputType.sqlite:
       return true
     default:
       return false
   }
 }
 
-export function targetIsSqlDatabase(format?: DatabaseCopyTargetType | null) {
+export function inputIsSqlDatabase(format?: DatabaseCopyInputType | null) {
   switch (format) {
-    case DatabaseCopyTargetType.mssql:
-    case DatabaseCopyTargetType.mysql:
-    case DatabaseCopyTargetType.postgresql:
-    case DatabaseCopyTargetType.sqlite:
+    case DatabaseCopyInputType.mssql:
+    case DatabaseCopyInputType.mysql:
+    case DatabaseCopyInputType.postgresql:
+    case DatabaseCopyInputType.sqlite:
+      return true
+    default:
+      return false
+  }
+}
+
+export function outputIsSqlDatabase(format?: DatabaseCopyOutputType | null) {
+  switch (format) {
+    case DatabaseCopyOutputType.mssql:
+    case DatabaseCopyOutputType.mysql:
+    case DatabaseCopyOutputType.postgresql:
+    case DatabaseCopyOutputType.sqlite:
       return true
     default:
       return false

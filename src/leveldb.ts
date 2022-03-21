@@ -7,31 +7,31 @@ import { rmrf } from './util'
 
 export const levelIteratorStream = require('level-iterator-stream')
 
-export async function openLevelDbSource(args: {
-  sourceFile?: string
-  sourceLevel?: level.LevelDB | LevelUp
-  sourceTable?: string[]
+export async function openLevelDbInput(args: {
+  inputFile?: string
+  inputLeveldb?: level.LevelDB | LevelUp
+  inputTable?: string[]
   extra?: Record<string, any>
 }) {
   return openLevelDb({
-    file: args.sourceFile,
-    level: args.sourceLevel,
-    tables: args.sourceTable,
+    file: args.inputFile,
+    level: args.inputLeveldb,
+    tables: args.inputTable,
     extra: args.extra,
   })
 }
 
-export async function openLevelDbTarget(args: {
-  targetFile?: string
-  targetLevel?: level.LevelDB | LevelUp
-  targetTable?: string[]
+export async function openLevelDbOutput(args: {
+  outputFile?: string
+  outputLeveldb?: level.LevelDB | LevelUp
+  outputTable?: string[]
   extra?: Record<string, any>
   removeExisting?: boolean
 }) {
   return openLevelDb({
-    file: args.targetFile,
-    level: args.targetLevel,
-    tables: args.targetTable,
+    file: args.outputFile,
+    level: args.outputLeveldb,
+    tables: args.outputTable,
     extra: args.extra,
     removeExisting: args.removeExisting,
   })

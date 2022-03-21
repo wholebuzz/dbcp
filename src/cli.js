@@ -14,8 +14,8 @@ const progressStream = require('progress-stream')
 const yargs = require('yargs')
 const {
   DatabaseCopyFormat,
-  DatabaseCopySourceType,
-  DatabaseCopyTargetType,
+  DatabaseCopyInputType,
+  DatabaseCopyOutputType,
   DatabaseCopySchema,
 } = require('./format')
 const { dbcp } = require('./index')
@@ -28,7 +28,7 @@ async function main() {
   const formats = Object.values(DatabaseCopyFormat)
   const args = yargs
     .strict()
-    .command('* [sourceFile] [targetFile]', '')
+    .command('* [inputFile] [outputFile]', '')
     .options({
       compoundInsert: {
         description: 'Compound insert mode can insert associated rows from multiple tables.',
@@ -61,6 +61,46 @@ async function main() {
         description: 'Database host',
         type: 'string',
       },
+      inputFile: {
+        description: 'Input file',
+        type: 'array',
+      },
+      inputFormat: {
+        choices: formats,
+      },
+      inputHost: {
+        description: 'Input host',
+        type: 'string',
+      },
+      inputName: {
+        description: 'Input database',
+        type: 'string',
+      },
+      inputPassword: {
+        description: 'Input database password',
+        type: 'string',
+      },
+      inputPort: {
+        description: 'Input database port',
+        type: 'string',
+      },
+      inputShards: {
+        description: 'Input shards',
+        type: 'number',
+      },
+      inputTable: {
+        description: 'Input database table',
+        type: 'string',
+      },
+      inputType: {
+        choices: Object.values(DatabaseCopyInputType),
+        description: 'Input database type',
+        type: 'string',
+      },
+      inputUser: {
+        description: 'Input database user',
+        type: 'string',
+      },
       limit: {
         description: 'Database query LIMIT',
         type: 'number',
@@ -68,6 +108,46 @@ async function main() {
       orderBy: {
         description: 'Database query ORDER BY',
         type: 'array',
+      },
+      outputFile: {
+        description: 'Output file',
+        type: 'string',
+      },
+      outputFormat: {
+        choices: formats,
+      },
+      outputHost: {
+        description: 'Output host',
+        type: 'string',
+      },
+      outputName: {
+        description: 'Output database',
+        type: 'string',
+      },
+      outputPassword: {
+        description: 'Output database password',
+        type: 'string',
+      },
+      outputPort: {
+        description: 'Output database port',
+        type: 'string',
+      },
+      outputShards: {
+        description: 'Output shards',
+        type: 'number',
+      },
+      outputTable: {
+        description: 'Output database table',
+        type: 'string',
+      },
+      outputType: {
+        choices: Object.values(DatabaseCopyOutputType),
+        description: 'Output database type',
+        type: 'string',
+      },
+      outputUser: {
+        description: 'Output database user',
+        type: 'string',
       },
       password: {
         description: 'Database password',
@@ -101,88 +181,8 @@ async function main() {
         description: 'The number of shards to split or join the data',
         type: 'number',
       },
-      sourceFile: {
-        description: 'Source file',
-        type: 'array',
-      },
-      sourceFormat: {
-        choices: formats,
-      },
-      sourceHost: {
-        description: 'Source host',
-        type: 'string',
-      },
-      sourceName: {
-        description: 'Source database',
-        type: 'string',
-      },
-      sourcePassword: {
-        description: 'Source database password',
-        type: 'string',
-      },
-      sourcePort: {
-        description: 'Source database port',
-        type: 'string',
-      },
-      sourceShards: {
-        description: 'Source shards',
-        type: 'number',
-      },
-      sourceTable: {
-        description: 'Source database table',
-        type: 'string',
-      },
-      sourceType: {
-        choices: Object.values(DatabaseCopySourceType),
-        description: 'Source database type',
-        type: 'string',
-      },
-      sourceUser: {
-        description: 'Source database user',
-        type: 'string',
-      },
       table: {
         description: 'Database table',
-        type: 'string',
-      },
-      targetFile: {
-        description: 'Target file',
-        type: 'string',
-      },
-      targetFormat: {
-        choices: formats,
-      },
-      targetHost: {
-        description: 'Target host',
-        type: 'string',
-      },
-      targetName: {
-        description: 'Target database',
-        type: 'string',
-      },
-      targetPassword: {
-        description: 'Target database password',
-        type: 'string',
-      },
-      targetPort: {
-        description: 'Target database port',
-        type: 'string',
-      },
-      targetShards: {
-        description: 'Target shards',
-        type: 'number',
-      },
-      targetTable: {
-        description: 'Target database table',
-        type: 'string',
-      },
-      targetType: {
-        choices: Object.values(DatabaseCopyTargetType),
-        description: 'Target database type',
-        type: 'string',
-      },
-      targetUser: {
-        description: 'Target database user',
         type: 'string',
       },
       user: {
@@ -203,13 +203,13 @@ async function main() {
     yargs.showHelp()
     process.exit(1)
   } else if (process.argv.length === 3) {
-    args.targetFile = '-'
+    args.outputFile = '-'
   }
 
-  const sourcePort =
-    args.sourcePort || args.port || process.env.SOURCE_DB_PORT || process.env.DB_PORT
-  const targetPort =
-    args.targetPort || args.port || process.env.TARGET_DB_PORT || process.env.DB_PORT
+  const inputPort =
+    args.inputPort || args.port || process.env.INPUT_DB_PORT || process.env.DB_PORT
+  const outputPort =
+    args.outputPort || args.port || process.env.OUTPUT_DB_PORT || process.env.DB_PORT
 
   const httpFileSystem = new HTTPFileSystem()
   const fileSystem = new AnyFileSystem([
@@ -241,46 +241,46 @@ async function main() {
       ? DatabaseCopySchema.dataOnly
       : undefined,
     fileSystem,
-    sourceFiles: args.sourceFile ? args.sourceFile.map((url) => ({ url })) : undefined,
-    sourceFormat: args.sourceFormat || args.format,
-    sourceHost:
-      args.sourceHost ||
+    inputFiles: args.inputFile ? args.inputFile.map((url) => ({ url })) : undefined,
+    inputFormat: args.inputFormat || args.format,
+    inputHost:
+      args.inputHost ||
       args.host ||
-      process.env.SOURCE_DB_HOST ||
+      process.env.INPUT_DB_HOST ||
       process.env.DB_HOST ||
       'localhost',
-    sourceName: args.sourceName || args.dbname || process.env.SOURCE_DB_NAME || process.env.DB_NAME,
-    sourcePassword:
-      args.sourcePassword ||
+    inputName: args.inputName || args.dbname || process.env.INPUT_DB_NAME || process.env.DB_NAME,
+    inputPassword:
+      args.inputPassword ||
       args.password ||
-      process.env.SOURCE_DB_PASSWORD ||
+      process.env.INPUT_DB_PASSWORD ||
       process.env.DB_PASSWORD,
-    sourcePort: sourcePort ? parseInt(sourcePort, 10) : undefined,
-    sourceShards: args.sourceShards || args.shards,
-    sourceTable:
-      args.sourceTable || args.table || process.env.SOURCE_DB_TABLE || process.env.DB_TABLE,
-    sourceType: args.sourceType || process.env.SOURCE_DB_TYPE || process.env.DB_TYPE,
-    sourceUser: args.sourceUser || args.user || process.env.SOURCE_DB_USER || process.env.DB_USER,
-    targetFormat: args.targetFormat || args.format,
-    targetHost:
-      args.targetHost ||
+    inputPort: inputPort ? parseInt(inputPort, 10) : undefined,
+    inputShards: args.inputShards || args.shards,
+    inputTable:
+      args.inputTable || args.table || process.env.INPUT_DB_TABLE || process.env.DB_TABLE,
+    inputType: args.inputType || process.env.INPUT_DB_TYPE || process.env.DB_TYPE,
+    inputUser: args.inputUser || args.user || process.env.INPUT_DB_USER || process.env.DB_USER,
+    outputFormat: args.outputFormat || args.format,
+    outputHost:
+      args.outputHost ||
       args.host ||
-      process.env.TARGET_DB_HOST ||
+      process.env.OUTPUT_DB_HOST ||
       process.env.DB_HOST ||
       'localhost',
-    targetName: args.targetName || args.dbname || process.env.TARGET_DB_NAME || process.env.DB_NAME,
-    targetPassword:
-      args.targetPassword ||
+    outputName: args.outputName || args.dbname || process.env.OUTPUT_DB_NAME || process.env.DB_NAME,
+    outputPassword:
+      args.outputPassword ||
       args.password ||
-      process.env.TARGET_DB_PASSWORD ||
+      process.env.OUTPUT_DB_PASSWORD ||
       process.env.DB_PASSWORD,
-    targetPort: targetPort ? parseInt(targetPort, 10) : undefined,
-    targetShards: args.targetShards || args.shards,
-    targetTable:
-      args.targetTable || args.table || process.env.TARGET_DB_TABLE || process.env.DB_TABLE,
-    targetType: args.targetType || process.env.TARGET_DB_TYPE || process.env.DB_TYPE,
-    targetUser: args.targetUser || args.user || process.env.TARGET_DB_USER || process.env.DB_USER,
-    transformBytesStream: args.targetFile !== '-' ? newBytesTransform : undefined,
+    outputPort: outputPort ? parseInt(outputPort, 10) : undefined,
+    outputShards: args.outputShards || args.shards,
+    outputTable:
+      args.outputTable || args.table || process.env.OUTPUT_DB_TABLE || process.env.DB_TABLE,
+    outputType: args.outputType || process.env.OUTPUT_DB_TYPE || process.env.DB_TYPE,
+    outputUser: args.outputUser || args.user || process.env.OUTPUT_DB_USER || process.env.DB_USER,
+    transformBytesStream: args.outputFile !== '-' ? newBytesTransform : undefined,
   }
 
   if (args.whereDate && args.whereDate.length === 3) {
@@ -296,10 +296,10 @@ async function main() {
     process.exit(-1)
   }
 
-  const sourceName = options.sourceFile || `${options.sourceName}.${options.sourceTable}`
-  const targetName = options.targetFile || `${options.targetName}.${options.targetTable}`
-  if (args.targetFile !== '-') {
-    spinner.succeed(`Wrote ${totalBytes} bytes to "${targetName}" from "${sourceName}"`)
+  const inputName = options.inputFile || `${options.inputName}.${options.inputTable}`
+  const outputName = options.outputFile || `${options.outputName}.${options.outputTable}`
+  if (args.outputFile !== '-') {
+    spinner.succeed(`Wrote ${totalBytes} bytes to "${outputName}" from "${inputName}"`)
   }
 }
 

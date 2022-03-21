@@ -165,27 +165,27 @@ export function pipeKnexInsertTextTransform(
 }
 
 export async function knexInspectCreateTableSchema(
-  sourceKnex: Knex,
-  targetKnex: Knex,
+  inputKnex: Knex,
+  outputKnex: Knex,
   tableName: string
 ) {
-  const columnsInfo = await knexInspectTableSchema(sourceKnex, tableName)
-  return knexFormatCreateTableSchema(targetKnex, tableName, columnsInfo)
+  const columnsInfo = await knexInspectTableSchema(inputKnex, tableName)
+  return knexFormatCreateTableSchema(outputKnex, tableName, columnsInfo)
 }
 
-export async function knexInspectTableSchema(sourceKnex: Knex, tableName: string) {
-  return schemaInspector(sourceKnex).columnInfo(tableName)
+export async function knexInspectTableSchema(inputKnex: Knex, tableName: string) {
+  return schemaInspector(inputKnex).columnInfo(tableName)
 }
 
 export function knexFormatCreateTableSchema(
-  targetKnex: Knex,
+  outputKnex: Knex,
   tableName: string,
   columnsInfo: Column[],
   columnType?: Record<string, string>
 ) {
-  const clientType = getClientType(targetKnex)
+  const clientType = getClientType(outputKnex)
   return (
-    targetKnex.schema
+    outputKnex.schema
       .createTableIfNotExists(tableName ?? '', (t) => {
         for (const columnInfo of columnsInfo) {
           const type = columnType?.[columnInfo.name] || columnInfo.data_type

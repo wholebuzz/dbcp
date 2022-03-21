@@ -13,26 +13,26 @@ import * as mongoDB from 'mongodb'
 import { Duplex, Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import {
-  openElasticSearchSource,
-  openElasticSearchTarget,
+  openElasticSearchInput,
+  openElasticSearchOutput,
   streamFromElasticSearch,
   streamToElasticSearch,
 } from './elasticsearch'
 import {
   DatabaseCopyFormat,
   DatabaseCopySchema,
-  DatabaseCopySourceType,
-  DatabaseCopyTargetType,
+  DatabaseCopyInputType,
+  DatabaseCopyOutputType,
   formatContentType,
   formatHasSchema,
   guessFormatFromFilename,
-  guessSourceTypeFromFilename,
-  guessTargetTypeFromFilename,
+  guessInputTypeFromFilename,
+  guessOutputTypeFromFilename,
   pipeFromOutputFormatTransform,
   pipeInputFormatTransform,
-  sourceHasDatabaseFile,
-  targetHasDatabaseFile,
-  targetIsSqlDatabase,
+  inputHasDatabaseFile,
+  outputHasDatabaseFile,
+  outputIsSqlDatabase,
 } from './format'
 import {
   dumpToKnex,
@@ -42,8 +42,8 @@ import {
   knexPoolConfig,
   queryKnex,
 } from './knex'
-import { openLevelDbSource, openLevelDbTarget, streamFromLevelDb, streamToLevelDb } from './leveldb'
-import { openMongoDbSource, openMongoDbTarget, streamFromMongoDb, streamToMongoDb } from './mongodb'
+import { openLevelDbInput, openLevelDbOutput, streamFromLevelDb, streamToLevelDb } from './leveldb'
+import { openMongoDbInput, openMongoDbOutput, streamFromMongoDb, streamToMongoDb } from './mongodb'
 import { Column, formatDDLCreateTableSchema, guessSchemaFromFile } from './schema'
 import { findObjectProperty, updateObjectPropertiesAsync } from './util'
 
@@ -53,7 +53,7 @@ function initParquet() {
   PARQUET_LOGICAL_TYPES.TIMESTAMP_MILLIS.fromPrimitive = (x: any) => new Date(Number(BigInt(x)))
 }
 
-export interface DatabaseCopySourceFile {
+export interface DatabaseCopyInputFile {
   url?: string
   query?: string
   columnType?: Record<string, string>
@@ -61,53 +61,53 @@ export interface DatabaseCopySourceFile {
   extraOutput?: boolean
   schema?: Column[]
   schemaFile?: string
-  sourceFormat?: DatabaseCopyFormat
-  sourceShards?: number
-  sourceShardFilter?: (index: number) => boolean
-  sourceStream?: ReadableStreamTree[]
+  inputFormat?: DatabaseCopyFormat
+  inputShards?: number
+  inputShardFilter?: (index: number) => boolean
+  inputStream?: ReadableStreamTree[]
   transformInputObject?: (x: unknown) => unknown | Promise<unknown>
   transformInputObjectStream?: () => Duplex
 }
 
-export interface DatabaseCopySource {
-  sourceConnection?: Record<string, any>
-  sourceElasticSearch?: Client
-  sourceFormat?: DatabaseCopyFormat
-  sourceFiles?: DatabaseCopySourceFile[] | Record<string, DatabaseCopySourceFile>
-  sourceHost?: string
-  sourceLevel?: level.LevelDB | LevelUp
-  sourceMongodb?: mongoDB.MongoClient
-  sourceName?: string
-  sourceKnex?: Knex
-  sourcePassword?: string
-  sourceShards?: number
-  sourceStream?: ReadableStreamTree
-  sourceTable?: string
-  sourceType?: DatabaseCopySourceType
-  sourcePort?: number
-  sourceUser?: string
+export interface DatabaseCopyInput {
+  inputConnection?: Record<string, any>
+  inputElasticSearch?: Client
+  inputFormat?: DatabaseCopyFormat
+  inputFiles?: DatabaseCopyInputFile[] | Record<string, DatabaseCopyInputFile>
+  inputHost?: string
+  inputLeveldb?: level.LevelDB | LevelUp
+  inputMongodb?: mongoDB.MongoClient
+  inputName?: string
+  inputKnex?: Knex
+  inputPassword?: string
+  inputShards?: number
+  inputStream?: ReadableStreamTree
+  inputTable?: string
+  inputType?: DatabaseCopyInputType
+  inputPort?: number
+  inputUser?: string
 }
 
-export interface DatabaseCopyTarget {
-  targetConnection?: Record<string, any>
-  targetElasticSearch?: Client
-  targetFormat?: DatabaseCopyFormat
-  targetFile?: string
-  targetHost?: string
-  targetKnex?: Knex
-  targetLevel?: level.LevelDB | LevelUp
-  targetMongodb?: mongoDB.MongoClient
-  targetName?: string
-  targetPassword?: string
-  targetShards?: number
-  targetStream?: WritableStreamTree[]
-  targetTable?: string
-  targetType?: DatabaseCopyTargetType
-  targetPort?: number
-  targetUser?: string
+export interface DatabaseCopyOutput {
+  outputConnection?: Record<string, any>
+  outputElasticSearch?: Client
+  outputFormat?: DatabaseCopyFormat
+  outputFile?: string
+  outputHost?: string
+  outputKnex?: Knex
+  outputLeveldb?: level.LevelDB | LevelUp
+  outputMongodb?: mongoDB.MongoClient
+  outputName?: string
+  outputPassword?: string
+  outputShards?: number
+  outputStream?: WritableStreamTree[]
+  outputTable?: string
+  outputType?: DatabaseCopyOutputType
+  outputPort?: number
+  outputUser?: string
 }
 
-export interface DatabaseCopyOptions extends DatabaseCopySource, DatabaseCopyTarget {
+export interface DatabaseCopyOptions extends DatabaseCopyInput, DatabaseCopyOutput {
   batchSize?: number
   columnType?: Record<string, string>
   compoundInsert?: boolean
@@ -137,72 +137,72 @@ export interface DatabaseCopyOptions extends DatabaseCopySource, DatabaseCopyTar
 
 export type DatabaseCopyFormats = Record<string, DatabaseCopyFormat | null>
 
-export function guessFormatFromSource(source: DatabaseCopySourceFile) {
-  return source.sourceStream ? DatabaseCopyFormat.object : guessFormatFromFilename(source.url)
+export function guessFormatFromInput(input: DatabaseCopyInputFile) {
+  return input.inputStream ? DatabaseCopyFormat.object : guessFormatFromFilename(input.url)
 }
 
-export function getSourceConnection(args: DatabaseCopyOptions) {
-  const sourceFilesEntries = Object.entries(args.sourceFiles ?? {})
-  const sourceFilesType =
-    sourceFilesEntries.length === 1
-      ? guessSourceTypeFromFilename(sourceFilesEntries[0][1].url)
+export function getInputConnection(args: DatabaseCopyOptions) {
+  const inputFilesEntries = Object.entries(args.inputFiles ?? {})
+  const inputFilesType =
+    inputFilesEntries.length === 1
+      ? guessInputTypeFromFilename(inputFilesEntries[0][1].url)
       : undefined
-  return sourceHasDatabaseFile(sourceFilesType)
+  return inputHasDatabaseFile(inputFilesType)
     ? {
         database: undefined,
-        filename: sourceFilesEntries[0][1].url,
+        filename: inputFilesEntries[0][1].url,
         timezone: 'UTC',
         user: undefined,
       }
     : {
-        database: args.sourceName,
-        user: args.sourceUser,
-        password: args.sourcePassword,
-        host: args.sourceHost,
-        port: args.sourcePort,
+        database: args.inputName,
+        user: args.inputUser,
+        password: args.inputPassword,
+        host: args.inputHost,
+        port: args.inputPort,
         timezone: 'UTC',
-        options: args.sourceType === 'mssql' ? { trustServerCertificate: true } : undefined,
-        charset: args.sourceType === 'mysql' ? 'utf8mb4' : undefined,
-        ...args.sourceConnection,
+        options: args.inputType === 'mssql' ? { trustServerCertificate: true } : undefined,
+        charset: args.inputType === 'mysql' ? 'utf8mb4' : undefined,
+        ...args.inputConnection,
       }
 }
 
-export function getTargetConnection(args: DatabaseCopyOptions) {
-  const targetFileType = guessTargetTypeFromFilename(args.targetFile)
-  return targetHasDatabaseFile(targetFileType)
+export function getOutputConnection(args: DatabaseCopyOptions) {
+  const outputFileType = guessOutputTypeFromFilename(args.outputFile)
+  return outputHasDatabaseFile(outputFileType)
     ? {
         timezone: 'UTC',
-        filename: args.targetFile,
+        filename: args.outputFile,
       }
     : {
-        database: args.targetName,
-        user: args.targetUser,
-        password: args.targetPassword,
-        host: args.targetHost,
-        port: args.targetPort,
+        database: args.outputName,
+        user: args.outputUser,
+        password: args.outputPassword,
+        host: args.outputHost,
+        port: args.outputPort,
         timezone: 'UTC',
-        options: args.targetType === 'mssql' ? { trustServerCertificate: true } : undefined,
-        charset: args.targetType === 'mysql' ? 'utf8mb4' : undefined,
-        ...args.targetConnection,
+        options: args.outputType === 'mssql' ? { trustServerCertificate: true } : undefined,
+        charset: args.outputType === 'mysql' ? 'utf8mb4' : undefined,
+        ...args.outputConnection,
       }
 }
 
-export function getSourceConnectionString(args: {
-  sourceHost?: string
-  sourcePassword?: string
-  sourcePort?: string | number
-  sourceUser?: string
+export function getInputConnectionString(args: {
+  inputHost?: string
+  inputPassword?: string
+  inputPort?: string | number
+  inputUser?: string
 }) {
-  return `${args.sourceUser}:${args.sourcePassword}@${args.sourceHost}:${args.sourcePort}`
+  return `${args.inputUser}:${args.inputPassword}@${args.inputHost}:${args.inputPort}`
 }
 
-export function getTargetConnectionString(args: {
-  targetHost?: string
-  targetPassword?: string
-  targetPort?: string | number
-  targetUser?: string
+export function getOutputConnectionString(args: {
+  outputHost?: string
+  outputPassword?: string
+  outputPort?: string | number
+  outputUser?: string
 }) {
-  return `${args.targetUser}:${args.targetPassword}@${args.targetHost}:${args.targetPort}`
+  return `${args.outputUser}:${args.outputPassword}@${args.outputHost}:${args.outputPort}`
 }
 
 export function getShardFunction(args: DatabaseCopyOptions) {
@@ -228,92 +228,92 @@ export function getExternalSortFunction(args: DatabaseCopyOptions): Array<(x: an
   return args.externalSortBy!.map((sortBy) => (x: any) => x[sortBy])
 }
 
-export function getSourceFormats(args: DatabaseCopyOptions) {
-  if (args.sourceStream) return { '0': DatabaseCopyFormat.object }
+export function getInputFormats(args: DatabaseCopyOptions) {
+  if (args.inputStream) return { '0': DatabaseCopyFormat.object }
   const ret: DatabaseCopyFormats = {}
-  for (const [key, sourceFile] of Object.entries(args.sourceFiles ?? {})) {
+  for (const [key, inputFile] of Object.entries(args.inputFiles ?? {})) {
     ret[key] =
-      (sourceFile.query || args.query) && sourceFile.url !== 's3://athena.csv'
+      (inputFile.query || args.query) && inputFile.url !== 's3://athena.csv'
         ? DatabaseCopyFormat.jsonl
-        : guessFormatFromSource(sourceFile) || DatabaseCopyFormat.json
+        : guessFormatFromInput(inputFile) || DatabaseCopyFormat.json
     if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
   }
   return ret
 }
 
-export function getSourceFormat(args: DatabaseCopyOptions, sourceFormats: DatabaseCopyFormats) {
-  if (args.sourceFormat) return args.sourceFormat
-  const formats = Object.values(sourceFormats)
+export function getInputFormat(args: DatabaseCopyOptions, inputFormats: DatabaseCopyFormats) {
+  if (args.inputFormat) return args.inputFormat
+  const formats = Object.values(inputFormats)
   if (!formats.length) return DatabaseCopyFormat.json
   return formats[0] && formats.every((format) => format === formats[0]) ? formats[0] : undefined
 }
 
-export function getTargetFormat(args: DatabaseCopyOptions, sourceFormat?: DatabaseCopyFormat) {
+export function getOutputFormat(args: DatabaseCopyOptions, inputFormat?: DatabaseCopyFormat) {
   return (
-    args.targetFormat ||
-    guessFormatFromFilename(args.targetFile) ||
-    (args.sourceFiles && sourceFormat) ||
+    args.outputFormat ||
+    guessFormatFromFilename(args.outputFile) ||
+    (args.inputFiles && inputFormat) ||
     DatabaseCopyFormat.json
   )
 }
 
-export async function openSources(
+export async function openInputs(
   args: DatabaseCopyOptions,
-  sourceFiles: Array<[string, DatabaseCopySourceFile]>,
-  sourceFormats: DatabaseCopyFormats,
-  sourceFormat?: DatabaseCopyFormat,
-  targetFormat?: DatabaseCopyFormat
+  inputFiles: Array<[string, DatabaseCopyInputFile]>,
+  inputFormats: DatabaseCopyFormats,
+  inputFormat?: DatabaseCopyFormat,
+  outputFormat?: DatabaseCopyFormat
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
-    sourceFiles.length === 1 &&
-    sourceFiles[0][1].url?.endsWith('/') &&
-    !sourceFiles[0][1].url?.startsWith('http') &&
-    !args.sourceStream
+    inputFiles.length === 1 &&
+    inputFiles[0][1].url?.endsWith('/') &&
+    !inputFiles[0][1].url?.startsWith('http') &&
+    !args.inputStream
       ? new Readable()
       : undefined
-  const sourceSpec: Record<string, ReadableFileSpec> = {}
-  sourceFiles.forEach(([sourceFileName, sourceFile]) => {
-    sourceSpec[sourceFileName] = {
+  const inputSpec: Record<string, ReadableFileSpec> = {}
+  inputFiles.forEach(([inputFileName, inputFile]) => {
+    inputSpec[inputFileName] = {
       format:
-        sourceFormat === targetFormat && sourceFormat === DatabaseCopyFormat.parquet
+        inputFormat === outputFormat && inputFormat === DatabaseCopyFormat.parquet
           ? undefined
-          : sourceFormat || sourceFormats[sourceFileName] || undefined,
-      url: sourceFile.url,
-      stream: sourceFile.sourceStream,
+          : inputFormat || inputFormats[inputFileName] || undefined,
+      url: inputFile.url,
+      stream: inputFile.inputStream,
       options: {
-        query: sourceFile.query || args.query,
-        extra: sourceFile.extra || args.extra,
-        extraOutput: sourceFile.extraOutput || args.extraOutput,
-        shards: sourceFile.sourceShards || args.sourceShards,
-        shardFilter: sourceFile.sourceShardFilter,
+        query: inputFile.query || args.query,
+        extra: inputFile.extra || args.extra,
+        extraOutput: inputFile.extraOutput || args.extraOutput,
+        shards: inputFile.inputShards || args.inputShards,
+        shardFilter: inputFile.inputShardFilter,
       },
     }
   })
-  const inputs: ReadableStreamTree[] | Record<string, ReadableStreamTree[]> = args.sourceStream
-    ? [args.sourceStream]
-    : sourceFiles.length === 1 && sourceFiles[0][1].url === '-'
+  const inputs: ReadableStreamTree[] | Record<string, ReadableStreamTree[]> = args.inputStream
+    ? [args.inputStream]
+    : inputFiles.length === 1 && inputFiles[0][1].url === '-'
     ? [StreamTree.readable(process.stdin)]
     : directoryStream
     ? [StreamTree.readable(directoryStream)]
-    : await openReadableFileSet(args.fileSystem!, sourceSpec)
-  // If the source is a directory, read the directory.
+    : await openReadableFileSet(args.fileSystem!, inputSpec)
+  // If the input is a directory, read the directory.
   if (directoryStream) {
     directoryStream.push(
-      JSON.stringify(await args.fileSystem!.readDirectory(sourceFiles[0][1].url!), null, 2)
+      JSON.stringify(await args.fileSystem!.readDirectory(inputFiles[0][1].url!), null, 2)
     )
     directoryStream.push(null)
   }
   return inputs
 }
 
-export async function openTargets(args: DatabaseCopyOptions, format?: DatabaseCopyFormat) {
+export async function openOutputs(args: DatabaseCopyOptions, format?: DatabaseCopyFormat) {
   const outputs =
-    args.targetStream ||
-    (args.targetFile === '-'
+    args.outputStream ||
+    (args.outputFile === '-'
       ? [StreamTree.writable(process.stdout)]
-      : await openWritableFiles(args.fileSystem!, args.targetFile!, {
+      : await openWritableFiles(args.fileSystem!, args.outputFile!, {
           contentType: formatContentType(format),
-          shards: args.targetShards,
+          shards: args.outputShards,
         }))
   for (let i = 0; i < outputs.length; i++) {
     if (args.transformBytesStream) outputs[i] = outputs[i].pipeFrom(args.transformBytesStream())
@@ -323,43 +323,43 @@ export async function openTargets(args: DatabaseCopyOptions, format?: DatabaseCo
 }
 
 export async function dbcp(args: DatabaseCopyOptions) {
-  const sourceFiles = Object.entries(args.sourceFiles ?? {})
-  const sourceFormats = getSourceFormats(args)
-  const sourceFormat = getSourceFormat(args, sourceFormats)
-  const targetFormat = getTargetFormat(args, sourceFormat)
-  const targetType = args.targetType ?? guessTargetTypeFromFilename(args.targetFile) ?? undefined
-  const sourceConnection = getSourceConnection(args)
+  const inputFiles = Object.entries(args.inputFiles ?? {})
+  const inputFormats = getInputFormats(args)
+  const inputFormat = getInputFormat(args, inputFormats)
+  const outputFormat = getOutputFormat(args, inputFormat)
+  const outputType = args.outputType ?? guessOutputTypeFromFilename(args.outputFile) ?? undefined
+  const inputConnection = getInputConnection(args)
   const orderByFunction = (args.orderBy?.length ?? 0) > 0 ? getOrderByFunction(args) : undefined
   const externalSortFunction =
     (args.externalSortBy?.length ?? 0) > 0 ? getExternalSortFunction(args) : undefined
   const isNotBytes2Bytes =
-    sourceFormat !== targetFormat ||
-    sourceFiles.length > 1 ||
-    sourceFiles.some((x) => x[1].sourceShards) ||
-    args.sourceShards ||
-    args.targetShards ||
+    inputFormat !== outputFormat ||
+    inputFiles.length > 1 ||
+    inputFiles.some((x) => x[1].inputShards) ||
+    args.inputShards ||
+    args.outputShards ||
     args.externalSortBy ||
     args.transformObject ||
     args.transformObjectStream
   if (
-    !args.sourceStream &&
-    !args.sourceKnex &&
-    !args.sourceElasticSearch &&
-    !args.sourceLevel &&
-    !args.sourceMongodb &&
-    (!sourceFiles.length || !args.fileSystem) &&
-    (!args.sourceType ||
-      (!sourceConnection.filename && (!sourceConnection.database || !sourceConnection.user)) ||
-      (!args.sourceTable && !args.query))
+    !args.inputStream &&
+    !args.inputKnex &&
+    !args.inputElasticSearch &&
+    !args.inputLeveldb &&
+    !args.inputMongodb &&
+    (!inputFiles.length || !args.fileSystem) &&
+    (!args.inputType ||
+      (!inputConnection.filename && (!inputConnection.database || !inputConnection.user)) ||
+      (!args.inputTable && !args.query))
   ) {
     throw new Error(
-      `Missing source parameters ${JSON.stringify(
+      `Missing input parameters ${JSON.stringify(
         {
-          sourceType: args.sourceType,
-          sourceFiles: args.sourceFiles,
-          sourceDatabase: sourceConnection.database,
-          sourceUser: sourceConnection.user,
-          sourceTable: args.sourceTable,
+          inputType: args.inputType,
+          inputFiles: args.inputFiles,
+          inputDatabase: inputConnection.database,
+          inputUser: inputConnection.user,
+          inputTable: args.inputTable,
         },
         null,
         2
@@ -368,25 +368,25 @@ export async function dbcp(args: DatabaseCopyOptions) {
   }
 
   if (
-    !args.targetStream &&
-    !args.targetKnex &&
-    !args.targetElasticSearch &&
-    !args.targetLevel &&
-    !args.targetMongodb &&
-    (!args.targetFile || !args.fileSystem) &&
-    (!targetType ||
-      !args.targetName ||
-      !args.targetUser ||
-      (!args.targetTable && !args.compoundInsert))
+    !args.outputStream &&
+    !args.outputKnex &&
+    !args.outputElasticSearch &&
+    !args.outputLeveldb &&
+    !args.outputMongodb &&
+    (!args.outputFile || !args.fileSystem) &&
+    (!outputType ||
+      !args.outputName ||
+      !args.outputUser ||
+      (!args.outputTable && !args.compoundInsert))
   ) {
     throw new Error(
-      `Missing target parameters ${JSON.stringify(
+      `Missing output parameters ${JSON.stringify(
         {
-          targetType,
-          targetFile: args.targetFile,
-          targetDatabase: args.targetName,
-          targetUser: args.targetUser,
-          targetTable: args.targetTable,
+          outputType,
+          outputFile: args.outputFile,
+          outputDatabase: args.outputName,
+          outputUser: args.outputUser,
+          outputTable: args.outputTable,
         },
         null,
         2
@@ -394,37 +394,37 @@ export async function dbcp(args: DatabaseCopyOptions) {
     )
   }
 
-  if (sourceFormat === DatabaseCopyFormat.parquet) initParquet()
+  if (inputFormat === DatabaseCopyFormat.parquet) initParquet()
   const shouldInspectSchema =
-    (formatHasSchema(targetFormat) || args.copySchema === DatabaseCopySchema.schemaOnly) &&
-    args.targetFile &&
+    (formatHasSchema(outputFormat) || args.copySchema === DatabaseCopySchema.schemaOnly) &&
+    args.outputFile &&
     args.copySchema !== DatabaseCopySchema.dataOnly
 
-  // If the copy source is a database.
-  if (!args.sourceStream && (!args.sourceFiles || sourceHasDatabaseFile(args.sourceType))) {
-    if (args.targetFile && !targetHasDatabaseFile(targetType)) {
+  // If the copy input is a database.
+  if (!args.inputStream && (!args.inputFiles || inputHasDatabaseFile(args.inputType))) {
+    if (args.outputFile && !outputHasDatabaseFile(outputType)) {
       const formattingKnex =
-        shouldInspectSchema || targetFormat === DatabaseCopyFormat.sql
-          ? targetType
-            ? knex({ client: targetType, log: knexLogConfig })
-            : args.sourceKnex ?? knex({ client: args.sourceType, log: knexLogConfig })
+        shouldInspectSchema || outputFormat === DatabaseCopyFormat.sql
+          ? outputType
+            ? knex({ client: outputType, log: knexLogConfig })
+            : args.inputKnex ?? knex({ client: args.inputType, log: knexLogConfig })
           : undefined
       // If the copy is database->file: JSON-formatting transform.
       const input =
         args.copySchema !== DatabaseCopySchema.schemaOnly ? await queryDatabase(args) : undefined
       try {
-        const outputs = await openTargets(args, targetFormat)
+        const outputs = await openOutputs(args, outputFormat)
         await dumpToFile(input?.input, outputs, {
           columnType: args.columnType,
           copySchema: args.copySchema,
           externalSortFunction,
-          format: targetFormat,
+          format: outputFormat,
           formattingKnex,
           shardFunction: getShardFunction(args),
           schema: shouldInspectSchema ? await databaseInspectSchema(args) : undefined,
-          sourceTable: args.sourceTable,
-          targetType: targetType || (args.sourceKnex ? args.sourceType : undefined),
-          targetShards: args.targetShards,
+          inputTable: args.inputTable,
+          outputType: outputType || (args.inputKnex ? args.inputType : undefined),
+          outputShards: args.outputShards,
           tempDirectories: args.tempDirectories,
         })
       } catch (error) {
@@ -437,7 +437,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
       // If the copy is database->database: no transform.
       const input = await queryDatabase(args)
       try {
-        await dumpToDatabase(input.input, { ...args, targetType }, args.targetTable!, {
+        await dumpToDatabase(input.input, { ...args, outputType }, args.outputTable!, {
           batchSize: args.batchSize,
           compoundInsert: args.compoundInsert,
         })
@@ -448,18 +448,18 @@ export async function dbcp(args: DatabaseCopyOptions) {
       }
     }
   } else {
-    // Else the copy source is a file.
-    const inputs = await openSources(args, sourceFiles, sourceFormats, sourceFormat, targetFormat)
-    if (args.targetStream || (args.targetFile && !targetHasDatabaseFile(targetType))) {
+    // Else the copy input is a file.
+    const inputs = await openInputs(args, inputFiles, inputFormats, inputFormat, outputFormat)
+    if (args.outputStream || (args.outputFile && !outputHasDatabaseFile(outputType))) {
       // If the copy is file->file: no transform.
-      const outputs = await openTargets(args, targetFormat)
+      const outputs = await openOutputs(args, outputFormat)
       const schema = shouldInspectSchema
         ? args.schema ||
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
-            : sourceFiles.length === 1
+            : inputFiles.length === 1
             ? Object.values(
-                await guessSchemaFromFile(args.fileSystem!, sourceFiles[0][1].url!, args.probeBytes)
+                await guessSchemaFromFile(args.fileSystem!, inputFiles[0][1].url!, args.probeBytes)
               )
             : undefined)
         : undefined
@@ -467,8 +467,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
         const inputArray = Array.isArray(inputGroup) ? inputGroup : [inputGroup]
         await updateObjectPropertiesAsync(inputArray, async (input) => {
           if (isNotBytes2Bytes) {
-            const inputFile = findObjectProperty(args.sourceFiles, inputGroupKey)
-            input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
+            const inputFile = findObjectProperty(args.inputFiles, inputGroupKey)
+            input = await pipeInputFormatTransform(input, inputFormats[inputGroupKey]!)
             if (inputFile?.transformInputObject) {
               input = pipeFilter(input, inputFile.transformInputObject)
             }
@@ -491,16 +491,16 @@ export async function dbcp(args: DatabaseCopyOptions) {
           columnType: args.columnType,
           copySchema: args.copySchema,
           externalSortFunction,
-          format: isNotBytes2Bytes ? targetFormat : undefined,
+          format: isNotBytes2Bytes ? outputFormat : undefined,
           formattingKnex:
-            shouldInspectSchema && targetIsSqlDatabase(targetType)
-              ? knex({ client: targetType, log: knexLogConfig })
+            shouldInspectSchema && outputIsSqlDatabase(outputType)
+              ? knex({ client: outputType, log: knexLogConfig })
               : undefined,
           shardFunction: getShardFunction(args),
           schema,
-          sourceTable: args.sourceTable,
-          targetType,
-          targetShards: args.targetShards,
+          inputTable: args.inputTable,
+          outputType,
+          outputShards: args.outputShards,
           tempDirectories: args.tempDirectories,
           transformObject: args.transformObject,
           transformObjectStream: args.transformObjectStream,
@@ -513,7 +513,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
         await updateObjectPropertiesAsync(inputArray, async (input) => {
           if (args.transformBytes) input = pipeFilter(input, args.transformBytes)
           if (args.transformBytesStream) input = input.pipe(args.transformBytesStream())
-          input = await pipeInputFormatTransform(input, sourceFormats[inputGroupKey]!)
+          input = await pipeInputFormatTransform(input, inputFormats[inputGroupKey]!)
           if (args.transformObject) input = pipeFilter(input, args.transformObject)
           if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
           return input
@@ -526,8 +526,8 @@ export async function dbcp(args: DatabaseCopyOptions) {
           group: args.group,
           labelSource: args.groupLabels,
         }),
-        { ...args, targetType },
-        sourceFormat === DatabaseCopyFormat.sql ? '' : args.targetTable!,
+        { ...args, outputType },
+        inputFormat === DatabaseCopyFormat.sql ? '' : args.outputTable!,
         { batchSize: args.batchSize, compoundInsert: args.compoundInsert }
       )
     }
@@ -549,7 +549,7 @@ async function writeSchema(
   if (options.schema) {
     readable.push(
       options.format === DatabaseCopyFormat.sql
-        ? options.type === DatabaseCopySourceType.athena
+        ? options.type === DatabaseCopyInputType.athena
           ? formatDDLCreateTableSchema(options.table ?? '', options.schema, options.columnType)
           : knexFormatCreateTableSchema(
               options.formattingKnex!,
@@ -575,9 +575,9 @@ export async function dumpToFile(
     formattingKnex?: Knex
     schema?: Column[]
     shardFunction?: (x: Record<string, any>, modulus: number) => number
-    sourceTable?: string
-    targetType?: string
-    targetShards?: number
+    inputTable?: string
+    outputType?: string
+    outputShards?: number
     tempDirectories?: string[]
     transformObject?: (x: unknown) => unknown
     transformObjectStream?: () => Duplex
@@ -590,8 +590,8 @@ export async function dumpToFile(
         format: options.format!,
         formattingKnex: options.formattingKnex,
         schema: options.schema,
-        table: options.sourceTable,
-        type: options.targetType,
+        table: options.inputTable,
+        type: options.outputType,
       })
     }
   } else {
@@ -606,7 +606,7 @@ export async function dumpToFile(
         output.node.stream.write(
           knexFormatCreateTableSchema(
             options.formattingKnex!,
-            options.sourceTable ?? '',
+            options.inputTable ?? '',
             options.schema,
             options.columnType
           )
@@ -620,7 +620,7 @@ export async function dumpToFile(
             outputs[i],
             options.format,
             options.formattingKnex,
-            options.sourceTable,
+            options.inputTable,
             options.schema ? { schema: options.schema, columnType: options.columnType } : undefined
           )
         }
@@ -633,10 +633,10 @@ export async function dumpToFile(
       }
     }
     if (!options?.externalSortFunction) {
-      const writable = shardWritables(outputs, options.targetShards, options.shardFunction)
+      const writable = shardWritables(outputs, options.outputShards, options.shardFunction)
       await pumpWritable(writable, undefined, input)
     } else {
-      const inputs = shardReadable(input!, options.targetShards, options.shardFunction)
+      const inputs = shardReadable(input!, options.outputShards, options.shardFunction)
       const esorts = []
       for (let i = 0; i < outputs.length; i++) {
         let writable = outputs[i]
@@ -662,11 +662,11 @@ async function dumpToDatabase(
   table: string,
   options?: { compoundInsert?: boolean; batchSize?: number; returning?: string }
 ) {
-  if (args.targetType === DatabaseCopyTargetType.elasticsearch) {
-    const client = await openElasticSearchTarget(args)
+  if (args.outputType === DatabaseCopyOutputType.elasticsearch) {
+    const client = await openElasticSearchOutput(args)
     try {
       const output = streamToElasticSearch(client, {
-        index: args.targetTable ?? '',
+        index: args.outputTable ?? '',
         bulkOptions: args.engineOptions,
         extra: args.extra,
         extraOutput: args.extraOutput,
@@ -677,29 +677,29 @@ async function dumpToDatabase(
     } finally {
       await client.close()
     }
-  } else if (args.targetType === DatabaseCopyTargetType.level) {
-    const db = await openLevelDbTarget({
+  } else if (args.outputType === DatabaseCopyOutputType.level) {
+    const db = await openLevelDbOutput({
       ...args,
-      targetTable: args.targetTable ? [args.targetTable] : undefined,
+      outputTable: args.outputTable ? [args.outputTable] : undefined,
     })
-    const targetLevel = Object.values(db.tables)[0] ?? db.db
+    const outputLeveldb = Object.values(db.tables)[0] ?? db.db
     const getKey = (item: any) => item[args.orderBy?.[0] || 'id']
     try {
-      const output = streamToLevelDb(targetLevel, { getKey })
+      const output = streamToLevelDb(outputLeveldb, { getKey })
       await pumpWritable(output, undefined, input)
     } catch (error) {
       throw error
     } finally {
       await db.close()
     }
-  } else if (args.targetType === DatabaseCopyTargetType.mongodb) {
-    const db = await openMongoDbTarget({
+  } else if (args.outputType === DatabaseCopyOutputType.mongodb) {
+    const db = await openMongoDbOutput({
       ...args,
-      targetTable: args.targetTable ? [args.targetTable] : undefined,
+      outputTable: args.outputTable ? [args.outputTable] : undefined,
     })
     try {
-      const target = Object.values(db.tables)[0]
-      const stream = streamToMongoDb(target)
+      const output = Object.values(db.tables)[0]
+      const stream = streamToMongoDb(output)
       await pumpWritable(stream, undefined, input)
     } catch (error) {
       throw error
@@ -707,52 +707,52 @@ async function dumpToDatabase(
       await db.close()
     }
   } else {
-    const targetKnex =
-      args.targetKnex ??
+    const outputKnex =
+      args.outputKnex ??
       knex({
-        client: args.targetType,
-        connection: getTargetConnection(args),
+        client: args.outputType,
+        connection: getOutputConnection(args),
         pool: knexPoolConfig,
-        useNullAsDefault: args.targetType === DatabaseCopyTargetType.sqlite,
+        useNullAsDefault: args.outputType === DatabaseCopyOutputType.sqlite,
       })
     try {
-      return await dumpToKnex(input, targetKnex, table, options)
+      return await dumpToKnex(input, outputKnex, table, options)
     } catch (error) {
       throw error
     } finally {
-      await targetKnex.destroy()
+      await outputKnex.destroy()
     }
   }
 }
 
 async function queryDatabase(args: DatabaseCopyOptions) {
-  if (args.sourceType === DatabaseCopySourceType.elasticsearch) {
-    const client = await openElasticSearchSource(args)
+  if (args.inputType === DatabaseCopyInputType.elasticsearch) {
+    const client = await openElasticSearchInput(args)
     let input = await streamFromElasticSearch(client, {
-      index: args.sourceTable!,
+      index: args.inputTable!,
       orderBy: args.orderBy,
     })
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
     return { input, destroy: () => client.close() }
-  } else if (args.sourceType === DatabaseCopySourceType.level) {
-    const db = await openLevelDbSource({
+  } else if (args.inputType === DatabaseCopyInputType.level) {
+    const db = await openLevelDbInput({
       ...args,
-      sourceFile: Object.entries(args.sourceFiles!)[0][1].url!,
-      sourceTable: args.sourceTable ? [args.sourceTable] : undefined,
+      inputFile: Object.entries(args.inputFiles!)[0][1].url!,
+      inputTable: args.inputTable ? [args.inputTable] : undefined,
     })
-    const sourceLevel = Object.values(db.tables)[0] ?? db.db
-    let input = streamFromLevelDb(sourceLevel)
+    const inputLeveldb = Object.values(db.tables)[0] ?? db.db
+    let input = streamFromLevelDb(inputLeveldb)
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
     return {
       input,
       destroy: () => db.close(),
     }
-  } else if (args.sourceType === DatabaseCopySourceType.mongodb) {
-    const db = await openMongoDbSource({
+  } else if (args.inputType === DatabaseCopyInputType.mongodb) {
+    const db = await openMongoDbInput({
       ...args,
-      sourceTable: args.sourceTable ? [args.sourceTable] : undefined,
+      inputTable: args.inputTable ? [args.inputTable] : undefined,
     })
     let input = streamFromMongoDb(Object.values(db.tables)[0], args)
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
@@ -762,35 +762,35 @@ async function queryDatabase(args: DatabaseCopyOptions) {
       destroy: () => db.close(),
     }
   } else {
-    const sourceKnex =
-      args.sourceKnex ??
+    const inputKnex =
+      args.inputKnex ??
       knex({
-        client: args.sourceType,
-        connection: getSourceConnection(args),
+        client: args.inputType,
+        connection: getInputConnection(args),
         pool: knexPoolConfig,
       } as any)
-    let input = queryKnex(sourceKnex, args.sourceTable!, args)
+    let input = queryKnex(inputKnex, args.inputTable!, args)
     if (args.transformObject) input = pipeFilter(input, args.transformObject)
     if (args.transformObjectStream) input = input.pipe(args.transformObjectStream())
-    return { input, destroy: () => sourceKnex.destroy() }
+    return { input, destroy: () => inputKnex.destroy() }
   }
 }
 
 export async function databaseInspectSchema(args: DatabaseCopyOptions) {
   if (args.schema) return args.schema
   if (args.schemaFile) return (await readJSON(args.fileSystem!, args.schemaFile)) as Column[]
-  const sourceKnex =
-    args.sourceKnex ??
+  const inputKnex =
+    args.inputKnex ??
     knex({
-      client: args.sourceType,
-      connection: getSourceConnection(args),
+      client: args.inputType,
+      connection: getInputConnection(args),
       pool: knexPoolConfig,
     } as any)
   try {
-    return await knexInspectTableSchema(sourceKnex, args.sourceTable ?? '')
+    return await knexInspectTableSchema(inputKnex, args.inputTable ?? '')
   } catch (error) {
     throw error
   } finally {
-    await sourceKnex.destroy()
+    await inputKnex.destroy()
   }
 }

@@ -7,21 +7,23 @@
 ### Enumerations
 
 - [DatabaseCopyFormat](../enums/format.databasecopyformat.md)
+- [DatabaseCopyInputType](../enums/format.databasecopyinputtype.md)
+- [DatabaseCopyOutputType](../enums/format.databasecopyoutputtype.md)
 - [DatabaseCopySchema](../enums/format.databasecopyschema.md)
-- [DatabaseCopySourceType](../enums/format.databasecopysourcetype.md)
-- [DatabaseCopyTargetType](../enums/format.databasecopytargettype.md)
 
 ### Functions
 
 - [formatContentType](format.md#formatcontenttype)
 - [formatHasSchema](format.md#formathasschema)
 - [guessFormatFromFilename](format.md#guessformatfromfilename)
-- [guessSourceTypeFromFilename](format.md#guesssourcetypefromfilename)
-- [guessTargetTypeFromFilename](format.md#guesstargettypefromfilename)
+- [guessInputTypeFromFilename](format.md#guessinputtypefromfilename)
+- [guessOutputTypeFromFilename](format.md#guessoutputtypefromfilename)
+- [inputHasDatabaseFile](format.md#inputhasdatabasefile)
+- [inputIsSqlDatabase](format.md#inputissqldatabase)
+- [outputHasDatabaseFile](format.md#outputhasdatabasefile)
+- [outputIsSqlDatabase](format.md#outputissqldatabase)
 - [pipeFromOutputFormatTransform](format.md#pipefromoutputformattransform)
 - [pipeInputFormatTransform](format.md#pipeinputformattransform)
-- [sourceHasDatabaseFile](format.md#sourcehasdatabasefile)
-- [targetHasDatabaseFile](format.md#targethasdatabasefile)
 
 ## Functions
 
@@ -37,7 +39,7 @@
 
 **Returns:** *undefined* \| ``"application/x-ndjson"`` \| ``"application/json"`` \| ``"application/sql"``
 
-Defined in: [format.ts:142](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L142)
+Defined in: [format.ts:148](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L148)
 
 ___
 
@@ -53,7 +55,7 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:176](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L176)
+Defined in: [format.ts:206](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L206)
 
 ___
 
@@ -69,13 +71,13 @@ ___
 
 **Returns:** ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
-Defined in: [format.ts:55](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L55)
+Defined in: [format.ts:61](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L61)
 
 ___
 
-### guessSourceTypeFromFilename
+### guessInputTypeFromFilename
 
-▸ **guessSourceTypeFromFilename**(`filename?`: *string*): ``null`` \| [*level*](../enums/format.databasecopysourcetype.md#level) \| [*sqlite*](../enums/format.databasecopysourcetype.md#sqlite)
+▸ **guessInputTypeFromFilename**(`filename?`: *string*): ``null`` \| [*level*](../enums/format.databasecopyinputtype.md#level) \| [*sqlite*](../enums/format.databasecopyinputtype.md#sqlite)
 
 #### Parameters
 
@@ -83,15 +85,15 @@ ___
 | :------ | :------ |
 | `filename?` | *string* |
 
-**Returns:** ``null`` \| [*level*](../enums/format.databasecopysourcetype.md#level) \| [*sqlite*](../enums/format.databasecopysourcetype.md#sqlite)
+**Returns:** ``null`` \| [*level*](../enums/format.databasecopyinputtype.md#level) \| [*sqlite*](../enums/format.databasecopyinputtype.md#sqlite)
 
-Defined in: [format.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L67)
+Defined in: [format.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L73)
 
 ___
 
-### guessTargetTypeFromFilename
+### guessOutputTypeFromFilename
 
-▸ **guessTargetTypeFromFilename**(`filename?`: *string*): ``null`` \| [*level*](../enums/format.databasecopytargettype.md#level) \| [*sqlite*](../enums/format.databasecopytargettype.md#sqlite)
+▸ **guessOutputTypeFromFilename**(`filename?`: *string*): ``null`` \| [*level*](../enums/format.databasecopyoutputtype.md#level) \| [*sqlite*](../enums/format.databasecopyoutputtype.md#sqlite)
 
 #### Parameters
 
@@ -99,9 +101,73 @@ ___
 | :------ | :------ |
 | `filename?` | *string* |
 
-**Returns:** ``null`` \| [*level*](../enums/format.databasecopytargettype.md#level) \| [*sqlite*](../enums/format.databasecopytargettype.md#sqlite)
+**Returns:** ``null`` \| [*level*](../enums/format.databasecopyoutputtype.md#level) \| [*sqlite*](../enums/format.databasecopyoutputtype.md#sqlite)
 
-Defined in: [format.ts:75](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L75)
+Defined in: [format.ts:81](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L81)
+
+___
+
+### inputHasDatabaseFile
+
+▸ **inputHasDatabaseFile**(`format?`: [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) \| ``null``): *boolean*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `format?` | [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) \| ``null`` |
+
+**Returns:** *boolean*
+
+Defined in: [format.ts:162](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L162)
+
+___
+
+### inputIsSqlDatabase
+
+▸ **inputIsSqlDatabase**(`format?`: [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) \| ``null``): *boolean*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `format?` | [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) \| ``null`` |
+
+**Returns:** *boolean*
+
+Defined in: [format.ts:182](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L182)
+
+___
+
+### outputHasDatabaseFile
+
+▸ **outputHasDatabaseFile**(`format?`: [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) \| ``null``): *boolean*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `format?` | [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) \| ``null`` |
+
+**Returns:** *boolean*
+
+Defined in: [format.ts:172](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L172)
+
+___
+
+### outputIsSqlDatabase
+
+▸ **outputIsSqlDatabase**(`format?`: [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) \| ``null``): *boolean*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `format?` | [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) \| ``null`` |
+
+**Returns:** *boolean*
+
+Defined in: [format.ts:194](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L194)
 
 ___
 
@@ -123,7 +189,7 @@ ___
 
 **Returns:** WritableStreamTree \| *Promise*<WritableStreamTree\>
 
-Defined in: [format.ts:105](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L105)
+Defined in: [format.ts:111](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L111)
 
 ___
 
@@ -140,36 +206,4 @@ ___
 
 **Returns:** ReadableStreamTree \| *Promise*<ReadableStreamTree\>
 
-Defined in: [format.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L83)
-
-___
-
-### sourceHasDatabaseFile
-
-▸ **sourceHasDatabaseFile**(`format?`: [*DatabaseCopySourceType*](../enums/format.databasecopysourcetype.md) \| ``null``): *boolean*
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `format?` | [*DatabaseCopySourceType*](../enums/format.databasecopysourcetype.md) \| ``null`` |
-
-**Returns:** *boolean*
-
-Defined in: [format.ts:156](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L156)
-
-___
-
-### targetHasDatabaseFile
-
-▸ **targetHasDatabaseFile**(`format?`: [*DatabaseCopyTargetType*](../enums/format.databasecopytargettype.md) \| ``null``): *boolean*
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `format?` | [*DatabaseCopyTargetType*](../enums/format.databasecopytargettype.md) \| ``null`` |
-
-**Returns:** *boolean*
-
-Defined in: [format.ts:166](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L166)
+Defined in: [format.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L89)

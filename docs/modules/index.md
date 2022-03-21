@@ -6,37 +6,33 @@
 
 ### Interfaces
 
+- [DatabaseCopyInput](../interfaces/index.databasecopyinput.md)
+- [DatabaseCopyInputFile](../interfaces/index.databasecopyinputfile.md)
 - [DatabaseCopyOptions](../interfaces/index.databasecopyoptions.md)
-- [DatabaseCopySourceFile](../interfaces/index.databasecopysourcefile.md)
+- [DatabaseCopyOutput](../interfaces/index.databasecopyoutput.md)
 
 ### Type aliases
 
 - [DatabaseCopyFormats](index.md#databasecopyformats)
-
-### Variables
-
-- [knexLogConfig](index.md#knexlogconfig)
-- [knexPoolConfig](index.md#knexpoolconfig)
 
 ### Functions
 
 - [databaseInspectSchema](index.md#databaseinspectschema)
 - [dbcp](index.md#dbcp)
 - [dumpToFile](index.md#dumptofile)
-- [findObjectProperty](index.md#findobjectproperty)
 - [getExternalSortFunction](index.md#getexternalsortfunction)
+- [getInputConnection](index.md#getinputconnection)
+- [getInputConnectionString](index.md#getinputconnectionstring)
+- [getInputFormat](index.md#getinputformat)
+- [getInputFormats](index.md#getinputformats)
 - [getOrderByFunction](index.md#getorderbyfunction)
+- [getOutputConnection](index.md#getoutputconnection)
+- [getOutputConnectionString](index.md#getoutputconnectionstring)
+- [getOutputFormat](index.md#getoutputformat)
 - [getShardFunction](index.md#getshardfunction)
-- [getSourceConnection](index.md#getsourceconnection)
-- [getSourceConnectionString](index.md#getsourceconnectionstring)
-- [getSourceFormat](index.md#getsourceformat)
-- [getSourceFormats](index.md#getsourceformats)
-- [getTargetConnection](index.md#gettargetconnection)
-- [getTargetConnectionString](index.md#gettargetconnectionstring)
-- [getTargetFormat](index.md#gettargetformat)
-- [openSources](index.md#opensources)
-- [openTargets](index.md#opentargets)
-- [updatePropertiesAsync](index.md#updatepropertiesasync)
+- [guessFormatFromInput](index.md#guessformatfrominput)
+- [openInputs](index.md#openinputs)
+- [openOutputs](index.md#openoutputs)
 
 ## Type aliases
 
@@ -44,43 +40,7 @@
 
 Ƭ **DatabaseCopyFormats**: *Record*<string, [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| ``null``\>
 
-Defined in: [index.ts:129](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L129)
-
-## Variables
-
-### knexLogConfig
-
-• `Const` **knexLogConfig**: *object*
-
-#### Type declaration
-
-| Name | Type |
-| :------ | :------ |
-| `debug` | (`_message`: *any*) => *void* |
-| `deprecate` | (`_message`: *any*) => *void* |
-| `error` | (`_message`: *any*) => *void* |
-| `warn` | (`_message`: *any*) => *void* |
-
-Defined in: [index.ts:906](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L906)
-
-___
-
-### knexPoolConfig
-
-• `Const` **knexPoolConfig**: *object*
-
-#### Type declaration
-
-| Name | Type |
-| :------ | :------ |
-| `acquireTimeoutMillis` | *number* |
-| `createRetryIntervalMillis` | *number* |
-| `createTimeoutMillis` | *number* |
-| `idleTimeoutMillis` | *number* |
-| `max` | *number* |
-| `min` | *number* |
-
-Defined in: [index.ts:921](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L921)
+Defined in: [index.ts:138](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L138)
 
 ## Functions
 
@@ -96,7 +56,7 @@ Defined in: [index.ts:921](https://github.com/wholebuzz/dbcp/blob/master/src/ind
 
 **Returns:** *Promise*<Column[]\>
 
-Defined in: [index.ts:887](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L887)
+Defined in: [index.ts:779](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L779)
 
 ___
 
@@ -112,13 +72,13 @@ ___
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:299](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L299)
+Defined in: [index.ts:325](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L325)
 
 ___
 
 ### dumpToFile
 
-▸ **dumpToFile**(`input`: ReadableStreamTree \| *undefined*, `outputs`: WritableStreamTree[], `options`: { `columnType?`: *Record*<string, string\> ; `copySchema?`: [*DatabaseCopySchema*](../enums/format.databasecopyschema.md) ; `externalSortFunction?`: (`x`: *any*) => *any*[] ; `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) ; `formattingKnex?`: Knex ; `schema?`: [*Column*](../interfaces/schema.column.md)[] ; `shardFunction?`: (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* ; `sourceTable?`: *string* ; `targetShards?`: *number* ; `targetType?`: *string* ; `tempDirectory?`: *string* ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: () => Duplex  }): *Promise*<void\>
+▸ **dumpToFile**(`input`: ReadableStreamTree \| *undefined*, `outputs`: WritableStreamTree[], `options`: { `columnType?`: *Record*<string, string\> ; `copySchema?`: [*DatabaseCopySchema*](../enums/format.databasecopyschema.md) ; `externalSortFunction?`: (`x`: *any*) => *any*[] ; `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) ; `formattingKnex?`: Knex ; `inputTable?`: *string* ; `outputShards?`: *number* ; `outputType?`: *string* ; `schema?`: [*Column*](../interfaces/schema.column.md)[] ; `shardFunction?`: (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* ; `tempDirectories?`: *string*[] ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: () => Duplex  }): *Promise*<void\>
 
 #### Parameters
 
@@ -132,41 +92,18 @@ ___
 | `options.externalSortFunction?` | (`x`: *any*) => *any*[] |
 | `options.format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
 | `options.formattingKnex?` | Knex |
+| `options.inputTable?` | *string* |
+| `options.outputShards?` | *number* |
+| `options.outputType?` | *string* |
 | `options.schema?` | [*Column*](../interfaces/schema.column.md)[] |
 | `options.shardFunction?` | (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* |
-| `options.sourceTable?` | *string* |
-| `options.targetShards?` | *number* |
-| `options.targetType?` | *string* |
-| `options.tempDirectory?` | *string* |
+| `options.tempDirectories?` | *string*[] |
 | `options.transformObject?` | (`x`: *unknown*) => *unknown* |
 | `options.transformObjectStream?` | () => Duplex |
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:585](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L585)
-
-___
-
-### findObjectProperty
-
-▸ **findObjectProperty**<X\>(`x`: X[] \| *Record*<string, X\> \| *undefined*, `key`: *string* \| *number*): X \| *undefined*
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `X` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `x` | X[] \| *Record*<string, X\> \| *undefined* |
-| `key` | *string* \| *number* |
-
-**Returns:** X \| *undefined*
-
-Defined in: [index.ts:515](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L515)
+Defined in: [index.ts:567](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L567)
 
 ___
 
@@ -182,7 +119,76 @@ ___
 
 **Returns:** (`x`: *any*) => *any*[]
 
-Defined in: [index.ts:204](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L204)
+Defined in: [index.ts:227](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L227)
+
+___
+
+### getInputConnection
+
+▸ **getInputConnection**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): { `database`: *undefined* ; `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+
+**Returns:** { `database`: *undefined* ; `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+
+Defined in: [index.ts:144](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L144)
+
+___
+
+### getInputConnectionString
+
+▸ **getInputConnectionString**(`args`: { `inputHost?`: *string* ; `inputPassword?`: *string* ; `inputPort?`: *string* \| *number* ; `inputUser?`: *string*  }): *string*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | *object* |
+| `args.inputHost?` | *string* |
+| `args.inputPassword?` | *string* |
+| `args.inputPort?` | *string* \| *number* |
+| `args.inputUser?` | *string* |
+
+**Returns:** *string*
+
+Defined in: [index.ts:190](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L190)
+
+___
+
+### getInputFormat
+
+▸ **getInputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats)): *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+| `inputFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
+
+**Returns:** *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+
+Defined in: [index.ts:244](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L244)
+
+___
+
+### getInputFormats
+
+▸ **getInputFormats**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): [*DatabaseCopyFormats*](index.md#databasecopyformats)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+
+**Returns:** [*DatabaseCopyFormats*](index.md#databasecopyformats)
+
+Defined in: [index.ts:231](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L231)
 
 ___
 
@@ -198,7 +204,60 @@ ___
 
 **Returns:** (`a`: *Record*<string, any\>, `b`: *Record*<string, any\>) => ``1`` \| ``0`` \| ``-1``
 
-Defined in: [index.ts:192](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L192)
+Defined in: [index.ts:215](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L215)
+
+___
+
+### getOutputConnection
+
+▸ **getOutputConnection**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+
+**Returns:** { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+
+Defined in: [index.ts:170](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L170)
+
+___
+
+### getOutputConnectionString
+
+▸ **getOutputConnectionString**(`args`: { `outputHost?`: *string* ; `outputPassword?`: *string* ; `outputPort?`: *string* \| *number* ; `outputUser?`: *string*  }): *string*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | *object* |
+| `args.outputHost?` | *string* |
+| `args.outputPassword?` | *string* |
+| `args.outputPort?` | *string* \| *number* |
+| `args.outputUser?` | *string* |
+
+**Returns:** *string*
+
+Defined in: [index.ts:199](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L199)
+
+___
+
+### getOutputFormat
+
+▸ **getOutputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+
+**Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+
+Defined in: [index.ts:251](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L251)
 
 ___
 
@@ -214,147 +273,49 @@ ___
 
 **Returns:** (`x`: *Record*<string, any\>, `modulus`: *number*) => *number*
 
-Defined in: [index.ts:185](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L185)
-
-___
-
-### getSourceConnection
-
-▸ **getSourceConnection**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): { `database`: *undefined* ; `filename`: *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-
-**Returns:** { `database`: *undefined* ; `filename`: *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
-
-Defined in: [index.ts:131](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L131)
-
-___
-
-### getSourceConnectionString
-
-▸ **getSourceConnectionString**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): *string*
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-
-**Returns:** *string*
-
-Defined in: [index.ts:177](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L177)
-
-___
-
-### getSourceFormat
-
-▸ **getSourceFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `sourceFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats)): *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-| `sourceFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
-
-**Returns:** *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
-
-Defined in: [index.ts:221](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L221)
-
-___
-
-### getSourceFormats
-
-▸ **getSourceFormats**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): [*DatabaseCopyFormats*](index.md#databasecopyformats)
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-
-**Returns:** [*DatabaseCopyFormats*](index.md#databasecopyformats)
-
 Defined in: [index.ts:208](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L208)
 
 ___
 
-### getTargetConnection
+### guessFormatFromInput
 
-▸ **getTargetConnection**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+▸ **guessFormatFromInput**(`input`: [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)): ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*object*](../enums/format.databasecopyformat.md#object) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
+| `input` | [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md) |
 
-**Returns:** { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
+**Returns:** ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*object*](../enums/format.databasecopyformat.md#object) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
-Defined in: [index.ts:157](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L157)
+Defined in: [index.ts:140](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L140)
 
 ___
 
-### getTargetConnectionString
+### openInputs
 
-▸ **getTargetConnectionString**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): *string*
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-
-**Returns:** *string*
-
-Defined in: [index.ts:181](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L181)
-
-___
-
-### getTargetFormat
-
-▸ **getTargetFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `sourceFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+▸ **openInputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFiles`: [*string*, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)][], `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md), `outputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-| `sourceFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
-
-**Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
-
-Defined in: [index.ts:228](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L228)
-
-___
-
-### openSources
-
-▸ **openSources**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `sourceFiles`: [*string*, [*DatabaseCopySourceFile*](../interfaces/index.databasecopysourcefile.md)][], `sourceFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats), `sourceFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md), `targetFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-| `sourceFiles` | [*string*, [*DatabaseCopySourceFile*](../interfaces/index.databasecopysourcefile.md)][] |
-| `sourceFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
-| `sourceFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
-| `targetFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `inputFiles` | [*string*, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)][] |
+| `inputFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
+| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `outputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
 
 **Returns:** *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
 
-Defined in: [index.ts:237](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L237)
+Defined in: [index.ts:260](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L260)
 
 ___
 
-### openTargets
+### openOutputs
 
-▸ **openTargets**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<WritableStreamTree[]\>
+▸ **openOutputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<WritableStreamTree[]\>
 
 #### Parameters
 
@@ -365,29 +326,4 @@ ___
 
 **Returns:** *Promise*<WritableStreamTree[]\>
 
-Defined in: [index.ts:283](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L283)
-
-___
-
-### updatePropertiesAsync
-
-▸ **updatePropertiesAsync**<X\>(`x`: X[] \| *Record*<string, X\>, `f`: (`x`: X, `key`: *string* \| *number*) => *Promise*<X\>, `options?`: { `concurrency?`: *number*  }): *Promise*<X[] \| Record<string, X\>\>
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `X` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `x` | X[] \| *Record*<string, X\> |
-| `f` | (`x`: X, `key`: *string* \| *number*) => *Promise*<X\> |
-| `options?` | *object* |
-| `options.concurrency?` | *number* |
-
-**Returns:** *Promise*<X[] \| Record<string, X\>\>
-
-Defined in: [index.ts:524](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L524)
+Defined in: [index.ts:309](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L309)

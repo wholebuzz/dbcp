@@ -10,8 +10,8 @@ import fs from 'fs'
 import hasha from 'hasha'
 import { knex } from 'knex'
 import * as mongoDB from 'mongodb'
-import { DatabaseCopySchema, DatabaseCopySourceType, DatabaseCopyTargetType } from './format'
-import { dbcp, getTargetConnectionString } from './index'
+import { DatabaseCopySchema, DatabaseCopyInputType, DatabaseCopyOutputType } from './format'
+import { dbcp, getOutputConnectionString } from './index'
 import { knexPoolConfig } from './knex'
 import {
   dbcpHashFile,
@@ -31,7 +31,7 @@ const fileSystem = new AnyFileSystem([
 ])
 const hashOptions = { algorithm: 'md5' }
 const targetJsonUrl = '/tmp/target.json.gz'
-const targetShardedJsonUrl = '/tmp/target-SSS-of-NNN.json.gz'
+const outputShardedJsonUrl = '/tmp/target-SSS-of-NNN.json.gz'
 const targetNDJsonUrl = '/tmp/target.jsonl.gz'
 const targetParquetUrl = '/tmp/target.parquet'
 const targetTfRecordUrl = '/tmp/target.tfrecord'
@@ -50,38 +50,38 @@ const esConnection = {
     password: process.env.ES_PASS ?? '',
   },
 }
-const esSource = {
-  sourceType: DatabaseCopySourceType.elasticsearch,
-  sourceName: esConnection.node,
-  sourceUser: esConnection.auth.username,
-  sourcePassword: esConnection.auth.password,
-  sourceTable: testSchemaTableName,
+const esInput = {
+  inputType: DatabaseCopyInputType.elasticsearch,
+  inputName: esConnection.node,
+  inputUser: esConnection.auth.username,
+  inputPassword: esConnection.auth.password,
+  inputTable: testSchemaTableName,
 }
-const esTarget = {
-  targetType: DatabaseCopyTargetType.elasticsearch,
-  targetName: esConnection.node,
-  targetUser: esConnection.auth.username,
-  targetPassword: esConnection.auth.password,
-  targetTable: testSchemaTableName,
+const esOutput = {
+  outputType: DatabaseCopyOutputType.elasticsearch,
+  outputName: esConnection.node,
+  outputUser: esConnection.auth.username,
+  outputPassword: esConnection.auth.password,
+  outputTable: testSchemaTableName,
 }
 
-const mongodbSource = {
-  sourceType: DatabaseCopySourceType.mongodb,
-  sourceHost: process.env.MONGODB_DB_HOST,
-  sourcePort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
-  sourceName: process.env.MONGODB_DB_NAME,
-  sourceUser: process.env.MONGODB_DB_USER,
-  sourcePassword: process.env.MONGODB_DB_PASS,
-  sourceTable: testSchemaTableName,
+const mongodbInput = {
+  inputType: DatabaseCopyInputType.mongodb,
+  inputHost: process.env.MONGODB_DB_HOST,
+  inputPort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
+  inputName: process.env.MONGODB_DB_NAME,
+  inputUser: process.env.MONGODB_DB_USER,
+  inputPassword: process.env.MONGODB_DB_PASS,
+  inputTable: testSchemaTableName,
 }
-const mongodbTarget = {
-  targetType: DatabaseCopyTargetType.mongodb,
-  targetHost: process.env.MONGODB_DB_HOST,
-  targetPort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
-  targetName: process.env.MONGODB_DB_NAME,
-  targetUser: process.env.MONGODB_DB_USER,
-  targetPassword: process.env.MONGODB_DB_PASS,
-  targetTable: testSchemaTableName,
+const mongodbOutput = {
+  outputType: DatabaseCopyOutputType.mongodb,
+  outputHost: process.env.MONGODB_DB_HOST,
+  outputPort: parseInt(process.env.MONGODB_DB_PORT ?? '', 10),
+  outputName: process.env.MONGODB_DB_NAME,
+  outputUser: process.env.MONGODB_DB_USER,
+  outputPassword: process.env.MONGODB_DB_PASS,
+  outputTable: testSchemaTableName,
 }
 
 const mssqlConnection = {
@@ -92,24 +92,24 @@ const mssqlConnection = {
   port: parseInt(process.env.MSSQL_DB_PORT ?? '', 10),
   options: { trustServerCertificate: true },
 }
-const mssqlSource = {
-  sourceType: DatabaseCopySourceType.mssql,
-  sourceHost: mssqlConnection.host,
-  sourcePort: mssqlConnection.port,
-  sourceUser: mssqlConnection.user,
-  sourcePassword: mssqlConnection.password,
-  sourceName: mssqlConnection.database,
-  sourceTable: testSchemaTableName,
+const mssqlInput = {
+  inputType: DatabaseCopyInputType.mssql,
+  inputHost: mssqlConnection.host,
+  inputPort: mssqlConnection.port,
+  inputUser: mssqlConnection.user,
+  inputPassword: mssqlConnection.password,
+  inputName: mssqlConnection.database,
+  inputTable: testSchemaTableName,
 }
-const mssqlTarget = {
+const mssqlOutput = {
   batchSize: 100,
-  targetType: DatabaseCopyTargetType.mssql,
-  targetHost: mssqlConnection.host,
-  targetPort: mssqlConnection.port,
-  targetUser: mssqlConnection.user,
-  targetPassword: mssqlConnection.password,
-  targetName: mssqlConnection.database,
-  targetTable: testSchemaTableName,
+  outputType: DatabaseCopyOutputType.mssql,
+  outputHost: mssqlConnection.host,
+  outputPort: mssqlConnection.port,
+  outputUser: mssqlConnection.user,
+  outputPassword: mssqlConnection.password,
+  outputName: mssqlConnection.database,
+  outputTable: testSchemaTableName,
 }
 
 const mysqlConnection = {
@@ -120,23 +120,23 @@ const mysqlConnection = {
   port: parseInt(process.env.MYSQL_DB_PORT ?? '', 10),
   charset: 'utf8mb4',
 }
-const mysqlSource = {
-  sourceType: DatabaseCopySourceType.mysql,
-  sourceHost: mysqlConnection.host,
-  sourcePort: mysqlConnection.port,
-  sourceUser: mysqlConnection.user,
-  sourcePassword: mysqlConnection.password,
-  sourceName: mysqlConnection.database,
-  sourceTable: testSchemaTableName,
+const mysqlInput = {
+  inputType: DatabaseCopyInputType.mysql,
+  inputHost: mysqlConnection.host,
+  inputPort: mysqlConnection.port,
+  inputUser: mysqlConnection.user,
+  inputPassword: mysqlConnection.password,
+  inputName: mysqlConnection.database,
+  inputTable: testSchemaTableName,
 }
-const mysqlTarget = {
-  targetType: DatabaseCopyTargetType.mysql,
-  targetHost: mysqlConnection.host,
-  targetPort: mysqlConnection.port,
-  targetUser: mysqlConnection.user,
-  targetPassword: mysqlConnection.password,
-  targetName: mysqlConnection.database,
-  targetTable: testSchemaTableName,
+const mysqlOutput = {
+  outputType: DatabaseCopyOutputType.mysql,
+  outputHost: mysqlConnection.host,
+  outputPort: mysqlConnection.port,
+  outputUser: mysqlConnection.user,
+  outputPassword: mysqlConnection.password,
+  outputName: mysqlConnection.database,
+  outputTable: testSchemaTableName,
 }
 
 const postgresConnection = {
@@ -146,23 +146,23 @@ const postgresConnection = {
   host: process.env.POSTGRES_DB_HOST ?? '',
   port: parseInt(process.env.POSTGRES_DB_PORT ?? '', 10),
 }
-const postgresSource = {
-  sourceType: DatabaseCopySourceType.postgresql,
-  sourceHost: postgresConnection.host,
-  sourcePort: postgresConnection.port,
-  sourceUser: postgresConnection.user,
-  sourcePassword: postgresConnection.password,
-  sourceName: postgresConnection.database,
-  sourceTable: testSchemaTableName,
+const postgresInput = {
+  inputType: DatabaseCopyInputType.postgresql,
+  inputHost: postgresConnection.host,
+  inputPort: postgresConnection.port,
+  inputUser: postgresConnection.user,
+  inputPassword: postgresConnection.password,
+  inputName: postgresConnection.database,
+  inputTable: testSchemaTableName,
 }
-const postgresTarget = {
-  targetType: DatabaseCopyTargetType.postgresql,
-  targetHost: postgresConnection.host,
-  targetPort: postgresConnection.port,
-  targetUser: postgresConnection.user,
-  targetPassword: postgresConnection.password,
-  targetName: postgresConnection.database,
-  targetTable: testSchemaTableName,
+const postgresOutput = {
+  outputType: DatabaseCopyOutputType.postgresql,
+  outputHost: postgresConnection.host,
+  outputPort: postgresConnection.port,
+  outputUser: postgresConnection.user,
+  outputPassword: postgresConnection.password,
+  outputName: postgresConnection.database,
+  outputTable: testSchemaTableName,
 }
 
 it('Should hash test data as string', async () => {
@@ -185,7 +185,7 @@ it('Should hash test data stream', async () => {
   expect(await dbcpHashFile(fileSystem, testNDJsonUrl)).toBe(testNDJsonHash)
   expect(
     await execCommand(
-      `node dist/cli.js --sourceFile ${testNDJsonUrl} --targetFile=-` +
+      `node dist/cli.js --inputFile ${testNDJsonUrl} --outputFile=-` +
         ` | ./node_modules/.bin/hasha --algorithm md5`
     )
   ).toBe(testNDJsonHash)
@@ -193,15 +193,15 @@ it('Should hash test data stream', async () => {
 
 it('Should copy local file', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
-    dbcp({ sourceFiles: [{ url: testNDJsonUrl }], targetFile: targetNDJsonUrl, fileSystem })
+    dbcp({ inputFiles: [{ url: testNDJsonUrl }], outputFile: targetNDJsonUrl, fileSystem })
   )
 })
 
 it('Should read local directory', async () => {
   const dir = { value: '' }
   await dbcp({
-    sourceFiles: [{ url: './test/' }],
-    targetStream: [writableToString(dir)],
+    inputFiles: [{ url: './test/' }],
+    outputStream: [writableToString(dir)],
     fileSystem,
   })
   expect(JSON.parse(dir.value)).toEqual([
@@ -214,10 +214,10 @@ it('Should read local directory', async () => {
 
 it('Should convert to JSON from ND-JSON and back', async () => {
   await expectCreateFileWithHash(fileSystem, targetJsonUrl, testJsonHash, () =>
-    dbcp({ sourceFiles: [{ url: testNDJsonUrl }], targetFile: targetJsonUrl, fileSystem })
+    dbcp({ inputFiles: [{ url: testNDJsonUrl }], outputFile: targetJsonUrl, fileSystem })
   )
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
-    dbcp({ sourceFiles: [{ url: targetJsonUrl }], targetFile: targetNDJsonUrl, fileSystem })
+    dbcp({ inputFiles: [{ url: targetJsonUrl }], outputFile: targetNDJsonUrl, fileSystem })
   )
 })
 
@@ -225,31 +225,31 @@ it('Should convert to sharded JSON from ND-JSON and back', async () => {
   const shards = 4
   await expectCreateFilesWithHashes(
     fileSystem,
-    shardedFilenames(targetShardedJsonUrl, shards),
+    shardedFilenames(outputShardedJsonUrl, shards),
     undefined,
     () =>
       dbcp({
         shardBy: 'id',
-        sourceFiles: [{ url: testNDJsonUrl }],
-        targetFile: targetShardedJsonUrl,
-        targetShards: shards,
+        inputFiles: [{ url: testNDJsonUrl }],
+        outputFile: outputShardedJsonUrl,
+        outputShards: shards,
         fileSystem,
       })
   )
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       orderBy: ['id'],
-      sourceShards: shards,
-      sourceFiles: [{ url: targetShardedJsonUrl }],
-      targetFile: targetNDJsonUrl,
+      inputShards: shards,
+      inputFiles: [{ url: outputShardedJsonUrl }],
+      outputFile: targetNDJsonUrl,
       fileSystem,
     })
   )
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       orderBy: ['id'],
-      sourceFiles: shardedFilenames(targetShardedJsonUrl, shards).map((url) => ({ url })),
-      targetFile: targetNDJsonUrl,
+      inputFiles: shardedFilenames(outputShardedJsonUrl, shards).map((url) => ({ url })),
+      outputFile: targetNDJsonUrl,
       fileSystem,
     })
   )
@@ -264,8 +264,8 @@ it('Should convert to Parquet from ND-JSON and back', async () => {
     () =>
       dbcp({
         fileSystem,
-        sourceFiles: [{ url: testNDJsonUrl }],
-        targetFile: targetParquetUrl,
+        inputFiles: [{ url: testNDJsonUrl }],
+        outputFile: targetParquetUrl,
       })
   )
 })
@@ -279,8 +279,8 @@ it('Should convert to TFRecord from ND-JSON and back', async () => {
     () =>
       dbcp({
         fileSystem,
-        sourceFiles: [{ url: testNDJsonUrl }],
-        targetFile: targetTfRecordUrl,
+        inputFiles: [{ url: testNDJsonUrl }],
+        outputFile: targetTfRecordUrl,
       }),
     (x: any) => {
       x.props = JSON.parse(x.props)
@@ -294,16 +294,16 @@ it('Should load to level from ND-JSON and dump to JSON after external sort', asy
   await expectCreateFileWithHash(fileSystem, targetLevelUrl, undefined, () =>
     dbcp({
       fileSystem,
-      sourceFiles: [{ url: testNDJsonUrl }],
-      targetFile: targetLevelUrl,
-      targetType: DatabaseCopyTargetType.level,
+      inputFiles: [{ url: testNDJsonUrl }],
+      outputFile: targetLevelUrl,
+      outputType: DatabaseCopyOutputType.level,
     })
   )
   await expectCreateFileWithHash(fileSystem, targetJsonUrl, testJsonHash, () =>
     dbcp({
-      sourceType: DatabaseCopySourceType.level,
-      sourceFiles: [{ url: targetLevelUrl }],
-      targetFile: targetJsonUrl,
+      inputType: DatabaseCopyInputType.level,
+      inputFiles: [{ url: targetLevelUrl }],
+      outputFile: targetJsonUrl,
       externalSortBy: ['id'],
       fileSystem,
     })
@@ -323,30 +323,30 @@ it('Should restore to and dump compound data', async () => {
   // Load schema
   await dbcp({
     fileSystem,
-    ...postgresTarget,
-    sourceFiles: [{ url: './test/compound.sql' }],
+    ...postgresOutput,
+    inputFiles: [{ url: './test/compound.sql' }],
   })
 
   // Load data
   await dbcp({
     fileSystem,
-    ...postgresTarget,
-    sourceFiles: [{ url: './test/compound-data.sql' }],
+    ...postgresOutput,
+    inputFiles: [{ url: './test/compound-data.sql' }],
   })
 
   // Dump to data
   await dbcp({
     fileSystem,
-    ...postgresSource,
+    ...postgresInput,
     query,
-    targetFile: targetJsonUrl,
+    outputFile: targetJsonUrl,
   })
 
   // Reload schema
   await dbcp({
     fileSystem,
-    ...postgresTarget,
-    sourceFiles: [{ url: './test/compound.sql' }],
+    ...postgresOutput,
+    inputFiles: [{ url: './test/compound.sql' }],
   })
 
   // Copy from targetJsonUrl to PostgreSQL
@@ -357,9 +357,9 @@ it('Should restore to and dump compound data', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...postgresTarget,
+        ...postgresOutput,
         compoundInsert: true,
-        sourceFiles: [{ url: targetJsonUrl }],
+        inputFiles: [{ url: targetJsonUrl }],
       }),
     undefined,
     2
@@ -373,9 +373,9 @@ it('Should restore to and dump compound data', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...postgresSource,
+        ...postgresInput,
         query,
-        targetFile: targetJsonUrl,
+        outputFile: targetJsonUrl,
       })
   )
 })
@@ -396,8 +396,8 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
     extra,
     extraOutput: true,
     fileSystem,
-    ...esTarget,
-    sourceFiles: [{ url: testNDJsonUrl }],
+    ...esOutput,
+    inputFiles: [{ url: testNDJsonUrl }],
   })
   expect((await client.count({ index: testSchemaTableName })).body.count).toBe(10000)
   await client.close()
@@ -408,19 +408,19 @@ it('Should restore to and dump from Elastic Search to ND-JSON', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...esSource,
-      targetFile: targetNDJsonUrl,
+      ...esInput,
+      outputFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
     })
   )
 })
 
 it('Should restore to and dump from MongoDB to ND-JSON', async () => {
-  const client = new mongoDB.MongoClient('mongodb://' + getTargetConnectionString(mongodbTarget))
+  const client = new mongoDB.MongoClient('mongodb://' + getOutputConnectionString(mongodbOutput))
   await client.connect()
-  const db: mongoDB.Db = client.db(mongodbTarget.targetName)
+  const db: mongoDB.Db = client.db(mongodbOutput.outputName)
   try {
-    await db.dropCollection(mongodbTarget.targetTable ?? '')
+    await db.dropCollection(mongodbOutput.outputTable ?? '')
   } catch (_err) {
     /* */
   }
@@ -429,16 +429,16 @@ it('Should restore to and dump from MongoDB to ND-JSON', async () => {
   // Copy from testNDJsonUrl to MongoDB
   await dbcp({
     fileSystem,
-    ...mongodbTarget,
-    sourceFiles: [{ url: testNDJsonUrl }],
+    ...mongodbOutput,
+    inputFiles: [{ url: testNDJsonUrl }],
   })
 
   // Dump and verify MongoDB
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...mongodbSource,
-      targetFile: targetNDJsonUrl,
+      ...mongodbInput,
+      outputFile: targetNDJsonUrl,
       transformObject: (x: any) => {
         delete x._id
         return x
@@ -451,16 +451,16 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
   // Load schema
   await dbcp({
     fileSystem,
-    ...postgresTarget,
-    sourceFiles: [{ url: testSchemaUrl }],
+    ...postgresOutput,
+    inputFiles: [{ url: testSchemaUrl }],
   })
 
   // Copy from testNDJsonUrl to PostgreSQL
   await expectFillDatabaseTable('postgresql', postgresConnection, testSchemaTableName, () =>
     dbcp({
       fileSystem,
-      ...postgresTarget,
-      sourceFiles: [{ url: testNDJsonUrl }],
+      ...postgresOutput,
+      inputFiles: [{ url: testNDJsonUrl }],
     })
   )
 
@@ -468,8 +468,8 @@ it('Should restore to and dump from Postgres to ND-JSON', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...postgresSource,
-      targetFile: targetNDJsonUrl,
+      ...postgresInput,
+      outputFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
     })
   )
@@ -480,26 +480,26 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   await expectCreateFileWithHash(fileSystem, targetSQLUrl, undefined, () =>
     dbcp({
       fileSystem,
-      ...postgresSource,
+      ...postgresInput,
       copySchema: DatabaseCopySchema.dataOnly,
-      targetFile: targetSQLUrl,
-      targetType: DatabaseCopyTargetType.postgresql,
+      outputFile: targetSQLUrl,
+      outputType: DatabaseCopyOutputType.postgresql,
     })
   )
 
   // Load schema and copy from testSchemaUrl to Postgres
   await dbcp({
     fileSystem,
-    ...postgresTarget,
-    sourceFiles: [{ url: testSchemaUrl }],
+    ...postgresOutput,
+    inputFiles: [{ url: testSchemaUrl }],
   })
 
   // Copy from targetSQLUrl to PostgreSQL
   await expectFillDatabaseTable('postgresql', postgresConnection, testSchemaTableName, () =>
     dbcp({
       fileSystem,
-      ...postgresTarget,
-      sourceFiles: [{ url: targetSQLUrl }],
+      ...postgresOutput,
+      inputFiles: [{ url: targetSQLUrl }],
     })
   )
 
@@ -507,8 +507,8 @@ it('Should restore to and dump from Postgres to SQL', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...postgresSource,
-      targetFile: targetNDJsonUrl,
+      ...postgresInput,
+      outputFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
     })
   )
@@ -518,17 +518,17 @@ it('Should not hang on error', async () => {
   await expect(
     dbcp({
       fileSystem,
-      ...postgresSource,
-      sourcePassword: 'BadPasswordWontWork',
-      targetFile: targetNDJsonUrl,
+      ...postgresInput,
+      inputPassword: 'BadPasswordWontWork',
+      outputFile: targetNDJsonUrl,
       orderBy: ['id ASC'],
     })
   ).rejects.toThrow(Error)
   await expect(
     dbcp({
       fileSystem,
-      ...postgresSource,
-      targetFile: 'gs://not-existent-bucket-wont-work/fail.jsonl.gz',
+      ...postgresInput,
+      outputFile: 'gs://not-existent-bucket-wont-work/fail.jsonl.gz',
       orderBy: ['id ASC'],
     })
   ).rejects.toThrow(Error)
@@ -539,10 +539,10 @@ it('Should copy from Postgres to Mysql', async () => {
   await expectCreateFileWithHash(fileSystem, targetSQLUrl, undefined, () =>
     dbcp({
       fileSystem,
-      ...postgresSource,
+      ...postgresInput,
       copySchema: DatabaseCopySchema.schemaOnly,
-      targetFile: targetSQLUrl,
-      targetType: DatabaseCopyTargetType.mysql,
+      outputFile: targetSQLUrl,
+      outputType: DatabaseCopyOutputType.mysql,
     })
   )
 
@@ -560,8 +560,8 @@ it('Should copy from Postgres to Mysql', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...mysqlTarget,
-        ...postgresSource,
+        ...mysqlOutput,
+        ...postgresInput,
         transformObject: (x: any) => {
           x.props = JSON.stringify(x.props)
           x.tags = JSON.stringify(x.tags)
@@ -575,9 +575,9 @@ it('Should copy from Postgres to Mysql', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...mysqlSource,
+      ...mysqlInput,
       orderBy: ['id ASC'],
-      targetFile: targetNDJsonUrl,
+      outputFile: targetNDJsonUrl,
       transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
@@ -592,10 +592,10 @@ it('Should copy from Postgres to SQL Server', async () => {
   await expectCreateFileWithHash(fileSystem, targetSQLUrl, undefined, () =>
     dbcp({
       fileSystem,
-      ...postgresSource,
+      ...postgresInput,
       copySchema: DatabaseCopySchema.schemaOnly,
-      targetFile: targetSQLUrl,
-      targetType: DatabaseCopyTargetType.mssql,
+      outputFile: targetSQLUrl,
+      outputType: DatabaseCopyOutputType.mssql,
     })
   )
 
@@ -613,8 +613,8 @@ it('Should copy from Postgres to SQL Server', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...mssqlTarget,
-        ...postgresSource,
+        ...mssqlOutput,
+        ...postgresInput,
         transformObject: (x: any) => {
           x.props = JSON.stringify(x.props)
           x.tags = JSON.stringify(x.tags)
@@ -628,9 +628,9 @@ it('Should copy from Postgres to SQL Server', async () => {
   await expectCreateFileWithHash(fileSystem, targetNDJsonUrl, testNDJsonHash, () =>
     dbcp({
       fileSystem,
-      ...mssqlSource,
+      ...mssqlInput,
       orderBy: ['id ASC'],
-      targetFile: targetNDJsonUrl,
+      outputFile: targetNDJsonUrl,
       transformObject: (x: any) => {
         x.props = JSON.parse(x.props)
         x.tags = JSON.parse(x.tags)
@@ -650,8 +650,8 @@ it('Should dump from Postgres to Parquet file', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...postgresSource,
-        targetFile: targetParquetUrl,
+        ...postgresInput,
+        outputFile: targetParquetUrl,
         orderBy: ['id ASC'],
       })
   )
@@ -667,8 +667,8 @@ it('Should dump from MySQL to Parquet file', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...mysqlSource,
-        targetFile: targetParquetUrl,
+        ...mysqlInput,
+        outputFile: targetParquetUrl,
         orderBy: ['id ASC'],
         transformObject: (x: any) => {
           x.props = JSON.parse(x.props)
@@ -689,8 +689,8 @@ it('Should dump from SQL Server to Parquet file', async () => {
     () =>
       dbcp({
         fileSystem,
-        ...mssqlSource,
-        targetFile: targetParquetUrl,
+        ...mssqlInput,
+        outputFile: targetParquetUrl,
         orderBy: ['id ASC'],
         columnType: { props: 'json', tags: 'json' },
         transformObject: (x: any) => {

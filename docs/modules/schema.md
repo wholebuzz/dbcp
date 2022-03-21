@@ -11,6 +11,9 @@
 ### Functions
 
 - [formatDDLCreateTableSchema](schema.md#formatddlcreatetableschema)
+- [formatDDLType](schema.md#formatddltype)
+- [getDDLColumnType](schema.md#getddlcolumntype)
+- [guessColumnType](schema.md#guesscolumntype)
 - [guessSchemaFromFile](schema.md#guessschemafromfile)
 - [newSchemaColumn](schema.md#newschemacolumn)
 - [normalizeToSchema](schema.md#normalizetoschema)
@@ -20,19 +23,69 @@
 
 ### formatDDLCreateTableSchema
 
-▸ **formatDDLCreateTableSchema**(`tableName`: *string*, `_columnsInfo`: [*Column*](../interfaces/schema.column.md)[], `_columnType?`: *Record*<string, string\>): *string*
+▸ **formatDDLCreateTableSchema**(`tableName`: *string*, `columnsInfo`: [*Column*](../interfaces/schema.column.md)[], `columnType?`: *Record*<string, string\>): *string*
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `tableName` | *string* |
-| `_columnsInfo` | [*Column*](../interfaces/schema.column.md)[] |
-| `_columnType?` | *Record*<string, string\> |
+| `columnsInfo` | [*Column*](../interfaces/schema.column.md)[] |
+| `columnType?` | *Record*<string, string\> |
 
 **Returns:** *string*
 
-Defined in: [schema.ts:166](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L166)
+Defined in: [schema.ts:187](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L187)
+
+___
+
+### formatDDLType
+
+▸ **formatDDLType**(`columnInfo`: [*Column*](../interfaces/schema.column.md) \| *undefined*, `indent`: *string*): *string*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `columnInfo` | [*Column*](../interfaces/schema.column.md) \| *undefined* |
+| `indent` | *string* |
+
+**Returns:** *string*
+
+Defined in: [schema.ts:205](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L205)
+
+___
+
+### getDDLColumnType
+
+▸ **getDDLColumnType**(`columnInfo`: [*Column*](../interfaces/schema.column.md)): ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `columnInfo` | [*Column*](../interfaces/schema.column.md) |
+
+**Returns:** ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
+
+Defined in: [schema.ts:223](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L223)
+
+___
+
+### guessColumnType
+
+▸ **guessColumnType**(`column`: [*Column*](../interfaces/schema.column.md), `value`: *Record*<string, any\>): *void*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `column` | [*Column*](../interfaces/schema.column.md) |
+| `value` | *Record*<string, any\> |
+
+**Returns:** *void*
+
+Defined in: [schema.ts:76](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L76)
 
 ___
 
@@ -50,7 +103,7 @@ ___
 
 **Returns:** *Promise*<Record<string, [*Column*](../interfaces/schema.column.md)\>\>
 
-Defined in: [schema.ts:46](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L46)
+Defined in: [schema.ts:48](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L48)
 
 ___
 
@@ -68,7 +121,7 @@ ___
 
 **Returns:** [*Column*](../interfaces/schema.column.md)
 
-Defined in: [schema.ts:27](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L27)
+Defined in: [schema.ts:29](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L29)
 
 ___
 
@@ -86,7 +139,7 @@ ___
 
 **Returns:** *any*
 
-Defined in: [schema.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L95)
+Defined in: [schema.ts:116](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L116)
 
 ___
 
@@ -103,4 +156,4 @@ ___
 
 **Returns:** { `compression`: *undefined* = 'GZIP'; `optional`: *boolean* ; `type`: *string* = 'BOOLEAN' } \| { `compression`: *string* = 'GZIP'; `optional`: *boolean* ; `type`: *string* = 'JSON' }
 
-Defined in: [schema.ts:139](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L139)
+Defined in: [schema.ts:160](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L160)

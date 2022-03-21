@@ -7,14 +7,18 @@
 ### Variables
 
 - [batch2](knex.md#batch2)
+- [knexLogConfig](knex.md#knexlogconfig)
+- [knexPoolConfig](knex.md#knexpoolconfig)
 
 ### Functions
 
+- [dumpToKnex](knex.md#dumptoknex)
 - [knexFormatCreateTableSchema](knex.md#knexformatcreatetableschema)
 - [knexInspectCreateTableSchema](knex.md#knexinspectcreatetableschema)
 - [knexInspectTableSchema](knex.md#knexinspecttableschema)
 - [newDBGateQuerySplitterStream](knex.md#newdbgatequerysplitterstream)
 - [pipeKnexInsertTextTransform](knex.md#pipeknexinserttexttransform)
+- [queryKnex](knex.md#queryknex)
 - [streamFromKnex](knex.md#streamfromknex)
 - [streamToKnex](knex.md#streamtoknex)
 - [streamToKnexRaw](knex.md#streamtoknexraw)
@@ -25,61 +29,119 @@
 
 • `Const` **batch2**: *any*
 
-Defined in: [knex.ts:18](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L18)
+Defined in: [knex.ts:19](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L19)
+
+___
+
+### knexLogConfig
+
+• `Const` **knexLogConfig**: *object*
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `debug` | (`_message`: *any*) => *void* |
+| `deprecate` | (`_message`: *any*) => *void* |
+| `error` | (`_message`: *any*) => *void* |
+| `warn` | (`_message`: *any*) => *void* |
+
+Defined in: [knex.ts:248](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L248)
+
+___
+
+### knexPoolConfig
+
+• `Const` **knexPoolConfig**: *object*
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `acquireTimeoutMillis` | *number* |
+| `createRetryIntervalMillis` | *number* |
+| `createTimeoutMillis` | *number* |
+| `idleTimeoutMillis` | *number* |
+| `max` | *number* |
+| `min` | *number* |
+
+Defined in: [knex.ts:263](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L263)
 
 ## Functions
 
-### knexFormatCreateTableSchema
+### dumpToKnex
 
-▸ **knexFormatCreateTableSchema**(`targetKnex`: Knex, `tableName`: *string*, `columnsInfo`: Column[], `columnType?`: *Record*<string, string\>): *string*
+▸ **dumpToKnex**(`input`: ReadableStreamTree, `db`: Knex, `table`: *string*, `options?`: { `batchSize?`: *number* ; `compoundInsert?`: *boolean* ; `returning?`: *string*  }): *Promise*<void\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `targetKnex` | Knex |
+| `input` | ReadableStreamTree |
+| `db` | Knex |
+| `table` | *string* |
+| `options?` | *object* |
+| `options.batchSize?` | *number* |
+| `options.compoundInsert?` | *boolean* |
+| `options.returning?` | *string* |
+
+**Returns:** *Promise*<void\>
+
+Defined in: [knex.ts:21](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L21)
+
+___
+
+### knexFormatCreateTableSchema
+
+▸ **knexFormatCreateTableSchema**(`outputKnex`: Knex, `tableName`: *string*, `columnsInfo`: Column[], `columnType?`: *Record*<string, string\>): *string*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `outputKnex` | Knex |
 | `tableName` | *string* |
 | `columnsInfo` | Column[] |
 | `columnType?` | *Record*<string, string\> |
 
 **Returns:** *string*
 
-Defined in: [knex.ts:130](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L130)
+Defined in: [knex.ts:180](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L180)
 
 ___
 
 ### knexInspectCreateTableSchema
 
-▸ **knexInspectCreateTableSchema**(`sourceKnex`: Knex, `targetKnex`: Knex, `tableName`: *string*): *Promise*<string\>
+▸ **knexInspectCreateTableSchema**(`inputKnex`: Knex, `outputKnex`: Knex, `tableName`: *string*): *Promise*<string\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `sourceKnex` | Knex |
-| `targetKnex` | Knex |
+| `inputKnex` | Knex |
+| `outputKnex` | Knex |
 | `tableName` | *string* |
 
 **Returns:** *Promise*<string\>
 
-Defined in: [knex.ts:117](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L117)
+Defined in: [knex.ts:167](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L167)
 
 ___
 
 ### knexInspectTableSchema
 
-▸ **knexInspectTableSchema**(`sourceKnex`: Knex, `tableName`: *string*): *Promise*<Column[]\>
+▸ **knexInspectTableSchema**(`inputKnex`: Knex, `tableName`: *string*): *Promise*<Column[]\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `sourceKnex` | Knex |
+| `inputKnex` | Knex |
 | `tableName` | *string* |
 
 **Returns:** *Promise*<Column[]\>
 
-Defined in: [knex.ts:126](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L126)
+Defined in: [knex.ts:176](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L176)
 
 ___
 
@@ -95,7 +157,7 @@ ___
 
 **Returns:** *SplitQueryStream*
 
-Defined in: [knex.ts:183](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L183)
+Defined in: [knex.ts:233](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L233)
 
 ___
 
@@ -113,7 +175,31 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L91)
+Defined in: [knex.ts:141](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L141)
+
+___
+
+### queryKnex
+
+▸ **queryKnex**(`db`: Knex, `table`: *string*, `options`: { `limit?`: *number* ; `orderBy?`: *string*[] ; `query?`: *string* ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: () => Duplex ; `where?`: (*string* \| *any*[])[]  }): ReadableStreamTree
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `db` | Knex |
+| `table` | *string* |
+| `options` | *object* |
+| `options.limit?` | *number* |
+| `options.orderBy?` | *string*[] |
+| `options.query?` | *string* |
+| `options.transformObject?` | (`x`: *unknown*) => *unknown* |
+| `options.transformObjectStream?` | () => Duplex |
+| `options.where?` | (*string* \| *any*[])[] |
+
+**Returns:** ReadableStreamTree
+
+Defined in: [knex.ts:39](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L39)
 
 ___
 
@@ -129,7 +215,7 @@ ___
 
 **Returns:** ReadableStreamTree
 
-Defined in: [knex.ts:20](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L20)
+Defined in: [knex.ts:70](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L70)
 
 ___
 
@@ -151,7 +237,7 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:24](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L24)
+Defined in: [knex.ts:74](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L74)
 
 ___
 
@@ -171,4 +257,4 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:58](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L58)
+Defined in: [knex.ts:108](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L108)

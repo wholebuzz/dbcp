@@ -23,7 +23,7 @@
 
 • **csv**: = "csv"
 
-Defined in: [format.ts:40](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L40)
+Defined in: [format.ts:46](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L46)
 
 ___
 
@@ -31,7 +31,7 @@ ___
 
 • **json**: = "json"
 
-Defined in: [format.ts:41](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L41)
+Defined in: [format.ts:47](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L47)
 
 ___
 
@@ -39,7 +39,7 @@ ___
 
 • **jsonl**: = "jsonl"
 
-Defined in: [format.ts:42](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L42)
+Defined in: [format.ts:48](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L48)
 
 ___
 
@@ -47,7 +47,7 @@ ___
 
 • **ndjson**: = "ndjson"
 
-Defined in: [format.ts:43](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L43)
+Defined in: [format.ts:49](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L49)
 
 ___
 
@@ -55,7 +55,7 @@ ___
 
 • **object**: = "object"
 
-Defined in: [format.ts:44](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L44)
+Defined in: [format.ts:50](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L50)
 
 ___
 
@@ -63,7 +63,7 @@ ___
 
 • **parquet**: = "parquet"
 
-Defined in: [format.ts:45](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L45)
+Defined in: [format.ts:51](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L51)
 
 ___
 
@@ -71,7 +71,7 @@ ___
 
 • **sql**: = "sql"
 
-Defined in: [format.ts:47](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L47)
+Defined in: [format.ts:53](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L53)
 
 ___
 
@@ -79,4 +79,4 @@ ___
 
 • **tfrecord**: = "tfrecord"
 
-Defined in: [format.ts:46](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L46)
+Defined in: [format.ts:52](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L52)

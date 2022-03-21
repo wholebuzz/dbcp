@@ -1,41 +1,41 @@
 import { streamAsyncFilter } from '@wholebuzz/fs/lib/stream'
 import * as mongoDB from 'mongodb'
 import StreamTree from 'tree-stream'
-import { getSourceConnectionString, getTargetConnectionString } from './index'
+import { getInputConnectionString, getOutputConnectionString } from './index'
 
 export const batch2 = require('batch2')
 
-export async function openMongoDbSource(args: {
-  sourceHost?: string
-  sourceMongodb?: mongoDB.MongoClient
-  sourceName?: string
-  sourcePassword?: string
-  sourcePort?: number
-  sourceTable?: string[]
-  sourceUser?: string
+export async function openMongoDbInput(args: {
+  inputHost?: string
+  inputMongodb?: mongoDB.MongoClient
+  inputName?: string
+  inputPassword?: string
+  inputPort?: number
+  inputTable?: string[]
+  inputUser?: string
 }) {
   return openMongoDb({
-    url: `mongodb://${getSourceConnectionString(args)}`,
-    mongodb: args.sourceMongodb,
-    name: args.sourceName,
-    tables: args.sourceTable,
+    url: `mongodb://${getInputConnectionString(args)}`,
+    mongodb: args.inputMongodb,
+    name: args.inputName,
+    tables: args.inputTable,
   })
 }
 
-export async function openMongoDbTarget(args: {
-  targetHost?: string
-  targetMongodb?: mongoDB.MongoClient
-  targetName?: string
-  targetPassword?: string
-  targetPort?: number
-  targetTable?: string[]
-  targetUser?: string
+export async function openMongoDbOutput(args: {
+  outputHost?: string
+  outputMongodb?: mongoDB.MongoClient
+  outputName?: string
+  outputPassword?: string
+  outputPort?: number
+  outputTable?: string[]
+  outputUser?: string
 }) {
   return openMongoDb({
-    url: `mongodb://${getTargetConnectionString(args)}`,
-    mongodb: args.targetMongodb,
-    name: args.targetName,
-    tables: args.targetTable,
+    url: `mongodb://${getOutputConnectionString(args)}`,
+    mongodb: args.outputMongodb,
+    name: args.outputName,
+    tables: args.outputTable,
   })
 }
 
