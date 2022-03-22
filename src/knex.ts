@@ -43,6 +43,10 @@ export function queryKnex(
     limit?: number
     orderBy?: string[]
     query?: string
+    inputShardBy?: string
+    inputShardFunction?: 'number' | 'string'
+    inputShardIndex?: number
+    inputShards?: number
     transformObject?: (x: unknown) => unknown
     transformObjectStream?: () => Duplex
     where?: Array<string | any[]>
@@ -57,6 +61,18 @@ export function queryKnex(
       query = Array.isArray(where)
         ? query.where(where[0], where[1], where[2])
         : query.where(db.raw(where))
+    }
+    if (options.inputShardBy && options.inputShards && options.inputShardIndex !== undefined) {
+      const clientType = getClientType(db)
+      query = query.where(
+        db.raw(
+          `${(options.inputShardFunction === 'number' ? shardNumberSQL : shardStringSQL)(
+            clientType,
+            options.inputShardBy,
+            options.inputShards
+          )} = ${options.inputShardIndex}`
+        )
+      )
     }
     for (const orderBy of options.orderBy ?? []) {
       query = query.orderByRaw(orderBy)
@@ -242,6 +258,31 @@ export function newDBGateQuerySplitterStream(type?: any) {
       return new SplitQueryStream(sqliteSplitterOptions)
     default:
       return new SplitQueryStream(defaultSplitterOptions)
+  }
+}
+
+export function shardNumberSQL(client: string, column: string, modulus: string | number) {
+  switch (client) {
+    case 'mssql':
+      return `(${column} % ${modulus})`
+    case 'mysql':
+    case 'postgres':
+      return `mod(${column}, ${modulus})`
+    default:
+      throw new Error(`shardIntegerSQL unsupported ${client}`)
+  }
+}
+
+export function shardStringSQL(client: string, column: string, modulus: string | number) {
+  switch (client) {
+    case 'mssql':
+      return `((CAST(HASHBYTES('MD5', ${column}) AS int) & 0xffff) % ${column})`
+    case 'mysql':
+      return `mod(conv(right(md5(${column}), 4), 16, 10), ${column})`
+    case 'postgresql':
+      return `mod(('x' || right(md5(${column}), 4))::bit(16)::int, ${modulus})`
+    default:
+      throw new Error(`shardTextSQL unsupported ${client}`)
   }
 }
 

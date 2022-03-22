@@ -37,7 +37,7 @@
 
 • `Optional` **outputConnection**: *Record*<string, any\>
 
-Defined in: [index.ts:92](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L92)
+Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
 
 ___
 
@@ -45,7 +45,7 @@ ___
 
 • `Optional` **outputElasticSearch**: *Client*
 
-Defined in: [index.ts:93](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L93)
+Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)
 
 ___
 
@@ -53,7 +53,7 @@ ___
 
 • `Optional` **outputFile**: *string*
 
-Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
+Defined in: [index.ts:98](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L98)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 • `Optional` **outputFormat**: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
 
-Defined in: [index.ts:94](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L94)
+Defined in: [index.ts:97](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L97)
 
 ___
 
@@ -69,7 +69,7 @@ ___
 
 • `Optional` **outputHost**: *string*
 
-Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)
+Defined in: [index.ts:99](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L99)
 
 ___
 
@@ -77,7 +77,7 @@ ___
 
 • `Optional` **outputKnex**: *Knex*<any, unknown[]\>
 
-Defined in: [index.ts:97](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L97)
+Defined in: [index.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L100)
 
 ___
 
@@ -85,7 +85,7 @@ ___
 
 • `Optional` **outputLeveldb**: *LevelDB*<any, any\> \| *LevelUp*<AbstractLevelDOWN<any, any\>, AbstractIterator<any, any\>\>
 
-Defined in: [index.ts:98](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L98)
+Defined in: [index.ts:101](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L101)
 
 ___
 
@@ -93,7 +93,7 @@ ___
 
 • `Optional` **outputMongodb**: *MongoClient*
 
-Defined in: [index.ts:99](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L99)
+Defined in: [index.ts:102](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L102)
 
 ___
 
@@ -101,7 +101,7 @@ ___
 
 • `Optional` **outputName**: *string*
 
-Defined in: [index.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L100)
+Defined in: [index.ts:103](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L103)
 
 ___
 
@@ -109,7 +109,7 @@ ___
 
 • `Optional` **outputPassword**: *string*
 
-Defined in: [index.ts:101](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L101)
+Defined in: [index.ts:104](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L104)
 
 ___
 
@@ -117,7 +117,7 @@ ___
 
 • `Optional` **outputPort**: *number*
 
-Defined in: [index.ts:106](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L106)
+Defined in: [index.ts:109](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L109)
 
 ___
 
@@ -125,7 +125,7 @@ ___
 
 • `Optional` **outputShards**: *number*
 
-Defined in: [index.ts:102](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L102)
+Defined in: [index.ts:105](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L105)
 
 ___
 
@@ -133,7 +133,7 @@ ___
 
 • `Optional` **outputStream**: WritableStreamTree[]
 
-Defined in: [index.ts:103](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L103)
+Defined in: [index.ts:106](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L106)
 
 ___
 
@@ -141,7 +141,7 @@ ___
 
 • `Optional` **outputTable**: *string*
 
-Defined in: [index.ts:104](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L104)
+Defined in: [index.ts:107](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L107)
 
 ___
 
@@ -149,7 +149,7 @@ ___
 
 • `Optional` **outputType**: [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md)
 
-Defined in: [index.ts:105](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L105)
+Defined in: [index.ts:108](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L108)
 
 ___
 
@@ -157,4 +157,4 @@ ___
 
 • `Optional` **outputUser**: *string*
 
-Defined in: [index.ts:107](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L107)
+Defined in: [index.ts:110](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L110)

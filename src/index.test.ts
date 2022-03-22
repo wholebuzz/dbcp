@@ -10,7 +10,7 @@ import fs from 'fs'
 import hasha from 'hasha'
 import { knex } from 'knex'
 import * as mongoDB from 'mongodb'
-import { DatabaseCopySchema, DatabaseCopyInputType, DatabaseCopyOutputType } from './format'
+import { DatabaseCopyInputType, DatabaseCopyOutputType, DatabaseCopySchema } from './format'
 import { dbcp, getOutputConnectionString } from './index'
 import { knexPoolConfig } from './knex'
 import {

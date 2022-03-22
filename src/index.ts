@@ -20,19 +20,19 @@ import {
 } from './elasticsearch'
 import {
   DatabaseCopyFormat,
-  DatabaseCopySchema,
   DatabaseCopyInputType,
   DatabaseCopyOutputType,
+  DatabaseCopySchema,
   formatContentType,
   formatHasSchema,
   guessFormatFromFilename,
   guessInputTypeFromFilename,
   guessOutputTypeFromFilename,
-  pipeFromOutputFormatTransform,
-  pipeInputFormatTransform,
   inputHasDatabaseFile,
   outputHasDatabaseFile,
   outputIsSqlDatabase,
+  pipeFromOutputFormatTransform,
+  pipeInputFormatTransform,
 } from './format'
 import {
   dumpToKnex,
@@ -80,6 +80,9 @@ export interface DatabaseCopyInput {
   inputName?: string
   inputKnex?: Knex
   inputPassword?: string
+  inputShardBy?: string
+  inputShardFunction?: 'number' | 'string'
+  inputShardIndex?: number
   inputShards?: number
   inputStream?: ReadableStreamTree
   inputTable?: string
@@ -285,7 +288,9 @@ export async function openInputs(
         extra: inputFile.extra || args.extra,
         extraOutput: inputFile.extraOutput || args.extraOutput,
         shards: inputFile.inputShards || args.inputShards,
-        shardFilter: inputFile.inputShardFilter,
+        shardFilter:
+          inputFile.inputShardFilter ||
+          (args.inputShardIndex !== undefined ? (x) => x === args.inputShardIndex : undefined),
       },
     }
   })
@@ -792,5 +797,58 @@ export async function databaseInspectSchema(args: DatabaseCopyOptions) {
     throw error
   } finally {
     await inputKnex.destroy()
+  }
+}
+
+export function assignDatabaseCopyInputProperties(
+  target: DatabaseCopyInput,
+  source?: DatabaseCopyInput
+) {
+  return {
+    ...target,
+    inputConnection: source?.inputConnection,
+    inputElasticSearch: source?.inputElasticSearch,
+    inputFormat: source?.inputFormat,
+    inputFiles: source?.inputFiles,
+    inputHost: source?.inputHost,
+    inputLeveldb: source?.inputLeveldb,
+    inputMongodb: source?.inputMongodb,
+    inputName: source?.inputName,
+    inputKnex: source?.inputKnex,
+    inputPassword: source?.inputPassword,
+    inputShardBy: source?.inputShardBy,
+    inputShardFunction: source?.inputShardFunction,
+    inputShardIndex: source?.inputShardIndex,
+    inputShards: source?.inputShards,
+    inputStream: source?.inputStream,
+    inputTable: source?.inputTable,
+    inputType: source?.inputType,
+    inputPort: source?.inputPort,
+    inputUser: source?.inputUser,
+  }
+}
+
+export function assignDatabaseCopyOutputProperties(
+  target: DatabaseCopyOutput,
+  source?: DatabaseCopyOutput
+) {
+  return {
+    ...target,
+    outputConnection: source?.outputConnection,
+    outputElasticSearch: source?.outputElasticSearch,
+    outputFormat: source?.outputFormat,
+    outputFile: source?.outputFile,
+    outputHost: source?.outputHost,
+    outputKnex: source?.outputKnex,
+    outputLeveldb: source?.outputLeveldb,
+    outputMongodb: source?.outputMongodb,
+    outputName: source?.outputName,
+    outputPassword: source?.outputPassword,
+    outputShards: source?.outputShards,
+    outputStream: source?.outputStream,
+    outputTable: source?.outputTable,
+    outputType: source?.outputType,
+    outputPort: source?.outputPort,
+    outputUser: source?.outputUser,
   }
 }

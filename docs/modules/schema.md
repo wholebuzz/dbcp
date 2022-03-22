@@ -58,7 +58,7 @@ ___
 
 ### getDDLColumnType
 
-▸ **getDDLColumnType**(`columnInfo`: [*Column*](../interfaces/schema.column.md)): ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
+▸ **getDDLColumnType**(`columnInfo`: [*Column*](../interfaces/schema.column.md)): ``"string"`` \| ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"array"`` \| ``"struct"``
 
 #### Parameters
 
@@ -66,7 +66,7 @@ ___
 | :------ | :------ |
 | `columnInfo` | [*Column*](../interfaces/schema.column.md) |
 
-**Returns:** ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
+**Returns:** ``"string"`` \| ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"array"`` \| ``"struct"``
 
 Defined in: [schema.ts:223](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L223)
 

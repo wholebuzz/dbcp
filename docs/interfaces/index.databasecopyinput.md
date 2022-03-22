@@ -25,6 +25,9 @@
 - [inputName](index.databasecopyinput.md#inputname)
 - [inputPassword](index.databasecopyinput.md#inputpassword)
 - [inputPort](index.databasecopyinput.md#inputport)
+- [inputShardBy](index.databasecopyinput.md#inputshardby)
+- [inputShardFunction](index.databasecopyinput.md#inputshardfunction)
+- [inputShardIndex](index.databasecopyinput.md#inputshardindex)
 - [inputShards](index.databasecopyinput.md#inputshards)
 - [inputStream](index.databasecopyinput.md#inputstream)
 - [inputTable](index.databasecopyinput.md#inputtable)
@@ -117,7 +120,31 @@ ___
 
 • `Optional` **inputPort**: *number*
 
-Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
+Defined in: [index.ts:90](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L90)
+
+___
+
+### inputShardBy
+
+• `Optional` **inputShardBy**: *string*
+
+Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
+
+___
+
+### inputShardFunction
+
+• `Optional` **inputShardFunction**: ``"string"`` \| ``"number"``
+
+Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
+
+___
+
+### inputShardIndex
+
+• `Optional` **inputShardIndex**: *number*
+
+Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
 
 ___
 
@@ -125,7 +152,7 @@ ___
 
 • `Optional` **inputShards**: *number*
 
-Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
+Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
 
 ___
 
@@ -133,7 +160,7 @@ ___
 
 • `Optional` **inputStream**: ReadableStreamTree
 
-Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
+Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
 
 ___
 
@@ -141,7 +168,7 @@ ___
 
 • `Optional` **inputTable**: *string*
 
-Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
+Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
 
 ___
 
@@ -149,7 +176,7 @@ ___
 
 • `Optional` **inputType**: [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md)
 
-Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
+Defined in: [index.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L89)
 
 ___
 
@@ -157,4 +184,4 @@ ___
 
 • `Optional` **inputUser**: *string*
 
-Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
+Defined in: [index.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L91)

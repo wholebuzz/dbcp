@@ -39,6 +39,9 @@
 - [inputName](index.databasecopyoptions.md#inputname)
 - [inputPassword](index.databasecopyoptions.md#inputpassword)
 - [inputPort](index.databasecopyoptions.md#inputport)
+- [inputShardBy](index.databasecopyoptions.md#inputshardby)
+- [inputShardFunction](index.databasecopyoptions.md#inputshardfunction)
+- [inputShardIndex](index.databasecopyoptions.md#inputshardindex)
 - [inputShards](index.databasecopyoptions.md#inputshards)
 - [inputStream](index.databasecopyoptions.md#inputstream)
 - [inputTable](index.databasecopyoptions.md#inputtable)
@@ -80,7 +83,7 @@
 
 • `Optional` **batchSize**: *number*
 
-Defined in: [index.ts:111](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L111)
+Defined in: [index.ts:114](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L114)
 
 ___
 
@@ -88,7 +91,7 @@ ___
 
 • `Optional` **columnType**: *Record*<string, string\>
 
-Defined in: [index.ts:112](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L112)
+Defined in: [index.ts:115](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L115)
 
 ___
 
@@ -96,7 +99,7 @@ ___
 
 • `Optional` **compoundInsert**: *boolean*
 
-Defined in: [index.ts:113](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L113)
+Defined in: [index.ts:116](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L116)
 
 ___
 
@@ -104,7 +107,7 @@ ___
 
 • `Optional` **contentType**: *string*
 
-Defined in: [index.ts:114](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L114)
+Defined in: [index.ts:117](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L117)
 
 ___
 
@@ -112,7 +115,7 @@ ___
 
 • `Optional` **copySchema**: [*DatabaseCopySchema*](../enums/format.databasecopyschema.md)
 
-Defined in: [index.ts:115](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L115)
+Defined in: [index.ts:118](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L118)
 
 ___
 
@@ -120,7 +123,7 @@ ___
 
 • `Optional` **engineOptions**: *any*
 
-Defined in: [index.ts:116](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L116)
+Defined in: [index.ts:119](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L119)
 
 ___
 
@@ -128,7 +131,7 @@ ___
 
 • `Optional` **externalSortBy**: *string*[]
 
-Defined in: [index.ts:117](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L117)
+Defined in: [index.ts:120](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L120)
 
 ___
 
@@ -136,7 +139,7 @@ ___
 
 • `Optional` **extra**: *Record*<string, any\>
 
-Defined in: [index.ts:118](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L118)
+Defined in: [index.ts:121](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L121)
 
 ___
 
@@ -144,7 +147,7 @@ ___
 
 • `Optional` **extraOutput**: *boolean*
 
-Defined in: [index.ts:119](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L119)
+Defined in: [index.ts:122](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L122)
 
 ___
 
@@ -152,7 +155,7 @@ ___
 
 • `Optional` **fileSystem**: *FileSystem*
 
-Defined in: [index.ts:120](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L120)
+Defined in: [index.ts:123](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L123)
 
 ___
 
@@ -160,7 +163,7 @@ ___
 
 • `Optional` **group**: *boolean*
 
-Defined in: [index.ts:121](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L121)
+Defined in: [index.ts:124](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L124)
 
 ___
 
@@ -168,7 +171,7 @@ ___
 
 • `Optional` **groupLabels**: *boolean*
 
-Defined in: [index.ts:122](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L122)
+Defined in: [index.ts:125](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L125)
 
 ___
 
@@ -278,7 +281,37 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputPort](index.databasecopyinput.md#inputport)
 
-Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
+Defined in: [index.ts:90](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L90)
+
+___
+
+### inputShardBy
+
+• `Optional` **inputShardBy**: *string*
+
+Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputShardBy](index.databasecopyinput.md#inputshardby)
+
+Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
+
+___
+
+### inputShardFunction
+
+• `Optional` **inputShardFunction**: ``"string"`` \| ``"number"``
+
+Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputShardFunction](index.databasecopyinput.md#inputshardfunction)
+
+Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
+
+___
+
+### inputShardIndex
+
+• `Optional` **inputShardIndex**: *number*
+
+Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputShardIndex](index.databasecopyinput.md#inputshardindex)
+
+Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
 
 ___
 
@@ -288,7 +321,7 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputShards](index.databasecopyinput.md#inputshards)
 
-Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
+Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
 
 ___
 
@@ -298,7 +331,7 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputStream](index.databasecopyinput.md#inputstream)
 
-Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
+Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
 
 ___
 
@@ -308,7 +341,7 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputTable](index.databasecopyinput.md#inputtable)
 
-Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
+Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
 
 ___
 
@@ -318,7 +351,7 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputType](index.databasecopyinput.md#inputtype)
 
-Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
+Defined in: [index.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L89)
 
 ___
 
@@ -328,7 +361,7 @@ ___
 
 Inherited from: [DatabaseCopyInput](index.databasecopyinput.md).[inputUser](index.databasecopyinput.md#inputuser)
 
-Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
+Defined in: [index.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L91)
 
 ___
 
@@ -336,7 +369,7 @@ ___
 
 • `Optional` **limit**: *number*
 
-Defined in: [index.ts:123](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L123)
+Defined in: [index.ts:126](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L126)
 
 ___
 
@@ -344,7 +377,7 @@ ___
 
 • `Optional` **orderBy**: *string*[]
 
-Defined in: [index.ts:124](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L124)
+Defined in: [index.ts:127](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L127)
 
 ___
 
@@ -354,7 +387,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputConnection](index.databasecopyoutput.md#outputconnection)
 
-Defined in: [index.ts:92](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L92)
+Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
 
 ___
 
@@ -364,7 +397,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputElasticSearch](index.databasecopyoutput.md#outputelasticsearch)
 
-Defined in: [index.ts:93](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L93)
+Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)
 
 ___
 
@@ -374,7 +407,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputFile](index.databasecopyoutput.md#outputfile)
 
-Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
+Defined in: [index.ts:98](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L98)
 
 ___
 
@@ -384,7 +417,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputFormat](index.databasecopyoutput.md#outputformat)
 
-Defined in: [index.ts:94](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L94)
+Defined in: [index.ts:97](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L97)
 
 ___
 
@@ -394,7 +427,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputHost](index.databasecopyoutput.md#outputhost)
 
-Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)
+Defined in: [index.ts:99](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L99)
 
 ___
 
@@ -404,7 +437,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputKnex](index.databasecopyoutput.md#outputknex)
 
-Defined in: [index.ts:97](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L97)
+Defined in: [index.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L100)
 
 ___
 
@@ -414,7 +447,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputLeveldb](index.databasecopyoutput.md#outputleveldb)
 
-Defined in: [index.ts:98](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L98)
+Defined in: [index.ts:101](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L101)
 
 ___
 
@@ -424,7 +457,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputMongodb](index.databasecopyoutput.md#outputmongodb)
 
-Defined in: [index.ts:99](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L99)
+Defined in: [index.ts:102](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L102)
 
 ___
 
@@ -434,7 +467,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputName](index.databasecopyoutput.md#outputname)
 
-Defined in: [index.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L100)
+Defined in: [index.ts:103](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L103)
 
 ___
 
@@ -444,7 +477,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputPassword](index.databasecopyoutput.md#outputpassword)
 
-Defined in: [index.ts:101](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L101)
+Defined in: [index.ts:104](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L104)
 
 ___
 
@@ -454,7 +487,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputPort](index.databasecopyoutput.md#outputport)
 
-Defined in: [index.ts:106](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L106)
+Defined in: [index.ts:109](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L109)
 
 ___
 
@@ -464,7 +497,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputShards](index.databasecopyoutput.md#outputshards)
 
-Defined in: [index.ts:102](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L102)
+Defined in: [index.ts:105](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L105)
 
 ___
 
@@ -474,7 +507,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputStream](index.databasecopyoutput.md#outputstream)
 
-Defined in: [index.ts:103](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L103)
+Defined in: [index.ts:106](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L106)
 
 ___
 
@@ -484,7 +517,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputTable](index.databasecopyoutput.md#outputtable)
 
-Defined in: [index.ts:104](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L104)
+Defined in: [index.ts:107](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L107)
 
 ___
 
@@ -494,7 +527,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputType](index.databasecopyoutput.md#outputtype)
 
-Defined in: [index.ts:105](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L105)
+Defined in: [index.ts:108](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L108)
 
 ___
 
@@ -504,7 +537,7 @@ ___
 
 Inherited from: [DatabaseCopyOutput](index.databasecopyoutput.md).[outputUser](index.databasecopyoutput.md#outputuser)
 
-Defined in: [index.ts:107](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L107)
+Defined in: [index.ts:110](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L110)
 
 ___
 
@@ -512,7 +545,7 @@ ___
 
 • `Optional` **probeBytes**: *number*
 
-Defined in: [index.ts:125](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L125)
+Defined in: [index.ts:128](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L128)
 
 ___
 
@@ -520,7 +553,7 @@ ___
 
 • `Optional` **query**: *string*
 
-Defined in: [index.ts:126](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L126)
+Defined in: [index.ts:129](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L129)
 
 ___
 
@@ -528,7 +561,7 @@ ___
 
 • `Optional` **schema**: [*Column*](schema.column.md)[]
 
-Defined in: [index.ts:128](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L128)
+Defined in: [index.ts:131](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L131)
 
 ___
 
@@ -536,7 +569,7 @@ ___
 
 • `Optional` **schemaFile**: *string*
 
-Defined in: [index.ts:129](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L129)
+Defined in: [index.ts:132](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L132)
 
 ___
 
@@ -544,7 +577,7 @@ ___
 
 • `Optional` **shardBy**: *string*
 
-Defined in: [index.ts:127](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L127)
+Defined in: [index.ts:130](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L130)
 
 ___
 
@@ -552,7 +585,7 @@ ___
 
 • `Optional` **tempDirectories**: *string*[]
 
-Defined in: [index.ts:130](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L130)
+Defined in: [index.ts:133](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L133)
 
 ___
 
@@ -572,7 +605,7 @@ ___
 
 **Returns:** *string*
 
-Defined in: [index.ts:133](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L133)
+Defined in: [index.ts:136](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L136)
 
 ___
 
@@ -586,7 +619,7 @@ ___
 
 **Returns:** *Duplex*
 
-Defined in: [index.ts:134](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L134)
+Defined in: [index.ts:137](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L137)
 
 ___
 
@@ -606,7 +639,7 @@ ___
 
 **Returns:** *unknown*
 
-Defined in: [index.ts:131](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L131)
+Defined in: [index.ts:134](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L134)
 
 ___
 
@@ -620,7 +653,7 @@ ___
 
 **Returns:** *Duplex*
 
-Defined in: [index.ts:132](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L132)
+Defined in: [index.ts:135](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L135)
 
 ___
 
@@ -628,4 +661,4 @@ ___
 
 • `Optional` **where**: (*string* \| *any*[])[]
 
-Defined in: [index.ts:135](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L135)
+Defined in: [index.ts:138](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L138)
