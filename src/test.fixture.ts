@@ -1,9 +1,9 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
+import { rmrf } from '@wholebuzz/fs/lib/local'
 import { readableToString, writableToString } from '@wholebuzz/fs/lib/stream'
 import { exec } from 'child_process'
 import hasha from 'hasha'
 import { dbcp } from './index'
-import { rmrf } from './util'
 
 const hashOptions = { algorithm: 'md5' }
 

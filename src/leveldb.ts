@@ -1,9 +1,9 @@
+import { rmrf } from '@wholebuzz/fs/lib/local'
 import { streamAsyncFilter, streamSyncFilter } from '@wholebuzz/fs/lib/stream'
 import level from 'level'
 import { LevelUp } from 'levelup'
 import sub from 'subleveldown'
 import StreamTree from 'tree-stream'
-import { rmrf } from './util'
 
 export const levelIteratorStream = require('level-iterator-stream')
 

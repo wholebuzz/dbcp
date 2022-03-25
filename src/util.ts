@@ -1,8 +1,4 @@
 import pSettle from 'p-settle'
-import rimraf from 'rimraf'
-import { promisify } from 'util'
-
-export const rmrf = promisify(rimraf)
 
 export function findObjectProperty<X>(
   x: X[] | Record<string, X> | undefined | null,
