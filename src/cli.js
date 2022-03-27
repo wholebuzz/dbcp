@@ -189,6 +189,11 @@ async function main() {
         description: 'Database user',
         type: 'string',
       },
+      verbose: {
+        alias: 'v',
+        description: 'Verbose',
+        type: 'boolean',
+      },
       where: {
         description: 'Database query WHERE',
         type: 'array',
@@ -293,6 +298,8 @@ async function main() {
   } catch (err) {
     // tslint:disable-next-line:no-console
     console.log('dbcp error:', err.message)
+    // tslint:disable-next-line:no-console
+    if (args.verbose) { console.error(err) }
     process.exit(-1)
   }
 

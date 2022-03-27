@@ -236,9 +236,11 @@ export function getInputFormats(args: DatabaseCopyOptions) {
   const ret: DatabaseCopyFormats = {}
   for (const [key, inputFile] of Object.entries(args.inputFiles ?? {})) {
     ret[key] =
-      (inputFile.query || args.query) && inputFile.url !== 's3://athena.csv'
+      inputFile.inputFormat ||
+      args.inputFormat ||
+      ((inputFile.query || args.query) && inputFile.url !== 's3://athena.csv'
         ? DatabaseCopyFormat.jsonl
-        : guessFormatFromInput(inputFile) || DatabaseCopyFormat.json
+        : guessFormatFromInput(inputFile) || DatabaseCopyFormat.json)
     if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
   }
   return ret

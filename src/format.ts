@@ -10,9 +10,12 @@ import { pipeTfRecordFormatter, pipeTfRecordParser } from '@wholebuzz/fs/lib/tfr
 import { Knex } from 'knex'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import { ParquetSchema } from 'parquetjs'
+import { Transform } from 'stream'
 import { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { pipeKnexInsertTextTransform } from './knex'
 import { parquetFieldFromSchema } from './schema'
+
+const ReadlineTransform = require('readline-transform')
 
 export enum DatabaseCopyInputType {
   athena = 'athena',
@@ -50,6 +53,7 @@ export enum DatabaseCopyFormat {
   object = 'object',
   parquet = 'parquet',
   tfrecord = 'tfrecord',
+  txt = 'txt',
   sql = 'sql',
 }
 
@@ -66,6 +70,7 @@ export function guessFormatFromFilename(filename?: string) {
   if (filename.endsWith('.jsonl') || filename.endsWith('.ndjson')) return DatabaseCopyFormat.jsonl
   if (filename.endsWith('.parquet')) return DatabaseCopyFormat.parquet
   if (filename.endsWith('.tfrecord')) return DatabaseCopyFormat.tfrecord
+  // if (filename.endsWith('.txt')) return DatabaseCopyFormat.txt
   if (filename.endsWith('.sql')) return DatabaseCopyFormat.sql
   return null
 }
@@ -101,6 +106,17 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
       return input
     case DatabaseCopyFormat.parquet:
       return input
+    case DatabaseCopyFormat.txt:
+      let lineNumber = 0
+      return input.pipe(new ReadlineTransform()).pipe(
+        new Transform({
+          objectMode: true,
+          async transform(value: string, _: string, callback: () => void) {
+            this.push({ key: lineNumber++, value })
+            callback()
+          },
+        })
+      )
     case DatabaseCopyFormat.sql:
       return input
     default:
