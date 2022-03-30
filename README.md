@@ -1,6 +1,6 @@
 # dbcp [![image](https://img.shields.io/npm/v/dbcp)](https://www.npmjs.com/package/dbcp) [![test](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml/badge.svg)](https://github.com/wholebuzz/dbcp/actions/workflows/test.yaml) ![Coverage](https://wholebuzz.storage.googleapis.com/dbcp/coverage.svg)
 
-```
+```console
 $ dbcp --help
 cli.js [inputFile] [outputFile]
 $ dbcp data.parquet data.jsonl.gz
@@ -49,14 +49,14 @@ Either `--inputType` or `--inputFile` and `--outputType` or `--outputFile` are r
 
 ### Global install
 
-```
+```console
 $ npm install -g dbcp
 $ dbcp --help
 ```
 
 ### Local setup
 
-```
+```console
 $ npm init
 $ npm install dbcp
 $ ./node_modules/.bin/dbcp --help
@@ -135,10 +135,12 @@ $ ./node_modules/.bin/dbcp --help
 - [Post a file to HTTP endpoint](#post-a-file-to-http-endpoint)
 - [Create Athena DDL from JSON sample](#create-athena-ddl-from-json-sample)
 - [Create Postgres CREATE TABLE from JSON sample](#create-postgres-create-table-from-json-sample)
+- [Split the test data file into four shards](#split-the-test-data-file-into-four-shards)
+- [Join the split files back into one](#join-the-split-files-back-into-one)
 
 ## Tested
 
-```
+```console
 PASS src/index.test.ts (85.9 s)
   ✓ Should hash test data as string
   ✓ Should hash test data stream
@@ -198,7 +200,7 @@ export interface DatabaseCopyOptions {
 
 ## CLI Options
 
-```
+```console
 $ dbcp --help
 cli.js [inputFile] [outputFile]
 
@@ -268,7 +270,7 @@ Options:
 
 ### Copy PostgreSQL table to Google Cloud Storage gzipped JSON file
 
-```
+```console
 $ dbcp \
   --inputType postgresql \
   --host localhost \
@@ -282,7 +284,7 @@ $ dbcp \
 
 ### Copy MySQL table to Amazon Web Services S3 gzipped JSON-Lines file
 
-```
+```console
 $ dbcp \
   --inputType mysql \
   --host localhost \
@@ -297,7 +299,7 @@ $ dbcp \
 
 ### Copy Amazon Web Services S3 gzipped JSON-Lines to MySQL table
 
-```
+```console
 $ dbcp \
   --outputType mysql \
   --host localhost \
@@ -311,7 +313,7 @@ $ dbcp \
 
 ### Copy SQLServer table to stdout
 
-```
+```console
 $ dbcp \
   --inputType mssql \
   --host localhost \
@@ -325,7 +327,7 @@ $ dbcp \
 
 ### Copy MongoDB table to four gzipped JSON-Lines shards
 
-```
+```console
 $ dbcp \
   --inputType mongodb \
   --host localhost \
@@ -347,46 +349,57 @@ $ ls output*
 
 ### Output a file to stdout
 
-```
+```console
 $ dbcp gs://bucket/archive.csv.gz | jq . | less
 ```
 
 ### Copy a file from AWS to GCP
 
-```
+```console
 $ dbcp s3://bucket/object.json.gz gs://bucket/file.json.gz
 ```
 
 ### Convert file from ND-JSON to JSON
 
-```
+```console
 $ dbcp foobar.jsonl bazbat.json
 ```
 
 ### Download a file
 
-```
+```console
 $ dbcp "https://www.w3.org/People/mimasa/test/imgformat/img/w3c_home.png" foo.png
 ```
 
 ### Post a file to HTTP endpoint
 
-```
+```console
 $ dbcp "./foo.png" "http://my.api/upload" --contentType "image/png"
 ```
 
 ### Create Athena DDL from JSON sample:
 
-```
+```console
 $ dbcp --schemaOnly --inputFile ./sample.jsonl.gz --outputType athena --outputFile ddl.sql
 ```
 
 ### Create Postgres CREATE TABLE from JSON sample:
 
-```
+```console
 $ dbcp --schemaOnly --inputFile ./sample.jsonl.gz --outputType postgresql --outputFile ddl.sql
 ```
 
+### Split the [test data file](https://github.com/wholebuzz/dbcp/tree/master/test) into four shards:
+
+```console
+$ dbcp ./test/test.jsonl.gz ./split-SSSS-of-NNNN.jsonl.gz --outputShards 4 --shardBy guid
+```
+
+### Join the split files back into one:
+
+```console
+$ dbcp ./split-SSSS-of-NNNN.jsonl.gz ./joined.jsonl.gz --inputShards 4 --orderBy id
+```
 
 [dbcp](docs/README.md) / Exports
 
