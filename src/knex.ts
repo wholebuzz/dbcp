@@ -15,6 +15,7 @@ import { Column } from 'knex-schema-inspector/dist/types/column'
 import { Duplex, Transform } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
+import { DatabaseCopyShardFunction } from './format'
 
 export const batch2 = require('batch2')
 
@@ -44,7 +45,7 @@ export function queryKnex(
     orderBy?: string[]
     query?: string
     inputShardBy?: string
-    inputShardFunction?: 'number' | 'string'
+    inputShardFunction?: DatabaseCopyShardFunction
     inputShardIndex?: number
     inputShards?: number
     transformObject?: (x: unknown) => unknown
@@ -66,11 +67,11 @@ export function queryKnex(
       const clientType = getClientType(db)
       query = query.where(
         db.raw(
-          `${(options.inputShardFunction === 'number' ? shardNumberSQL : shardStringSQL)(
-            clientType,
-            options.inputShardBy,
-            options.inputShards
-          )} = ${options.inputShardIndex}`
+          `${(options.inputShardFunction === DatabaseCopyShardFunction.number
+            ? shardNumberSQL
+            : shardMd5LswSQL)(clientType, options.inputShardBy, options.inputShards)} = ${
+            options.inputShardIndex
+          }`
         )
       )
     }
@@ -273,7 +274,7 @@ export function shardNumberSQL(client: string, column: string, modulus: string |
   }
 }
 
-export function shardStringSQL(client: string, column: string, modulus: string | number) {
+export function shardMd5LswSQL(client: string, column: string, modulus: string | number) {
   switch (client) {
     case 'mssql':
       return `((CAST(HASHBYTES('MD5', ${column}) AS int) & 0xffff) % ${column})`

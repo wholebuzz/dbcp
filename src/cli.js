@@ -17,6 +17,7 @@ const {
   DatabaseCopyInputType,
   DatabaseCopyOutputType,
   DatabaseCopySchema,
+  DatabaseCopyShardFunction,
 } = require('./format')
 const { dbcp } = require('./index')
 
@@ -130,6 +131,11 @@ async function main() {
       },
       outputPort: {
         description: 'Output database port',
+        type: 'string',
+      },
+      outputShardFunction: {
+        choices: Object.values(DatabaseCopyShardFunction),
+        description: 'Output shard function',
         type: 'string',
       },
       outputShards: {

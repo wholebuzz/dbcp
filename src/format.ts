@@ -57,6 +57,13 @@ export enum DatabaseCopyFormat {
   sql = 'sql',
 }
 
+export enum DatabaseCopyShardFunction {
+  number = 'number',
+  md5lsw = 'md5lsw',
+  random = 'random',
+  roundrobin = 'roundrobin',
+}
+
 export enum DatabaseCopySchema {
   dataOnly = 'dataOnly',
   schemaOnly = 'schemaOnly',

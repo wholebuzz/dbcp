@@ -23,6 +23,7 @@ import {
   DatabaseCopyInputType,
   DatabaseCopyOutputType,
   DatabaseCopySchema,
+  DatabaseCopyShardFunction,
   formatContentType,
   formatHasSchema,
   guessFormatFromFilename,
@@ -81,7 +82,7 @@ export interface DatabaseCopyInput {
   inputKnex?: Knex
   inputPassword?: string
   inputShardBy?: string
-  inputShardFunction?: 'number' | 'string'
+  inputShardFunction?: DatabaseCopyShardFunction
   inputShardIndex?: number
   inputShards?: number
   inputStream?: ReadableStreamTree
@@ -102,6 +103,7 @@ export interface DatabaseCopyOutput {
   outputMongodb?: mongoDB.MongoClient
   outputName?: string
   outputPassword?: string
+  outputShardFunction?: DatabaseCopyShardFunction
   outputShards?: number
   outputStream?: WritableStreamTree[]
   outputTable?: string
@@ -209,9 +211,21 @@ export function getOutputConnectionString(args: {
 }
 
 export function getShardFunction(args: DatabaseCopyOptions) {
-  return (x: Record<string, any>, modulus: number) => {
-    const value = x[args.shardBy!]
-    return typeof value === 'number' ? value % modulus : shardIndex(value, modulus)
+  switch (args.outputShardFunction) {
+    case DatabaseCopyShardFunction.random:
+      return (_: Record<string, any>, modulus: number) => Math.floor(Math.random() * modulus)
+
+    case DatabaseCopyShardFunction.roundrobin:
+      let count = 0
+      return (_: Record<string, any>, modulus: number) => count++ % modulus
+
+    case DatabaseCopyShardFunction.number:
+    case DatabaseCopyShardFunction.md5lsw:
+    default:
+      return (x: Record<string, any>, modulus: number) => {
+        const value = x[args.shardBy!]
+        return typeof value === 'number' ? value % modulus : shardIndex(value, modulus)
+      }
   }
 }
 

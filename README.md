@@ -31,7 +31,8 @@ Either `--inputType` or `--inputFile` and `--outputType` or `--outputFile` are r
 ## Credits
 
 - Database powered by [knex](https://www.npmjs.com/package/knex) and [knex-schema-inspector](https://www.npmjs.com/package/knex-schema-inspector)
-- File system and file formats provided by [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs)
+- File system, file formats, and sharding provided by [@wholebuzz/fs](https://www.npmjs.com/package/@wholebuzz/fs)
+- External file sorting with [external-sorting](https://github.com/ldubos/external-sorting)
 - Connected using the [tree-stream](https://www.npmjs.com/package/tree-stream) primitives `ReadableStreamTree` and `WritableStreamTree`
 - Used to implement [@wholebuzz/mapreduce](https://www.npmjs.com/package/@wholebuzz/mapreduce)
 
