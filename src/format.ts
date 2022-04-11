@@ -10,7 +10,7 @@ import { pipeTfRecordFormatter, pipeTfRecordParser } from '@wholebuzz/fs/lib/tfr
 import { Knex } from 'knex'
 import { Column } from 'knex-schema-inspector/dist/types/column'
 import { ParquetSchema } from 'parquetjs'
-import { Transform } from 'stream'
+import { Duplex, Transform } from 'stream'
 import { ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { pipeKnexInsertTextTransform } from './knex'
 import { parquetFieldFromSchema } from './schema'
@@ -64,10 +64,17 @@ export enum DatabaseCopyShardFunction {
   roundrobin = 'roundrobin',
 }
 
+export type DatabaseCopyShardFunctionOverride = (
+  value: Record<string, any>,
+  modulus: number
+) => number
+
 export enum DatabaseCopySchema {
   dataOnly = 'dataOnly',
   schemaOnly = 'schemaOnly',
 }
+
+export type DatabaseCopyTransformFactory = () => Duplex
 
 export function guessFormatFromFilename(filename?: string) {
   if (!filename) return null
@@ -98,7 +105,11 @@ export function guessOutputTypeFromFilename(filename?: string) {
   return null
 }
 
-export function pipeInputFormatTransform(input: ReadableStreamTree, format: DatabaseCopyFormat) {
+export function pipeInputFormatTransform(
+  input: ReadableStreamTree,
+  format: DatabaseCopyFormat | DatabaseCopyTransformFactory
+) {
+  if (typeof format === 'function') return input.pipe(format())
   switch (format) {
     case DatabaseCopyFormat.csv:
       return pipeCSVParser(input, { columns: true })
@@ -133,7 +144,7 @@ export function pipeInputFormatTransform(input: ReadableStreamTree, format: Data
 
 export function pipeFromOutputFormatTransform(
   output: WritableStreamTree,
-  format: DatabaseCopyFormat,
+  format: DatabaseCopyFormat | DatabaseCopyTransformFactory,
   db?: Knex,
   tableName?: string,
   options?: {
@@ -141,6 +152,7 @@ export function pipeFromOutputFormatTransform(
     columnType?: Record<string, string>
   }
 ) {
+  if (typeof format === 'function') return output.pipeFrom(format())
   switch (format) {
     case DatabaseCopyFormat.csv:
       return pipeCSVFormatter(output, { header: true })
@@ -226,7 +238,7 @@ export function outputIsSqlDatabase(format?: DatabaseCopyOutputType | null) {
   }
 }
 
-export function formatHasSchema(format?: DatabaseCopyFormat) {
+export function formatHasSchema(format?: DatabaseCopyFormat | DatabaseCopyTransformFactory) {
   switch (format) {
     case DatabaseCopyFormat.parquet:
     case DatabaseCopyFormat.sql:
@@ -234,4 +246,10 @@ export function formatHasSchema(format?: DatabaseCopyFormat) {
     default:
       return false
   }
+}
+
+export function nonCustomFormat(
+  format?: DatabaseCopyFormat | DatabaseCopyTransformFactory | null
+): DatabaseCopyFormat | undefined {
+  return typeof format === 'function' ? undefined : format || undefined
 }

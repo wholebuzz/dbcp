@@ -12,10 +12,10 @@ import { SplitQueryStream } from 'dbgate-query-splitter/lib/splitQueryStream'
 import { Knex } from 'knex'
 import schemaInspector from 'knex-schema-inspector'
 import { Column } from 'knex-schema-inspector/dist/types/column'
-import { Duplex, Transform } from 'stream'
+import { Transform } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import { streamToKnexCompoundInsert } from './compound'
-import { DatabaseCopyShardFunction } from './format'
+import { DatabaseCopyShardFunction, DatabaseCopyTransformFactory } from './format'
 
 export const batch2 = require('batch2')
 
@@ -49,7 +49,7 @@ export function queryKnex(
     inputShardIndex?: number
     inputShards?: number
     transformObject?: (x: unknown) => unknown
-    transformObjectStream?: () => Duplex
+    transformObjectStream?: DatabaseCopyTransformFactory
     where?: Array<string | any[]>
   }
 ) {

@@ -4,13 +4,13 @@ import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardReadable, shardWritables } from '@wholebuzz/fs/lib/stream'
-import { openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
+import { Logger, openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
 import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import level from 'level'
 import { LevelUp } from 'levelup'
 import * as mongoDB from 'mongodb'
-import { Duplex, Readable } from 'stream'
+import { Readable } from 'stream'
 import StreamTree, { pumpWritable, ReadableStreamTree, WritableStreamTree } from 'tree-stream'
 import {
   openElasticSearchInput,
@@ -24,12 +24,15 @@ import {
   DatabaseCopyOutputType,
   DatabaseCopySchema,
   DatabaseCopyShardFunction,
+  DatabaseCopyShardFunctionOverride,
+  DatabaseCopyTransformFactory,
   formatContentType,
   formatHasSchema,
   guessFormatFromFilename,
   guessInputTypeFromFilename,
   guessOutputTypeFromFilename,
   inputHasDatabaseFile,
+  nonCustomFormat,
   outputHasDatabaseFile,
   outputIsSqlDatabase,
   pipeFromOutputFormatTransform,
@@ -62,18 +65,18 @@ export interface DatabaseCopyInputFile {
   extraOutput?: boolean
   schema?: Column[]
   schemaFile?: string
-  inputFormat?: DatabaseCopyFormat
+  inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
   inputShards?: number
   inputShardFilter?: (index: number) => boolean
   inputStream?: ReadableStreamTree[]
   transformInputObject?: (x: unknown) => unknown | Promise<unknown>
-  transformInputObjectStream?: () => Duplex
+  transformInputObjectStream?: DatabaseCopyTransformFactory
 }
 
 export interface DatabaseCopyInput {
   inputConnection?: Record<string, any>
   inputElasticSearch?: Client
-  inputFormat?: DatabaseCopyFormat
+  inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
   inputFiles?: DatabaseCopyInputFile[] | Record<string, DatabaseCopyInputFile>
   inputHost?: string
   inputLeveldb?: level.LevelDB | LevelUp
@@ -95,7 +98,7 @@ export interface DatabaseCopyInput {
 export interface DatabaseCopyOutput {
   outputConnection?: Record<string, any>
   outputElasticSearch?: Client
-  outputFormat?: DatabaseCopyFormat
+  outputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
   outputFile?: string
   outputHost?: string
   outputKnex?: Knex
@@ -103,7 +106,7 @@ export interface DatabaseCopyOutput {
   outputMongodb?: mongoDB.MongoClient
   outputName?: string
   outputPassword?: string
-  outputShardFunction?: DatabaseCopyShardFunction
+  outputShardFunction?: DatabaseCopyShardFunction | DatabaseCopyShardFunctionOverride
   outputShards?: number
   outputStream?: WritableStreamTree[]
   outputTable?: string
@@ -126,6 +129,7 @@ export interface DatabaseCopyOptions extends DatabaseCopyInput, DatabaseCopyOutp
   group?: boolean
   groupLabels?: boolean
   limit?: number
+  logger?: Logger
   orderBy?: string[]
   probeBytes?: number
   query?: string
@@ -134,13 +138,16 @@ export interface DatabaseCopyOptions extends DatabaseCopyInput, DatabaseCopyOutp
   schemaFile?: string
   tempDirectories?: string[]
   transformObject?: (x: unknown) => unknown | Promise<unknown>
-  transformObjectStream?: () => Duplex
+  transformObjectStream?: DatabaseCopyTransformFactory
   transformBytes?: (x: string) => string
-  transformBytesStream?: () => Duplex
+  transformBytesStream?: DatabaseCopyTransformFactory
   where?: Array<string | any[]>
 }
 
-export type DatabaseCopyFormats = Record<string, DatabaseCopyFormat | null>
+export type DatabaseCopyFormats = Record<
+  string,
+  DatabaseCopyFormat | DatabaseCopyTransformFactory | null
+>
 
 export function guessFormatFromInput(input: DatabaseCopyInputFile) {
   return input.inputStream ? DatabaseCopyFormat.object : guessFormatFromFilename(input.url)
@@ -211,6 +218,7 @@ export function getOutputConnectionString(args: {
 }
 
 export function getShardFunction(args: DatabaseCopyOptions) {
+  if (typeof args.outputShardFunction === 'function') return args.outputShardFunction
   switch (args.outputShardFunction) {
     case DatabaseCopyShardFunction.random:
       return (_: Record<string, any>, modulus: number) => Math.floor(Math.random() * modulus)
@@ -249,12 +257,22 @@ export function getInputFormats(args: DatabaseCopyOptions) {
   if (args.inputStream) return { '0': DatabaseCopyFormat.object }
   const ret: DatabaseCopyFormats = {}
   for (const [key, inputFile] of Object.entries(args.inputFiles ?? {})) {
-    ret[key] =
-      inputFile.inputFormat ||
-      args.inputFormat ||
-      ((inputFile.query || args.query) && inputFile.url !== 's3://athena.csv'
+    const specifiedFormat = inputFile.inputFormat || args.inputFormat
+    const guessedFormat =
+      (inputFile.query || args.query) && inputFile.url !== 's3://athena.csv'
         ? DatabaseCopyFormat.jsonl
-        : guessFormatFromInput(inputFile) || DatabaseCopyFormat.json)
+        : guessFormatFromInput(inputFile)
+    if (specifiedFormat && guessedFormat && specifiedFormat !== guessedFormat) {
+      if (args.logger) {
+        args.logger.info(
+          `WARNING: specified input format ${specifiedFormat} but would've guessed ${guessedFormat}`
+        )
+      }
+    }
+    if (!specifiedFormat && !guessedFormat) {
+      if (args.logger) args.logger.info(`WARNING: couldn't guess input format, defaulting to JSON`)
+    }
+    ret[key] = specifiedFormat || guessedFormat || DatabaseCopyFormat.json
     if (ret[key] === DatabaseCopyFormat.parquet) initParquet()
   }
   return ret
@@ -267,7 +285,10 @@ export function getInputFormat(args: DatabaseCopyOptions, inputFormats: Database
   return formats[0] && formats.every((format) => format === formats[0]) ? formats[0] : undefined
 }
 
-export function getOutputFormat(args: DatabaseCopyOptions, inputFormat?: DatabaseCopyFormat) {
+export function getOutputFormat(
+  args: DatabaseCopyOptions,
+  inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
+) {
   return (
     args.outputFormat ||
     guessFormatFromFilename(args.outputFile) ||
@@ -280,8 +301,8 @@ export async function openInputs(
   args: DatabaseCopyOptions,
   inputFiles: Array<[string, DatabaseCopyInputFile]>,
   inputFormats: DatabaseCopyFormats,
-  inputFormat?: DatabaseCopyFormat,
-  outputFormat?: DatabaseCopyFormat
+  inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory,
+  outputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
 ): Promise<ReadableStreamTree[] | Record<string, ReadableStreamTree | ReadableStreamTree[]>> {
   const directoryStream =
     inputFiles.length === 1 &&
@@ -296,7 +317,9 @@ export async function openInputs(
       format:
         inputFormat === outputFormat && inputFormat === DatabaseCopyFormat.parquet
           ? undefined
-          : inputFormat || inputFormats[inputFileName] || undefined,
+          : nonCustomFormat(inputFormat) ||
+            nonCustomFormat(inputFormats[inputFileName]) ||
+            undefined,
       url: inputFile.url,
       stream: inputFile.inputStream,
       options: {
@@ -327,13 +350,16 @@ export async function openInputs(
   return inputs
 }
 
-export async function openOutputs(args: DatabaseCopyOptions, format?: DatabaseCopyFormat) {
+export async function openOutputs(
+  args: DatabaseCopyOptions,
+  format?: DatabaseCopyFormat | DatabaseCopyTransformFactory
+) {
   const outputs =
     args.outputStream ||
     (args.outputFile === '-'
       ? [StreamTree.writable(process.stdout)]
       : await openWritableFiles(args.fileSystem!, args.outputFile!, {
-          contentType: formatContentType(format),
+          contentType: typeof format !== 'function' ? formatContentType(format) : undefined,
           shards: args.outputShards,
         }))
   for (let i = 0; i < outputs.length; i++) {
@@ -559,7 +585,7 @@ async function writeSchema(
   output: WritableStreamTree,
   options: {
     columnType?: Record<string, string>
-    format: DatabaseCopyFormat
+    format: DatabaseCopyFormat | DatabaseCopyTransformFactory
     formattingKnex?: Knex
     schema?: Column[]
     table?: string
@@ -592,7 +618,7 @@ export async function dumpToFile(
     columnType?: Record<string, string>
     copySchema?: DatabaseCopySchema
     externalSortFunction?: Array<(x: any) => any>
-    format?: DatabaseCopyFormat
+    format?: DatabaseCopyFormat | DatabaseCopyTransformFactory
     formattingKnex?: Knex
     schema?: Column[]
     shardFunction?: (x: Record<string, any>, modulus: number) => number
@@ -601,7 +627,7 @@ export async function dumpToFile(
     outputShards?: number
     tempDirectories?: string[]
     transformObject?: (x: unknown) => unknown
-    transformObjectStream?: () => Duplex
+    transformObjectStream?: DatabaseCopyTransformFactory
   }
 ) {
   if (options.copySchema === DatabaseCopySchema.schemaOnly) {
