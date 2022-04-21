@@ -360,10 +360,11 @@ export async function openOutputs(
   args: DatabaseCopyOptions,
   format?: DatabaseCopyFormat | DatabaseCopyTransformFactory
 ) {
-  if (args.outputShards && !isShardedFilename(args.outputFile ?? ''))
+  if ((args.outputShards ?? 0) > 1 && !isShardedFilename(args.outputFile ?? '')) {
     throw new Error(
       `openOutputs ${args.outputShards} shards without sharded outputFile: ${args.outputFile}`
     )
+  }
   const outputs =
     args.outputStream ||
     (args.outputFile === '-'
