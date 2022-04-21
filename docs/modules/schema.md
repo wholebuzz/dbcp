@@ -35,7 +35,7 @@
 
 **Returns:** *string*
 
-Defined in: [schema.ts:187](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L187)
+Defined in: [schema.ts:192](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L192)
 
 ___
 
@@ -52,13 +52,13 @@ ___
 
 **Returns:** *string*
 
-Defined in: [schema.ts:205](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L205)
+Defined in: [schema.ts:210](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L210)
 
 ___
 
 ### getDDLColumnType
 
-▸ **getDDLColumnType**(`columnInfo`: [*Column*](../interfaces/schema.column.md)): ``"string"`` \| ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"array"`` \| ``"struct"``
+▸ **getDDLColumnType**(`columnInfo`: [*Column*](../interfaces/schema.column.md)): ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
 
 #### Parameters
 
@@ -66,9 +66,9 @@ ___
 | :------ | :------ |
 | `columnInfo` | [*Column*](../interfaces/schema.column.md) |
 
-**Returns:** ``"string"`` \| ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"array"`` \| ``"struct"``
+**Returns:** ``"boolean"`` \| ``"bigint"`` \| ``"float"`` \| ``"string"`` \| ``"array"`` \| ``"struct"``
 
-Defined in: [schema.ts:223](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L223)
+Defined in: [schema.ts:228](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L228)
 
 ___
 
@@ -85,25 +85,25 @@ ___
 
 **Returns:** *void*
 
-Defined in: [schema.ts:76](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L76)
+Defined in: [schema.ts:81](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L81)
 
 ___
 
 ### guessSchemaFromFile
 
-▸ **guessSchemaFromFile**(`fileSystem`: FileSystem, `filename`: *string*, `probeBytes?`: *number*): *Promise*<Record<string, [*Column*](../interfaces/schema.column.md)\>\>
+▸ **guessSchemaFromFile**(`fileSystem`: FileSystem, `file`: [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md), `args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): *Promise*<Record<string, [*Column*](../interfaces/schema.column.md)\>\>
 
 #### Parameters
 
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `fileSystem` | FileSystem | - |
-| `filename` | *string* | - |
-| `probeBytes` | *number* | 65536 |
+| Name | Type |
+| :------ | :------ |
+| `fileSystem` | FileSystem |
+| `file` | [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md) |
+| `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
 
 **Returns:** *Promise*<Record<string, [*Column*](../interfaces/schema.column.md)\>\>
 
-Defined in: [schema.ts:48](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L48)
+Defined in: [schema.ts:50](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L50)
 
 ___
 
@@ -121,7 +121,7 @@ ___
 
 **Returns:** [*Column*](../interfaces/schema.column.md)
 
-Defined in: [schema.ts:29](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L29)
+Defined in: [schema.ts:31](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L31)
 
 ___
 
@@ -139,7 +139,7 @@ ___
 
 **Returns:** *any*
 
-Defined in: [schema.ts:116](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L116)
+Defined in: [schema.ts:121](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L121)
 
 ___
 
@@ -156,4 +156,4 @@ ___
 
 **Returns:** { `compression`: *undefined* = 'GZIP'; `optional`: *boolean* ; `type`: *string* = 'BOOLEAN' } \| { `compression`: *string* = 'GZIP'; `optional`: *boolean* ; `type`: *string* = 'JSON' }
 
-Defined in: [schema.ts:160](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L160)
+Defined in: [schema.ts:165](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L165)

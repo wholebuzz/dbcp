@@ -35,7 +35,7 @@
 
 • `Optional` **comment**: ``null`` \| *string*
 
-Defined in: [schema.ts:23](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L23)
+Defined in: [schema.ts:25](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L25)
 
 ___
 
@@ -43,7 +43,7 @@ ___
 
 • **data\_type**: *string*
 
-Defined in: [schema.ts:9](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L9)
+Defined in: [schema.ts:11](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L11)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 • **default\_value**: *any*
 
-Defined in: [schema.ts:10](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L10)
+Defined in: [schema.ts:12](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L12)
 
 ___
 
@@ -59,7 +59,7 @@ ___
 
 • **foreign\_key\_column**: ``null`` \| *string*
 
-Defined in: [schema.ts:22](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L22)
+Defined in: [schema.ts:24](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L24)
 
 ___
 
@@ -67,7 +67,7 @@ ___
 
 • `Optional` **foreign\_key\_schema**: ``null`` \| *string*
 
-Defined in: [schema.ts:25](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L25)
+Defined in: [schema.ts:27](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L27)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 • **foreign\_key\_table**: ``null`` \| *string*
 
-Defined in: [schema.ts:21](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L21)
+Defined in: [schema.ts:23](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L23)
 
 ___
 
@@ -83,7 +83,7 @@ ___
 
 • `Optional` **generation\_expression**: ``null`` \| *string*
 
-Defined in: [schema.ts:19](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L19)
+Defined in: [schema.ts:21](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L21)
 
 ___
 
@@ -91,7 +91,7 @@ ___
 
 • **has\_auto\_increment**: *boolean*
 
-Defined in: [schema.ts:20](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L20)
+Defined in: [schema.ts:22](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L22)
 
 ___
 
@@ -99,7 +99,7 @@ ___
 
 • `Optional` **is\_array**: *boolean*
 
-Defined in: [schema.ts:14](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L14)
+Defined in: [schema.ts:16](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L16)
 
 ___
 
@@ -107,7 +107,7 @@ ___
 
 • **is\_generated**: *boolean*
 
-Defined in: [schema.ts:18](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L18)
+Defined in: [schema.ts:20](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L20)
 
 ___
 
@@ -115,7 +115,7 @@ ___
 
 • **is\_nullable**: *boolean*
 
-Defined in: [schema.ts:15](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L15)
+Defined in: [schema.ts:17](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L17)
 
 ___
 
@@ -123,7 +123,7 @@ ___
 
 • **is\_primary\_key**: *boolean*
 
-Defined in: [schema.ts:17](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L17)
+Defined in: [schema.ts:19](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L19)
 
 ___
 
@@ -131,7 +131,7 @@ ___
 
 • **is\_unique**: *boolean*
 
-Defined in: [schema.ts:16](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L16)
+Defined in: [schema.ts:18](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L18)
 
 ___
 
@@ -139,7 +139,7 @@ ___
 
 • **max\_length**: ``null`` \| *number*
 
-Defined in: [schema.ts:11](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L11)
+Defined in: [schema.ts:13](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L13)
 
 ___
 
@@ -147,7 +147,7 @@ ___
 
 • **name**: *string*
 
-Defined in: [schema.ts:7](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L7)
+Defined in: [schema.ts:9](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L9)
 
 ___
 
@@ -155,7 +155,7 @@ ___
 
 • **numeric\_precision**: ``null`` \| *number*
 
-Defined in: [schema.ts:12](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L12)
+Defined in: [schema.ts:14](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L14)
 
 ___
 
@@ -163,7 +163,7 @@ ___
 
 • **numeric\_scale**: ``null`` \| *number*
 
-Defined in: [schema.ts:13](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L13)
+Defined in: [schema.ts:15](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L15)
 
 ___
 
@@ -171,7 +171,7 @@ ___
 
 • `Optional` **schema**: *string*
 
-Defined in: [schema.ts:24](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L24)
+Defined in: [schema.ts:26](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L26)
 
 ___
 
@@ -179,7 +179,7 @@ ___
 
 • `Optional` **sub\_columns**: ``null`` \| *Record*<string, [*Column*](schema.column.md)\>
 
-Defined in: [schema.ts:26](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L26)
+Defined in: [schema.ts:28](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L28)
 
 ___
 
@@ -187,4 +187,4 @@ ___
 
 • **table**: *string*
 
-Defined in: [schema.ts:8](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L8)
+Defined in: [schema.ts:10](https://github.com/wholebuzz/dbcp/blob/master/src/schema.ts#L10)

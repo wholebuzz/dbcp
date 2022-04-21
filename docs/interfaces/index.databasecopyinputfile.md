@@ -28,7 +28,7 @@
 
 • `Optional` **columnType**: *Record*<string, string\>
 
-Defined in: [index.ts:59](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L59)
+Defined in: [index.ts:69](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L69)
 
 ___
 
@@ -36,7 +36,7 @@ ___
 
 • `Optional` **extra**: *Record*<string, any\>
 
-Defined in: [index.ts:60](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L60)
+Defined in: [index.ts:70](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L70)
 
 ___
 
@@ -44,15 +44,15 @@ ___
 
 • `Optional` **extraOutput**: *boolean*
 
-Defined in: [index.ts:61](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L61)
+Defined in: [index.ts:71](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L71)
 
 ___
 
 ### inputFormat
 
-• `Optional` **inputFormat**: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+• `Optional` **inputFormat**: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](../modules/format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:64](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L64)
+Defined in: [index.ts:74](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L74)
 
 ___
 
@@ -72,7 +72,7 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [index.ts:66](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L66)
+Defined in: [index.ts:76](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L76)
 
 ___
 
@@ -80,7 +80,7 @@ ___
 
 • `Optional` **inputShards**: *number*
 
-Defined in: [index.ts:65](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L65)
+Defined in: [index.ts:75](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L75)
 
 ___
 
@@ -88,7 +88,7 @@ ___
 
 • `Optional` **inputStream**: ReadableStreamTree[]
 
-Defined in: [index.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L67)
+Defined in: [index.ts:77](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L77)
 
 ___
 
@@ -96,7 +96,7 @@ ___
 
 • `Optional` **query**: *string*
 
-Defined in: [index.ts:58](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L58)
+Defined in: [index.ts:68](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L68)
 
 ___
 
@@ -104,7 +104,7 @@ ___
 
 • `Optional` **schema**: [*Column*](schema.column.md)[]
 
-Defined in: [index.ts:62](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L62)
+Defined in: [index.ts:72](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L72)
 
 ___
 
@@ -112,7 +112,7 @@ ___
 
 • `Optional` **schemaFile**: *string*
 
-Defined in: [index.ts:63](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L63)
+Defined in: [index.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L73)
 
 ___
 
@@ -132,21 +132,15 @@ ___
 
 **Returns:** *unknown*
 
-Defined in: [index.ts:68](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L68)
+Defined in: [index.ts:78](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L78)
 
 ___
 
 ### transformInputObjectStream
 
-• `Optional` **transformInputObjectStream**: () => *Duplex*
+• `Optional` **transformInputObjectStream**: [*DatabaseCopyTransformFactory*](../modules/format.md#databasecopytransformfactory)
 
-#### Type declaration
-
-▸ (): *Duplex*
-
-**Returns:** *Duplex*
-
-Defined in: [index.ts:69](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L69)
+Defined in: [index.ts:79](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L79)
 
 ___
 
@@ -154,4 +148,4 @@ ___
 
 • `Optional` **url**: *string*
 
-Defined in: [index.ts:57](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L57)
+Defined in: [index.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L67)

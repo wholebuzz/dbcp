@@ -19,8 +19,8 @@
 - [newDBGateQuerySplitterStream](knex.md#newdbgatequerysplitterstream)
 - [pipeKnexInsertTextTransform](knex.md#pipeknexinserttexttransform)
 - [queryKnex](knex.md#queryknex)
+- [shardMd5LswSQL](knex.md#shardmd5lswsql)
 - [shardNumberSQL](knex.md#shardnumbersql)
-- [shardStringSQL](knex.md#shardstringsql)
 - [streamFromKnex](knex.md#streamfromknex)
 - [streamToKnex](knex.md#streamtoknex)
 - [streamToKnexRaw](knex.md#streamtoknexraw)
@@ -31,7 +31,7 @@
 
 • `Const` **batch2**: *any*
 
-Defined in: [knex.ts:19](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L19)
+Defined in: [knex.ts:20](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L20)
 
 ___
 
@@ -48,7 +48,7 @@ ___
 | `error` | (`_message`: *any*) => *void* |
 | `warn` | (`_message`: *any*) => *void* |
 
-Defined in: [knex.ts:289](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L289)
+Defined in: [knex.ts:290](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L290)
 
 ___
 
@@ -67,7 +67,7 @@ ___
 | `max` | *number* |
 | `min` | *number* |
 
-Defined in: [knex.ts:304](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L304)
+Defined in: [knex.ts:305](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L305)
 
 ## Functions
 
@@ -89,7 +89,7 @@ Defined in: [knex.ts:304](https://github.com/wholebuzz/dbcp/blob/master/src/knex
 
 **Returns:** *Promise*<void\>
 
-Defined in: [knex.ts:21](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L21)
+Defined in: [knex.ts:22](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L22)
 
 ___
 
@@ -108,7 +108,7 @@ ___
 
 **Returns:** *string*
 
-Defined in: [knex.ts:196](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L196)
+Defined in: [knex.ts:197](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L197)
 
 ___
 
@@ -126,7 +126,7 @@ ___
 
 **Returns:** *Promise*<string\>
 
-Defined in: [knex.ts:183](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L183)
+Defined in: [knex.ts:184](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L184)
 
 ___
 
@@ -143,7 +143,7 @@ ___
 
 **Returns:** *Promise*<Column[]\>
 
-Defined in: [knex.ts:192](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L192)
+Defined in: [knex.ts:193](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L193)
 
 ___
 
@@ -159,7 +159,7 @@ ___
 
 **Returns:** *SplitQueryStream*
 
-Defined in: [knex.ts:249](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L249)
+Defined in: [knex.ts:250](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L250)
 
 ___
 
@@ -177,13 +177,13 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:157](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L157)
+Defined in: [knex.ts:158](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L158)
 
 ___
 
 ### queryKnex
 
-▸ **queryKnex**(`db`: Knex, `table`: *string*, `options`: { `inputShardBy?`: *string* ; `inputShardFunction?`: ``"number"`` \| ``"string"`` ; `inputShardIndex?`: *number* ; `inputShards?`: *number* ; `limit?`: *number* ; `orderBy?`: *string*[] ; `query?`: *string* ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: () => Duplex ; `where?`: (*string* \| *any*[])[]  }): ReadableStreamTree
+▸ **queryKnex**(`db`: Knex, `table`: *string*, `options`: { `inputShardBy?`: *string* ; `inputShardFunction?`: [*DatabaseCopyShardFunction*](../enums/format.databasecopyshardfunction.md) ; `inputShardIndex?`: *number* ; `inputShards?`: *number* ; `limit?`: *number* ; `orderBy?`: *string*[] ; `query?`: *string* ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) ; `where?`: (*string* \| *any*[])[]  }): ReadableStreamTree
 
 #### Parameters
 
@@ -193,19 +193,37 @@ ___
 | `table` | *string* |
 | `options` | *object* |
 | `options.inputShardBy?` | *string* |
-| `options.inputShardFunction?` | ``"number"`` \| ``"string"`` |
+| `options.inputShardFunction?` | [*DatabaseCopyShardFunction*](../enums/format.databasecopyshardfunction.md) |
 | `options.inputShardIndex?` | *number* |
 | `options.inputShards?` | *number* |
 | `options.limit?` | *number* |
 | `options.orderBy?` | *string*[] |
 | `options.query?` | *string* |
 | `options.transformObject?` | (`x`: *unknown*) => *unknown* |
-| `options.transformObjectStream?` | () => Duplex |
+| `options.transformObjectStream?` | [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 | `options.where?` | (*string* \| *any*[])[] |
 
 **Returns:** ReadableStreamTree
 
-Defined in: [knex.ts:39](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L39)
+Defined in: [knex.ts:40](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L40)
+
+___
+
+### shardMd5LswSQL
+
+▸ **shardMd5LswSQL**(`client`: *string*, `column`: *string*, `modulus`: *string* \| *number*): *string*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `client` | *string* |
+| `column` | *string* |
+| `modulus` | *string* \| *number* |
+
+**Returns:** *string*
+
+Defined in: [knex.ts:277](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L277)
 
 ___
 
@@ -223,25 +241,7 @@ ___
 
 **Returns:** *string*
 
-Defined in: [knex.ts:264](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L264)
-
-___
-
-### shardStringSQL
-
-▸ **shardStringSQL**(`client`: *string*, `column`: *string*, `modulus`: *string* \| *number*): *string*
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `client` | *string* |
-| `column` | *string* |
-| `modulus` | *string* \| *number* |
-
-**Returns:** *string*
-
-Defined in: [knex.ts:276](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L276)
+Defined in: [knex.ts:265](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L265)
 
 ___
 
@@ -257,7 +257,7 @@ ___
 
 **Returns:** ReadableStreamTree
 
-Defined in: [knex.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L86)
+Defined in: [knex.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L87)
 
 ___
 
@@ -279,7 +279,7 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:90](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L90)
+Defined in: [knex.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L91)
 
 ___
 
@@ -299,4 +299,4 @@ ___
 
 **Returns:** WritableStreamTree
 
-Defined in: [knex.ts:124](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L124)
+Defined in: [knex.ts:125](https://github.com/wholebuzz/dbcp/blob/master/src/knex.ts#L125)

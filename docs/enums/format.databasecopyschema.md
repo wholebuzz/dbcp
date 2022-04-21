@@ -17,7 +17,7 @@
 
 • **dataOnly**: = "dataOnly"
 
-Defined in: [format.ts:57](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L57)
+Defined in: [format.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L73)
 
 ___
 
@@ -25,4 +25,4 @@ ___
 
 • **schemaOnly**: = "schemaOnly"
 
-Defined in: [format.ts:58](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L58)
+Defined in: [format.ts:74](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L74)

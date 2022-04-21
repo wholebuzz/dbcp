@@ -4,7 +4,13 @@ import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardReadable, shardWritables } from '@wholebuzz/fs/lib/stream'
-import { Logger, openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
+import {
+  isShardedFilename,
+  Logger,
+  openWritableFiles,
+  ReadableFileSpec,
+  shardIndex,
+} from '@wholebuzz/fs/lib/util'
 import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import level from 'level'
@@ -354,6 +360,10 @@ export async function openOutputs(
   args: DatabaseCopyOptions,
   format?: DatabaseCopyFormat | DatabaseCopyTransformFactory
 ) {
+  if (args.outputShards && !isShardedFilename(args.outputFile ?? ''))
+    throw new Error(
+      `openOutputs ${args.outputShards} shards without sharded outputFile: ${args.outputFile}`
+    )
   const outputs =
     args.outputStream ||
     (args.outputFile === '-'
@@ -505,9 +515,7 @@ export async function dbcp(args: DatabaseCopyOptions) {
           (args.schemaFile
             ? ((await readJSON(args.fileSystem!, args.schemaFile)) as Column[])
             : inputFiles.length === 1
-            ? Object.values(
-                await guessSchemaFromFile(args.fileSystem!, inputFiles[0][1].url!, args.probeBytes)
-              )
+            ? Object.values(await guessSchemaFromFile(args.fileSystem!, inputFiles[0][1]!, args))
             : undefined)
         : undefined
       await updateObjectPropertiesAsync(inputs, async (inputGroup, inputGroupKey) => {

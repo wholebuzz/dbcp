@@ -7,7 +7,6 @@
 ### Functions
 
 - [findObjectProperty](util.md#findobjectproperty)
-- [rmrf](util.md#rmrf)
 - [updateObjectProperties](util.md#updateobjectproperties)
 - [updateObjectPropertiesAsync](util.md#updateobjectpropertiesasync)
 
@@ -32,23 +31,7 @@
 
 **Returns:** X \| *undefined*
 
-Defined in: [util.ts:7](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L7)
-
-___
-
-### rmrf
-
-▸ `Const` **rmrf**(`arg1`: *string*): *Promise*<void\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `arg1` | *string* |
-
-**Returns:** *Promise*<void\>
-
-Defined in: [util.ts:5](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L5)
+Defined in: [util.ts:3](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L3)
 
 ___
 
@@ -71,7 +54,7 @@ ___
 
 **Returns:** *undefined* \| X[] \| {}
 
-Defined in: [util.ts:16](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L16)
+Defined in: [util.ts:12](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L12)
 
 ___
 
@@ -96,4 +79,4 @@ ___
 
 **Returns:** *Promise*<undefined \| X[] \| Record<string, X\>\>
 
-Defined in: [util.ts:30](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L30)
+Defined in: [util.ts:26](https://github.com/wholebuzz/dbcp/blob/master/src/util.ts#L26)

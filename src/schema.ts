@@ -1,6 +1,8 @@
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { pipeFilter } from '@wholebuzz/fs/lib/stream'
+import { shardedFilename } from '@wholebuzz/fs/lib/util'
 import { pumpReadable } from 'tree-stream'
+import { DatabaseCopyInputFile, DatabaseCopyOptions } from '.'
 import { guessFormatFromFilename, pipeInputFormatTransform } from './format'
 
 export interface Column {
@@ -47,9 +49,12 @@ export function newSchemaColumn(table: string, name: string, type: string): Colu
 
 export async function guessSchemaFromFile(
   fileSystem: FileSystem,
-  filename: string,
-  probeBytes = 65536
+  file: DatabaseCopyInputFile,
+  args: DatabaseCopyOptions
 ) {
+  const shards = file.inputShards || args.inputShards
+  const filename = shards ? shardedFilename(file.url!, { index: 0, modulus: shards }) : file.url!
+  const probeBytes = args.probeBytes ?? 65536
   const schema: Record<string, Column> = {}
   const format = guessFormatFromFilename(filename)
   if (!format) throw new Error(`Unknown format: ${filename}`)

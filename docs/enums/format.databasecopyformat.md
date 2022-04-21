@@ -16,6 +16,7 @@
 - [parquet](format.databasecopyformat.md#parquet)
 - [sql](format.databasecopyformat.md#sql)
 - [tfrecord](format.databasecopyformat.md#tfrecord)
+- [txt](format.databasecopyformat.md#txt)
 
 ## Enumeration members
 
@@ -23,7 +24,7 @@
 
 • **csv**: = "csv"
 
-Defined in: [format.ts:46](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L46)
+Defined in: [format.ts:49](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L49)
 
 ___
 
@@ -31,7 +32,7 @@ ___
 
 • **json**: = "json"
 
-Defined in: [format.ts:47](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L47)
+Defined in: [format.ts:50](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L50)
 
 ___
 
@@ -39,7 +40,7 @@ ___
 
 • **jsonl**: = "jsonl"
 
-Defined in: [format.ts:48](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L48)
+Defined in: [format.ts:51](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L51)
 
 ___
 
@@ -47,7 +48,7 @@ ___
 
 • **ndjson**: = "ndjson"
 
-Defined in: [format.ts:49](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L49)
+Defined in: [format.ts:52](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L52)
 
 ___
 
@@ -55,7 +56,7 @@ ___
 
 • **object**: = "object"
 
-Defined in: [format.ts:50](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L50)
+Defined in: [format.ts:53](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L53)
 
 ___
 
@@ -63,7 +64,7 @@ ___
 
 • **parquet**: = "parquet"
 
-Defined in: [format.ts:51](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L51)
+Defined in: [format.ts:54](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L54)
 
 ___
 
@@ -71,7 +72,7 @@ ___
 
 • **sql**: = "sql"
 
-Defined in: [format.ts:53](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L53)
+Defined in: [format.ts:57](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L57)
 
 ___
 
@@ -79,4 +80,12 @@ ___
 
 • **tfrecord**: = "tfrecord"
 
-Defined in: [format.ts:52](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L52)
+Defined in: [format.ts:55](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L55)
+
+___
+
+### txt
+
+• **txt**: = "txt"
+
+Defined in: [format.ts:56](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L56)

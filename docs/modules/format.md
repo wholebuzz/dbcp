@@ -10,6 +10,12 @@
 - [DatabaseCopyInputType](../enums/format.databasecopyinputtype.md)
 - [DatabaseCopyOutputType](../enums/format.databasecopyoutputtype.md)
 - [DatabaseCopySchema](../enums/format.databasecopyschema.md)
+- [DatabaseCopyShardFunction](../enums/format.databasecopyshardfunction.md)
+
+### Type aliases
+
+- [DatabaseCopyShardFunctionOverride](format.md#databasecopyshardfunctionoverride)
+- [DatabaseCopyTransformFactory](format.md#databasecopytransformfactory)
 
 ### Functions
 
@@ -20,10 +26,46 @@
 - [guessOutputTypeFromFilename](format.md#guessoutputtypefromfilename)
 - [inputHasDatabaseFile](format.md#inputhasdatabasefile)
 - [inputIsSqlDatabase](format.md#inputissqldatabase)
+- [nonCustomFormat](format.md#noncustomformat)
 - [outputHasDatabaseFile](format.md#outputhasdatabasefile)
 - [outputIsSqlDatabase](format.md#outputissqldatabase)
 - [pipeFromOutputFormatTransform](format.md#pipefromoutputformattransform)
 - [pipeInputFormatTransform](format.md#pipeinputformattransform)
+
+## Type aliases
+
+### DatabaseCopyShardFunctionOverride
+
+Ƭ **DatabaseCopyShardFunctionOverride**: (`value`: *Record*<string, any\>, `modulus`: *number*) => *number*
+
+#### Type declaration
+
+▸ (`value`: *Record*<string, any\>, `modulus`: *number*): *number*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `value` | *Record*<string, any\> |
+| `modulus` | *number* |
+
+**Returns:** *number*
+
+Defined in: [format.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L67)
+
+___
+
+### DatabaseCopyTransformFactory
+
+Ƭ **DatabaseCopyTransformFactory**: () => Duplex
+
+#### Type declaration
+
+▸ (): Duplex
+
+**Returns:** Duplex
+
+Defined in: [format.ts:77](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L77)
 
 ## Functions
 
@@ -39,23 +81,23 @@
 
 **Returns:** *undefined* \| ``"application/x-ndjson"`` \| ``"application/json"`` \| ``"application/sql"``
 
-Defined in: [format.ts:148](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L148)
+Defined in: [format.ts:183](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L183)
 
 ___
 
 ### formatHasSchema
 
-▸ **formatHasSchema**(`format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *boolean*
+▸ **formatHasSchema**(`format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)): *boolean*
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:206](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L206)
+Defined in: [format.ts:241](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L241)
 
 ___
 
@@ -71,7 +113,7 @@ ___
 
 **Returns:** ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
-Defined in: [format.ts:61](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L61)
+Defined in: [format.ts:79](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L79)
 
 ___
 
@@ -87,7 +129,7 @@ ___
 
 **Returns:** ``null`` \| [*level*](../enums/format.databasecopyinputtype.md#level) \| [*sqlite*](../enums/format.databasecopyinputtype.md#sqlite)
 
-Defined in: [format.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L73)
+Defined in: [format.ts:92](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L92)
 
 ___
 
@@ -103,7 +145,7 @@ ___
 
 **Returns:** ``null`` \| [*level*](../enums/format.databasecopyoutputtype.md#level) \| [*sqlite*](../enums/format.databasecopyoutputtype.md#sqlite)
 
-Defined in: [format.ts:81](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L81)
+Defined in: [format.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L100)
 
 ___
 
@@ -119,7 +161,7 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:162](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L162)
+Defined in: [format.ts:197](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L197)
 
 ___
 
@@ -135,7 +177,23 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:182](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L182)
+Defined in: [format.ts:217](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L217)
+
+___
+
+### nonCustomFormat
+
+▸ **nonCustomFormat**(`format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) \| ``null``): [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| *undefined*
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) \| ``null`` |
+
+**Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| *undefined*
+
+Defined in: [format.ts:251](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L251)
 
 ___
 
@@ -151,7 +209,7 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:172](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L172)
+Defined in: [format.ts:207](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L207)
 
 ___
 
@@ -167,20 +225,20 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [format.ts:194](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L194)
+Defined in: [format.ts:229](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L229)
 
 ___
 
 ### pipeFromOutputFormatTransform
 
-▸ **pipeFromOutputFormatTransform**(`output`: WritableStreamTree, `format`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md), `db?`: Knex, `tableName?`: *string*, `options?`: { `columnType?`: *Record*<string, string\> ; `schema?`: Column[]  }): WritableStreamTree \| *Promise*<WritableStreamTree\>
+▸ **pipeFromOutputFormatTransform**(`output`: WritableStreamTree, `format`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory), `db?`: Knex, `tableName?`: *string*, `options?`: { `columnType?`: *Record*<string, string\> ; `schema?`: Column[]  }): WritableStreamTree \| *Promise*<WritableStreamTree\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `output` | WritableStreamTree |
-| `format` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `format` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 | `db?` | Knex |
 | `tableName?` | *string* |
 | `options?` | *object* |
@@ -189,21 +247,21 @@ ___
 
 **Returns:** WritableStreamTree \| *Promise*<WritableStreamTree\>
 
-Defined in: [format.ts:111](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L111)
+Defined in: [format.ts:145](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L145)
 
 ___
 
 ### pipeInputFormatTransform
 
-▸ **pipeInputFormatTransform**(`input`: ReadableStreamTree, `format`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): ReadableStreamTree \| *Promise*<ReadableStreamTree\>
+▸ **pipeInputFormatTransform**(`input`: ReadableStreamTree, `format`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)): ReadableStreamTree \| *Promise*<ReadableStreamTree\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `input` | ReadableStreamTree |
-| `format` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `format` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
 **Returns:** ReadableStreamTree \| *Promise*<ReadableStreamTree\>
 
-Defined in: [format.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L89)
+Defined in: [format.ts:108](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L108)

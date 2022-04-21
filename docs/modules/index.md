@@ -40,9 +40,9 @@
 
 ### DatabaseCopyFormats
 
-Ƭ **DatabaseCopyFormats**: *Record*<string, [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| ``null``\>
+Ƭ **DatabaseCopyFormats**: *Record*<string, [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) \| ``null``\>
 
-Defined in: [index.ts:141](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L141)
+Defined in: [index.ts:153](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L153)
 
 ## Functions
 
@@ -64,7 +64,7 @@ Defined in: [index.ts:141](https://github.com/wholebuzz/dbcp/blob/master/src/ind
 | `inputConnection` | *undefined* \| *Record*<string, any\> |
 | `inputElasticSearch` | *undefined* \| *Client* |
 | `inputFiles` | *undefined* \| [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)[] \| *Record*<string, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)\> |
-| `inputFormat` | *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `inputFormat` | *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 | `inputHost` | *undefined* \| *string* |
 | `inputKnex` | *undefined* \| *Knex*<any, unknown[]\> |
 | `inputLeveldb` | *undefined* \| *LevelDB*<any, any\> \| *LevelUp*<AbstractLevelDOWN<any, any\>, AbstractIterator<any, any\>\> |
@@ -73,7 +73,7 @@ Defined in: [index.ts:141](https://github.com/wholebuzz/dbcp/blob/master/src/ind
 | `inputPassword` | *undefined* \| *string* |
 | `inputPort` | *undefined* \| *number* |
 | `inputShardBy` | *undefined* \| *string* |
-| `inputShardFunction` | *undefined* \| ``"string"`` \| ``"number"`` |
+| `inputShardFunction` | *undefined* \| [*DatabaseCopyShardFunction*](../enums/format.databasecopyshardfunction.md) |
 | `inputShardIndex` | *undefined* \| *number* |
 | `inputShards` | *undefined* \| *number* |
 | `inputStream` | *undefined* \| ReadableStreamTree |
@@ -81,7 +81,7 @@ Defined in: [index.ts:141](https://github.com/wholebuzz/dbcp/blob/master/src/ind
 | `inputType` | *undefined* \| [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) |
 | `inputUser` | *undefined* \| *string* |
 
-Defined in: [index.ts:803](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L803)
+Defined in: [index.ts:853](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L853)
 
 ___
 
@@ -103,7 +103,7 @@ ___
 | `outputConnection` | *undefined* \| *Record*<string, any\> |
 | `outputElasticSearch` | *undefined* \| *Client* |
 | `outputFile` | *undefined* \| *string* |
-| `outputFormat` | *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `outputFormat` | *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 | `outputHost` | *undefined* \| *string* |
 | `outputKnex` | *undefined* \| *Knex*<any, unknown[]\> |
 | `outputLeveldb` | *undefined* \| *LevelDB*<any, any\> \| *LevelUp*<AbstractLevelDOWN<any, any\>, AbstractIterator<any, any\>\> |
@@ -111,13 +111,14 @@ ___
 | `outputName` | *undefined* \| *string* |
 | `outputPassword` | *undefined* \| *string* |
 | `outputPort` | *undefined* \| *number* |
+| `outputShardFunction?` | [*DatabaseCopyShardFunctionOverride*](format.md#databasecopyshardfunctionoverride) \| [*DatabaseCopyShardFunction*](../enums/format.databasecopyshardfunction.md) |
 | `outputShards` | *undefined* \| *number* |
 | `outputStream` | *undefined* \| WritableStreamTree[] |
 | `outputTable` | *undefined* \| *string* |
 | `outputType` | *undefined* \| [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) |
 | `outputUser` | *undefined* \| *string* |
 
-Defined in: [index.ts:831](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L831)
+Defined in: [index.ts:881](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L881)
 
 ___
 
@@ -133,7 +134,7 @@ ___
 
 **Returns:** *Promise*<Column[]\>
 
-Defined in: [index.ts:784](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L784)
+Defined in: [index.ts:834](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L834)
 
 ___
 
@@ -149,13 +150,13 @@ ___
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:330](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L330)
+Defined in: [index.ts:382](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L382)
 
 ___
 
 ### dumpToFile
 
-▸ **dumpToFile**(`input`: ReadableStreamTree \| *undefined*, `outputs`: WritableStreamTree[], `options`: { `columnType?`: *Record*<string, string\> ; `copySchema?`: [*DatabaseCopySchema*](../enums/format.databasecopyschema.md) ; `externalSortFunction?`: (`x`: *any*) => *any*[] ; `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) ; `formattingKnex?`: Knex ; `inputTable?`: *string* ; `outputShards?`: *number* ; `outputType?`: *string* ; `schema?`: [*Column*](../interfaces/schema.column.md)[] ; `shardFunction?`: (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* ; `tempDirectories?`: *string*[] ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: () => Duplex  }): *Promise*<void\>
+▸ **dumpToFile**(`input`: ReadableStreamTree \| *undefined*, `outputs`: WritableStreamTree[], `options`: { `columnType?`: *Record*<string, string\> ; `copySchema?`: [*DatabaseCopySchema*](../enums/format.databasecopyschema.md) ; `externalSortFunction?`: (`x`: *any*) => *any*[] ; `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) ; `formattingKnex?`: Knex ; `inputTable?`: *string* ; `outputShards?`: *number* ; `outputType?`: *string* ; `schema?`: [*Column*](../interfaces/schema.column.md)[] ; `shardFunction?`: (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* ; `tempDirectories?`: *string*[] ; `transformObject?`: (`x`: *unknown*) => *unknown* ; `transformObjectStream?`: [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)  }): *Promise*<void\>
 
 #### Parameters
 
@@ -167,7 +168,7 @@ ___
 | `options.columnType?` | *Record*<string, string\> |
 | `options.copySchema?` | [*DatabaseCopySchema*](../enums/format.databasecopyschema.md) |
 | `options.externalSortFunction?` | (`x`: *any*) => *any*[] |
-| `options.format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `options.format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 | `options.formattingKnex?` | Knex |
 | `options.inputTable?` | *string* |
 | `options.outputShards?` | *number* |
@@ -176,11 +177,11 @@ ___
 | `options.shardFunction?` | (`x`: *Record*<string, any\>, `modulus`: *number*) => *number* |
 | `options.tempDirectories?` | *string*[] |
 | `options.transformObject?` | (`x`: *unknown*) => *unknown* |
-| `options.transformObjectStream?` | () => Duplex |
+| `options.transformObjectStream?` | [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:572](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L572)
+Defined in: [index.ts:622](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L622)
 
 ___
 
@@ -196,7 +197,7 @@ ___
 
 **Returns:** (`x`: *any*) => *any*[]
 
-Defined in: [index.ts:230](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L230)
+Defined in: [index.ts:258](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L258)
 
 ___
 
@@ -212,7 +213,7 @@ ___
 
 **Returns:** { `database`: *undefined* ; `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
 
-Defined in: [index.ts:147](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L147)
+Defined in: [index.ts:162](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L162)
 
 ___
 
@@ -232,13 +233,13 @@ ___
 
 **Returns:** *string*
 
-Defined in: [index.ts:193](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L193)
+Defined in: [index.ts:208](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L208)
 
 ___
 
 ### getInputFormat
 
-▸ **getInputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats)): *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+▸ **getInputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats)): *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
 #### Parameters
 
@@ -247,9 +248,9 @@ ___
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
 | `inputFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
 
-**Returns:** *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+**Returns:** *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:247](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L247)
+Defined in: [index.ts:287](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L287)
 
 ___
 
@@ -265,7 +266,7 @@ ___
 
 **Returns:** [*DatabaseCopyFormats*](index.md#databasecopyformats)
 
-Defined in: [index.ts:234](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L234)
+Defined in: [index.ts:262](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L262)
 
 ___
 
@@ -281,7 +282,7 @@ ___
 
 **Returns:** (`a`: *Record*<string, any\>, `b`: *Record*<string, any\>) => ``1`` \| ``0`` \| ``-1``
 
-Defined in: [index.ts:218](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L218)
+Defined in: [index.ts:246](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L246)
 
 ___
 
@@ -297,7 +298,7 @@ ___
 
 **Returns:** { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
 
-Defined in: [index.ts:173](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L173)
+Defined in: [index.ts:188](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L188)
 
 ___
 
@@ -317,30 +318,30 @@ ___
 
 **Returns:** *string*
 
-Defined in: [index.ts:202](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L202)
+Defined in: [index.ts:217](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L217)
 
 ___
 
 ### getOutputFormat
 
-▸ **getOutputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+▸ **getOutputFormat**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)): [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
-**Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)
+**Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:254](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L254)
+Defined in: [index.ts:294](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L294)
 
 ___
 
 ### getShardFunction
 
-▸ **getShardFunction**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): *function*
+▸ **getShardFunction**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md)): [*DatabaseCopyShardFunctionOverride*](format.md#databasecopyshardfunctionoverride)
 
 #### Parameters
 
@@ -348,9 +349,9 @@ ___
 | :------ | :------ |
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
 
-**Returns:** (`x`: *Record*<string, any\>, `modulus`: *number*) => *number*
+**Returns:** [*DatabaseCopyShardFunctionOverride*](format.md#databasecopyshardfunctionoverride)
 
-Defined in: [index.ts:211](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L211)
+Defined in: [index.ts:226](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L226)
 
 ___
 
@@ -366,13 +367,13 @@ ___
 
 **Returns:** ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*object*](../enums/format.databasecopyformat.md#object) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
-Defined in: [index.ts:143](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L143)
+Defined in: [index.ts:158](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L158)
 
 ___
 
 ### openInputs
 
-▸ **openInputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFiles`: [*string*, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)][], `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md), `outputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
+▸ **openInputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `inputFiles`: [*string*, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)][], `inputFormats`: [*DatabaseCopyFormats*](index.md#databasecopyformats), `inputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory), `outputFormat?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)): *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
 
 #### Parameters
 
@@ -381,26 +382,26 @@ ___
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
 | `inputFiles` | [*string*, [*DatabaseCopyInputFile*](../interfaces/index.databasecopyinputfile.md)][] |
 | `inputFormats` | [*DatabaseCopyFormats*](index.md#databasecopyformats) |
-| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
-| `outputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `inputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
+| `outputFormat?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
 **Returns:** *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
 
-Defined in: [index.ts:263](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L263)
+Defined in: [index.ts:306](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L306)
 
 ___
 
 ### openOutputs
 
-▸ **openOutputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md)): *Promise*<WritableStreamTree[]\>
+▸ **openOutputs**(`args`: [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md), `format?`: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)): *Promise*<WritableStreamTree[]\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `args` | [*DatabaseCopyOptions*](../interfaces/index.databasecopyoptions.md) |
-| `format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) |
+| `format?` | [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) |
 
 **Returns:** *Promise*<WritableStreamTree[]\>
 
-Defined in: [index.ts:314](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L314)
+Defined in: [index.ts:359](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L359)

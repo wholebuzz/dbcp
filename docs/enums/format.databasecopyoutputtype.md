@@ -26,7 +26,7 @@
 
 • **athena**: = "athena"
 
-Defined in: [format.ts:32](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L32)
+Defined in: [format.ts:35](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L35)
 
 ___
 
@@ -34,7 +34,7 @@ ___
 
 • **elasticsearch**: = "elasticsearch"
 
-Defined in: [format.ts:33](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L33)
+Defined in: [format.ts:36](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L36)
 
 ___
 
@@ -42,7 +42,7 @@ ___
 
 • **file**: = "file"
 
-Defined in: [format.ts:34](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L34)
+Defined in: [format.ts:37](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L37)
 
 ___
 
@@ -50,7 +50,7 @@ ___
 
 • **http**: = "http"
 
-Defined in: [format.ts:35](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L35)
+Defined in: [format.ts:38](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L38)
 
 ___
 
@@ -58,7 +58,7 @@ ___
 
 • **level**: = "level"
 
-Defined in: [format.ts:36](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L36)
+Defined in: [format.ts:39](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L39)
 
 ___
 
@@ -66,7 +66,7 @@ ___
 
 • **mongodb**: = "mongodb"
 
-Defined in: [format.ts:37](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L37)
+Defined in: [format.ts:40](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L40)
 
 ___
 
@@ -74,7 +74,7 @@ ___
 
 • **mssql**: = "mssql"
 
-Defined in: [format.ts:38](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L38)
+Defined in: [format.ts:41](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L41)
 
 ___
 
@@ -82,7 +82,7 @@ ___
 
 • **mysql**: = "mysql"
 
-Defined in: [format.ts:39](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L39)
+Defined in: [format.ts:42](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L42)
 
 ___
 
@@ -90,7 +90,7 @@ ___
 
 • **postgresql**: = "postgresql"
 
-Defined in: [format.ts:40](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L40)
+Defined in: [format.ts:43](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L43)
 
 ___
 
@@ -98,7 +98,7 @@ ___
 
 • **redis**: = "redis"
 
-Defined in: [format.ts:41](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L41)
+Defined in: [format.ts:44](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L44)
 
 ___
 
@@ -106,4 +106,4 @@ ___
 
 • **sqlite**: = "sqlite"
 
-Defined in: [format.ts:42](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L42)
+Defined in: [format.ts:45](https://github.com/wholebuzz/dbcp/blob/master/src/format.ts#L45)
