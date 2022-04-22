@@ -15,6 +15,7 @@
 - [inputShardFilter](index.databasecopyinputfile.md#inputshardfilter)
 - [inputShards](index.databasecopyinputfile.md#inputshards)
 - [inputStream](index.databasecopyinputfile.md#inputstream)
+- [parquetOptions](index.databasecopyinputfile.md#parquetoptions)
 - [query](index.databasecopyinputfile.md#query)
 - [schema](index.databasecopyinputfile.md#schema)
 - [schemaFile](index.databasecopyinputfile.md#schemafile)
@@ -28,7 +29,7 @@
 
 • `Optional` **columnType**: *Record*<string, string\>
 
-Defined in: [index.ts:69](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L69)
+Defined in: [index.ts:63](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L63)
 
 ___
 
@@ -36,7 +37,7 @@ ___
 
 • `Optional` **extra**: *Record*<string, any\>
 
-Defined in: [index.ts:70](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L70)
+Defined in: [index.ts:64](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L64)
 
 ___
 
@@ -44,7 +45,7 @@ ___
 
 • `Optional` **extraOutput**: *boolean*
 
-Defined in: [index.ts:71](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L71)
+Defined in: [index.ts:65](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L65)
 
 ___
 
@@ -52,7 +53,7 @@ ___
 
 • `Optional` **inputFormat**: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](../modules/format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:74](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L74)
+Defined in: [index.ts:69](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L69)
 
 ___
 
@@ -72,7 +73,7 @@ ___
 
 **Returns:** *boolean*
 
-Defined in: [index.ts:76](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L76)
+Defined in: [index.ts:71](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L71)
 
 ___
 
@@ -80,7 +81,7 @@ ___
 
 • `Optional` **inputShards**: *number*
 
-Defined in: [index.ts:75](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L75)
+Defined in: [index.ts:70](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L70)
 
 ___
 
@@ -88,7 +89,15 @@ ___
 
 • `Optional` **inputStream**: ReadableStreamTree[]
 
-Defined in: [index.ts:77](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L77)
+Defined in: [index.ts:72](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L72)
+
+___
+
+### parquetOptions
+
+• `Optional` **parquetOptions**: OpenParquetFileOptions
+
+Defined in: [index.ts:68](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L68)
 
 ___
 
@@ -96,7 +105,7 @@ ___
 
 • `Optional` **query**: *string*
 
-Defined in: [index.ts:68](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L68)
+Defined in: [index.ts:62](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L62)
 
 ___
 
@@ -104,7 +113,7 @@ ___
 
 • `Optional` **schema**: [*Column*](schema.column.md)[]
 
-Defined in: [index.ts:72](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L72)
+Defined in: [index.ts:66](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L66)
 
 ___
 
@@ -112,7 +121,7 @@ ___
 
 • `Optional` **schemaFile**: *string*
 
-Defined in: [index.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L73)
+Defined in: [index.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L67)
 
 ___
 
@@ -132,7 +141,7 @@ ___
 
 **Returns:** *unknown*
 
-Defined in: [index.ts:78](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L78)
+Defined in: [index.ts:73](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L73)
 
 ___
 
@@ -140,7 +149,7 @@ ___
 
 • `Optional` **transformInputObjectStream**: [*DatabaseCopyTransformFactory*](../modules/format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:79](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L79)
+Defined in: [index.ts:74](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L74)
 
 ___
 
@@ -148,4 +157,4 @@ ___
 
 • `Optional` **url**: *string*
 
-Defined in: [index.ts:67](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L67)
+Defined in: [index.ts:61](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L61)

@@ -42,7 +42,7 @@
 
 Ƭ **DatabaseCopyFormats**: *Record*<string, [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory) \| ``null``\>
 
-Defined in: [index.ts:153](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L153)
+Defined in: [index.ts:148](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L148)
 
 ## Functions
 
@@ -81,7 +81,7 @@ Defined in: [index.ts:153](https://github.com/wholebuzz/dbcp/blob/master/src/ind
 | `inputType` | *undefined* \| [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md) |
 | `inputUser` | *undefined* \| *string* |
 
-Defined in: [index.ts:853](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L853)
+Defined in: [index.ts:849](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L849)
 
 ___
 
@@ -118,7 +118,7 @@ ___
 | `outputType` | *undefined* \| [*DatabaseCopyOutputType*](../enums/format.databasecopyoutputtype.md) |
 | `outputUser` | *undefined* \| *string* |
 
-Defined in: [index.ts:881](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L881)
+Defined in: [index.ts:877](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L877)
 
 ___
 
@@ -134,7 +134,7 @@ ___
 
 **Returns:** *Promise*<Column[]\>
 
-Defined in: [index.ts:834](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L834)
+Defined in: [index.ts:830](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L830)
 
 ___
 
@@ -150,7 +150,7 @@ ___
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:382](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L382)
+Defined in: [index.ts:378](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L378)
 
 ___
 
@@ -181,7 +181,7 @@ ___
 
 **Returns:** *Promise*<void\>
 
-Defined in: [index.ts:622](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L622)
+Defined in: [index.ts:618](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L618)
 
 ___
 
@@ -197,7 +197,7 @@ ___
 
 **Returns:** (`x`: *any*) => *any*[]
 
-Defined in: [index.ts:258](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L258)
+Defined in: [index.ts:253](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L253)
 
 ___
 
@@ -213,7 +213,7 @@ ___
 
 **Returns:** { `database`: *undefined* ; `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC'; `user`: *undefined*  } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
 
-Defined in: [index.ts:162](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L162)
+Defined in: [index.ts:157](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L157)
 
 ___
 
@@ -233,7 +233,7 @@ ___
 
 **Returns:** *string*
 
-Defined in: [index.ts:208](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L208)
+Defined in: [index.ts:203](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L203)
 
 ___
 
@@ -250,7 +250,7 @@ ___
 
 **Returns:** *undefined* \| [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:287](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L287)
+Defined in: [index.ts:282](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L282)
 
 ___
 
@@ -266,7 +266,7 @@ ___
 
 **Returns:** [*DatabaseCopyFormats*](index.md#databasecopyformats)
 
-Defined in: [index.ts:262](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L262)
+Defined in: [index.ts:257](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L257)
 
 ___
 
@@ -282,7 +282,7 @@ ___
 
 **Returns:** (`a`: *Record*<string, any\>, `b`: *Record*<string, any\>) => ``1`` \| ``0`` \| ``-1``
 
-Defined in: [index.ts:246](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L246)
+Defined in: [index.ts:241](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L241)
 
 ___
 
@@ -298,7 +298,7 @@ ___
 
 **Returns:** { `filename`: *undefined* \| *string* ; `timezone`: *string* = 'UTC' } \| { `charset`: *undefined* \| *string* ; `database`: *undefined* \| *string* ; `filename`: *undefined* ; `host`: *undefined* \| *string* ; `options`: *undefined* \| { `trustServerCertificate`: *boolean* = true } ; `password`: *undefined* \| *string* ; `port`: *undefined* \| *number* ; `timezone`: *string* = 'UTC'; `user`: *undefined* \| *string*  }
 
-Defined in: [index.ts:188](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L188)
+Defined in: [index.ts:183](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L183)
 
 ___
 
@@ -318,7 +318,7 @@ ___
 
 **Returns:** *string*
 
-Defined in: [index.ts:217](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L217)
+Defined in: [index.ts:212](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L212)
 
 ___
 
@@ -335,7 +335,7 @@ ___
 
 **Returns:** [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:294](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L294)
+Defined in: [index.ts:289](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L289)
 
 ___
 
@@ -351,7 +351,7 @@ ___
 
 **Returns:** [*DatabaseCopyShardFunctionOverride*](format.md#databasecopyshardfunctionoverride)
 
-Defined in: [index.ts:226](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L226)
+Defined in: [index.ts:221](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L221)
 
 ___
 
@@ -367,7 +367,7 @@ ___
 
 **Returns:** ``null`` \| [*csv*](../enums/format.databasecopyformat.md#csv) \| [*json*](../enums/format.databasecopyformat.md#json) \| [*jsonl*](../enums/format.databasecopyformat.md#jsonl) \| [*object*](../enums/format.databasecopyformat.md#object) \| [*parquet*](../enums/format.databasecopyformat.md#parquet) \| [*tfrecord*](../enums/format.databasecopyformat.md#tfrecord) \| [*sql*](../enums/format.databasecopyformat.md#sql)
 
-Defined in: [index.ts:158](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L158)
+Defined in: [index.ts:153](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L153)
 
 ___
 
@@ -387,7 +387,7 @@ ___
 
 **Returns:** *Promise*<ReadableStreamTree[] \| Record<string, ReadableStreamTree \| ReadableStreamTree[]\>\>
 
-Defined in: [index.ts:306](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L306)
+Defined in: [index.ts:301](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L301)
 
 ___
 
@@ -404,4 +404,4 @@ ___
 
 **Returns:** *Promise*<WritableStreamTree[]\>
 
-Defined in: [index.ts:359](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L359)
+Defined in: [index.ts:356](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L356)

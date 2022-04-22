@@ -155,6 +155,10 @@ async function main() {
         description: 'Output database user',
         type: 'string',
       },
+      parquetRowGroupRange: {
+        description: 'Parquet row group range',
+        type: 'array',
+      },
       password: {
         description: 'Database password',
         type: 'string',
@@ -217,8 +221,7 @@ async function main() {
     args.outputFile = '-'
   }
 
-  const inputPort =
-    args.inputPort || args.port || process.env.INPUT_DB_PORT || process.env.DB_PORT
+  const inputPort = args.inputPort || args.port || process.env.INPUT_DB_PORT || process.env.DB_PORT
   const outputPort =
     args.outputPort || args.port || process.env.OUTPUT_DB_PORT || process.env.DB_PORT
 
@@ -252,7 +255,14 @@ async function main() {
       ? DatabaseCopySchema.dataOnly
       : undefined,
     fileSystem,
-    inputFiles: args.inputFile ? args.inputFile.map((url) => ({ url })) : undefined,
+    inputFiles: args.inputFile
+      ? args.inputFile.map((url) => ({
+          parquetOptions: args.parquetRowGroupRange
+            ? { rowGroupRange: args.parquetRowGroupRange }
+            : undefined,
+          url,
+        }))
+      : undefined,
     inputFormat: args.inputFormat || args.format,
     inputHost:
       args.inputHost ||
@@ -268,8 +278,7 @@ async function main() {
       process.env.DB_PASSWORD,
     inputPort: inputPort ? parseInt(inputPort, 10) : undefined,
     inputShards: args.inputShards || args.shards,
-    inputTable:
-      args.inputTable || args.table || process.env.INPUT_DB_TABLE || process.env.DB_TABLE,
+    inputTable: args.inputTable || args.table || process.env.INPUT_DB_TABLE || process.env.DB_TABLE,
     inputType: args.inputType || process.env.INPUT_DB_TYPE || process.env.DB_TYPE,
     inputUser: args.inputUser || args.user || process.env.INPUT_DB_USER || process.env.DB_USER,
     outputFormat: args.outputFormat || args.format,
@@ -295,7 +304,9 @@ async function main() {
   }
 
   if (args.whereDate && args.whereDate.length === 3) {
-    if (!options.where) { options.where = [] }
+    if (!options.where) {
+      options.where = []
+    }
     options.where.push([args.whereDate[0], args.whereDate[1], new Date(args.whereDate[2])])
   }
 
@@ -304,8 +315,10 @@ async function main() {
   } catch (err) {
     // tslint:disable-next-line:no-console
     console.log('dbcp error:', err.message)
-    // tslint:disable-next-line:no-console
-    if (args.verbose) { console.error(err) }
+    if (args.verbose) {
+      // tslint:disable-next-line:no-console
+      console.error(err)
+    }
     process.exit(-1)
   }
 

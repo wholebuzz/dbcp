@@ -40,7 +40,7 @@
 
 • `Optional` **inputConnection**: *Record*<string, any\>
 
-Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
+Defined in: [index.ts:78](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L78)
 
 ___
 
@@ -48,7 +48,7 @@ ___
 
 • `Optional` **inputElasticSearch**: *Client*
 
-Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
+Defined in: [index.ts:79](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L79)
 
 ___
 
@@ -56,7 +56,7 @@ ___
 
 • `Optional` **inputFiles**: [*DatabaseCopyInputFile*](index.databasecopyinputfile.md)[] \| *Record*<string, [*DatabaseCopyInputFile*](index.databasecopyinputfile.md)\>
 
-Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
+Defined in: [index.ts:81](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L81)
 
 ___
 
@@ -64,7 +64,7 @@ ___
 
 • `Optional` **inputFormat**: [*DatabaseCopyFormat*](../enums/format.databasecopyformat.md) \| [*DatabaseCopyTransformFactory*](../modules/format.md#databasecopytransformfactory)
 
-Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
+Defined in: [index.ts:80](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L80)
 
 ___
 
@@ -72,7 +72,7 @@ ___
 
 • `Optional` **inputHost**: *string*
 
-Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
+Defined in: [index.ts:82](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L82)
 
 ___
 
@@ -80,7 +80,7 @@ ___
 
 • `Optional` **inputKnex**: *Knex*<any, unknown[]\>
 
-Defined in: [index.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L91)
+Defined in: [index.ts:86](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L86)
 
 ___
 
@@ -88,7 +88,7 @@ ___
 
 • `Optional` **inputLeveldb**: *LevelDB*<any, any\> \| *LevelUp*<AbstractLevelDOWN<any, any\>, AbstractIterator<any, any\>\>
 
-Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
+Defined in: [index.ts:83](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L83)
 
 ___
 
@@ -96,7 +96,7 @@ ___
 
 • `Optional` **inputMongodb**: *MongoClient*
 
-Defined in: [index.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L89)
+Defined in: [index.ts:84](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L84)
 
 ___
 
@@ -104,7 +104,7 @@ ___
 
 • `Optional` **inputName**: *string*
 
-Defined in: [index.ts:90](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L90)
+Defined in: [index.ts:85](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L85)
 
 ___
 
@@ -112,7 +112,7 @@ ___
 
 • `Optional` **inputPassword**: *string*
 
-Defined in: [index.ts:92](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L92)
+Defined in: [index.ts:87](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L87)
 
 ___
 
@@ -120,7 +120,7 @@ ___
 
 • `Optional` **inputPort**: *number*
 
-Defined in: [index.ts:100](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L100)
+Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
 
 ___
 
@@ -128,7 +128,7 @@ ___
 
 • `Optional` **inputShardBy**: *string*
 
-Defined in: [index.ts:93](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L93)
+Defined in: [index.ts:88](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L88)
 
 ___
 
@@ -136,7 +136,7 @@ ___
 
 • `Optional` **inputShardFunction**: [*DatabaseCopyShardFunction*](../enums/format.databasecopyshardfunction.md)
 
-Defined in: [index.ts:94](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L94)
+Defined in: [index.ts:89](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L89)
 
 ___
 
@@ -144,7 +144,7 @@ ___
 
 • `Optional` **inputShardIndex**: *number*
 
-Defined in: [index.ts:95](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L95)
+Defined in: [index.ts:90](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L90)
 
 ___
 
@@ -152,7 +152,7 @@ ___
 
 • `Optional` **inputShards**: *number*
 
-Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)
+Defined in: [index.ts:91](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L91)
 
 ___
 
@@ -160,7 +160,7 @@ ___
 
 • `Optional` **inputStream**: ReadableStreamTree
 
-Defined in: [index.ts:97](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L97)
+Defined in: [index.ts:92](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L92)
 
 ___
 
@@ -168,7 +168,7 @@ ___
 
 • `Optional` **inputTable**: *string*
 
-Defined in: [index.ts:98](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L98)
+Defined in: [index.ts:93](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L93)
 
 ___
 
@@ -176,7 +176,7 @@ ___
 
 • `Optional` **inputType**: [*DatabaseCopyInputType*](../enums/format.databasecopyinputtype.md)
 
-Defined in: [index.ts:99](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L99)
+Defined in: [index.ts:94](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L94)
 
 ___
 
@@ -184,4 +184,4 @@ ___
 
 • `Optional` **inputUser**: *string*
 
-Defined in: [index.ts:101](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L101)
+Defined in: [index.ts:96](https://github.com/wholebuzz/dbcp/blob/master/src/index.ts#L96)

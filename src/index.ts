@@ -2,15 +2,9 @@ import { Client } from '@elastic/elasticsearch'
 import { FileSystem } from '@wholebuzz/fs/lib/fs'
 import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/fs/lib/json'
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
-import { openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
+import { OpenParquetFileOptions, openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardReadable, shardWritables } from '@wholebuzz/fs/lib/stream'
-import {
-  isShardedFilename,
-  Logger,
-  openWritableFiles,
-  ReadableFileSpec,
-  shardIndex,
-} from '@wholebuzz/fs/lib/util'
+import { Logger, openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
 import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import level from 'level'
@@ -71,6 +65,7 @@ export interface DatabaseCopyInputFile {
   extraOutput?: boolean
   schema?: Column[]
   schemaFile?: string
+  parquetOptions?: OpenParquetFileOptions
   inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
   inputShards?: number
   inputShardFilter?: (index: number) => boolean
@@ -319,9 +314,10 @@ export async function openInputs(
       : undefined
   const inputSpec: Record<string, ReadableFileSpec> = {}
   inputFiles.forEach(([inputFileName, inputFile]) => {
+    const isParquet = inputFormat === DatabaseCopyFormat.parquet
     inputSpec[inputFileName] = {
       format:
-        inputFormat === outputFormat && inputFormat === DatabaseCopyFormat.parquet
+        inputFormat === outputFormat && isParquet
           ? undefined
           : nonCustomFormat(inputFormat) ||
             nonCustomFormat(inputFormats[inputFileName]) ||
@@ -329,6 +325,7 @@ export async function openInputs(
       url: inputFile.url,
       stream: inputFile.inputStream,
       options: {
+        ...inputFile.parquetOptions,
         query: inputFile.query || args.query,
         extra: inputFile.extra || args.extra,
         extraOutput: inputFile.extraOutput || args.extraOutput,
@@ -360,11 +357,6 @@ export async function openOutputs(
   args: DatabaseCopyOptions,
   format?: DatabaseCopyFormat | DatabaseCopyTransformFactory
 ) {
-  if ((args.outputShards ?? 0) > 1 && !isShardedFilename(args.outputFile ?? '')) {
-    throw new Error(
-      `openOutputs ${args.outputShards} shards without sharded outputFile: ${args.outputFile}`
-    )
-  }
   const outputs =
     args.outputStream ||
     (args.outputFile === '-'
@@ -376,6 +368,9 @@ export async function openOutputs(
   for (let i = 0; i < outputs.length; i++) {
     if (args.transformBytesStream) outputs[i] = outputs[i].pipeFrom(args.transformBytesStream())
     if (args.transformBytes) outputs[i] = pipeFromFilter(outputs[i], args.transformBytes)
+  }
+  if (outputs.length !== (args.outputShards || 1)) {
+    throw new Error(`openOutputs expected ${args.outputShards} shards but found ${outputs.length}`)
   }
   return outputs
 }
