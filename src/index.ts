@@ -4,7 +4,13 @@ import { newJSONLinesFormatter, newJSONLinesParser, readJSON } from '@wholebuzz/
 import { mergeStreams } from '@wholebuzz/fs/lib/merge'
 import { OpenParquetFileOptions, openReadableFileSet } from '@wholebuzz/fs/lib/parquet'
 import { pipeFilter, pipeFromFilter, shardReadable, shardWritables } from '@wholebuzz/fs/lib/stream'
-import { Logger, openWritableFiles, ReadableFileSpec, shardIndex } from '@wholebuzz/fs/lib/util'
+import {
+  Logger,
+  openWritableFiles,
+  ReadableFileOptions,
+  ReadableFileSpec,
+  shardIndex,
+} from '@wholebuzz/fs/lib/util'
 import esort from 'external-sorting'
 import { Knex, knex } from 'knex'
 import level from 'level'
@@ -65,7 +71,7 @@ export interface DatabaseCopyInputFile {
   extraOutput?: boolean
   schema?: Column[]
   schemaFile?: string
-  parquetOptions?: OpenParquetFileOptions
+  fileOptions?: ReadableFileOptions & OpenParquetFileOptions
   inputFormat?: DatabaseCopyFormat | DatabaseCopyTransformFactory
   inputShards?: number
   inputShardFilter?: (index: number) => boolean
@@ -325,7 +331,7 @@ export async function openInputs(
       url: inputFile.url,
       stream: inputFile.inputStream,
       options: {
-        ...inputFile.parquetOptions,
+        ...inputFile.fileOptions,
         query: inputFile.query || args.query,
         extra: inputFile.extra || args.extra,
         extraOutput: inputFile.extraOutput || args.extraOutput,

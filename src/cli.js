@@ -257,7 +257,7 @@ async function main() {
     fileSystem,
     inputFiles: args.inputFile
       ? args.inputFile.map((url) => ({
-          parquetOptions: args.parquetRowGroupRange
+          fileOptions: args.parquetRowGroupRange
             ? { rowGroupRange: args.parquetRowGroupRange }
             : undefined,
           url,
